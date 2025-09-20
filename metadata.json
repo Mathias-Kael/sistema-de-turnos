@@ -1,0 +1,5 @@
+{
+  "name": "Sistema de Turnos Escalable",
+  "description": "Una aplicación web que permite a cualquier negocio que trabaje con reservas mostrar su disponibilidad, tomar reservas online y enviar confirmaciones y recordatorios automáticos. Cuenta con branding personalizable y una interfaz de usuario minimalista y mobile-first.",
+  "requestFramePermissions": []
+}

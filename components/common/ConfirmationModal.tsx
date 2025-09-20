@@ -1,0 +1,138 @@
+import React, { useState, useMemo } from 'react';
+import { Service, Business } from '../../types';
+import { formatDuration } from '../../utils/format';
+import { generateICS } from '../../utils/ics';
+
+interface ConfirmationModalProps {
+    date: Date;
+    slot: string;
+    selectedServices: Service[];
+    employeeId: string | 'any';
+    business: Business;
+    onClose: () => void;
+}
+
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot, selectedServices, employeeId, business, onClose }) => {
+    const [clientName, setClientName] = useState('');
+    const [clientEmail, setClientEmail] = useState('');
+    const [clientPhone, setClientPhone] = useState('');
+    const [isConfirmed, setIsConfirmed] = useState(false);
+    
+    const totalDuration = useMemo(() => selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0), [selectedServices]);
+    const totalPrice = useMemo(() => selectedServices.reduce((acc, s) => acc + s.price, 0), [selectedServices]);
+
+    const employee = useMemo(() => {
+        if (employeeId === 'any') {
+            return null;
+        }
+        return business.employees.find(e => e.id === employeeId);
+    }, [employeeId, business.employees]);
+
+    const handleConfirm = (e: React.FormEvent) => {
+        e.preventDefault();
+        // In a real app, here you would send the booking data to your backend API.
+        // For this demo, we'll just show a success message.
+        console.log({
+            clientName,
+            clientEmail,
+            clientPhone,
+            date,
+            slot,
+            selectedServices,
+            employeeId
+        });
+        setIsConfirmed(true);
+    };
+
+    const whatsappMessage = useMemo(() => {
+        const serviceNames = selectedServices.map(s => s.name).join(', ');
+        const dateString = date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const text = `Hola ${business.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. ¡Gracias!`;
+        return encodeURIComponent(text);
+    }, [clientName, selectedServices, date, slot, business.name]);
+    
+    const whatsappUrl = `https://wa.me/${business.phone}?text=${whatsappMessage}`;
+
+    if (isConfirmed) {
+        return (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
+                <div className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-2xl font-bold text-green-600 mb-4">¡Turno Confirmado!</h2>
+                    <p className="text-gray-700 mb-4">
+                        Recibirás un recordatorio por email. Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
+                    </p>
+                    <div className="space-y-3">
+                        <a 
+                            href={whatsappUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full block bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                            Confirmar por WhatsApp
+                        </a>
+                        <button
+                            type="button"
+                            onClick={() => generateICS(date, slot, selectedServices, business)}
+                            className="w-full block bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Añadir al Calendario
+                        </button>
+                        <button type="button" onClick={onClose} className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors mt-2">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <form onSubmit={handleConfirm} className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold text-brand mb-4">Confirma tu turno</h2>
+                
+                <div className="bg-secondary p-4 rounded-lg mb-6">
+                    <p><strong>Fecha:</strong> {date.toLocaleDateString('es-AR')}</p>
+                    <p><strong>Hora:</strong> {slot}</p>
+                    {employee && <p><strong>Con:</strong> {employee.name}</p>}
+                    <p><strong>Servicios:</strong></p>
+                    <ul className="list-disc list-inside text-sm pl-2">
+                        {selectedServices.map(s => <li key={s.id}>{s.name}</li>)}
+                    </ul>
+                    <hr className="my-3 border-t border-gray-300" />
+                    <div className="flex justify-between font-bold text-lg">
+                        <span>Total:</span>
+                        <span>${totalPrice}</span>
+                    </div>
+                     <div className="text-right text-sm text-gray-600">
+                        <span>Duración total: {formatDuration(totalDuration)}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <input type="text" id="name" value={clientName} onChange={e => setClientName(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                    </div>
+                     <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email (Opcional)</label>
+                        <input type="email" id="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                    </div>
+                     <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono (WhatsApp)</label>
+                        <input type="tel" id="phone" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t">
+                    <button type="button" onClick={onClose} className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity">
+                        Confirmar Reserva
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
