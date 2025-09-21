@@ -42,6 +42,54 @@ export const StyleInjector: React.FC = () => {
             font-family: var(--font-family);
             color: var(--color-text);
         }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-primary: #e2e8f0;
+                --color-secondary: #cbd5e0;
+                --color-text: #f7fafc;
+            }
+
+            body {
+                background-color: #1a202c;
+                color: #f7fafc;
+            }
+
+            /* Override common Tailwind classes for dark mode */
+            .bg-white { background-color: #2d3748; }
+            .bg-gray-50 { background-color: #1a202c; }
+            .bg-gray-100 { background-color: #4a5568; }
+            .text-gray-700 { color: #e2e8f0; }
+            .text-gray-800 { color: #f7fafc; }
+            .border-gray-200 { border-color: #4a5568; }
+            .border-gray-300 { border-color: #718096; }
+
+            /* Input fields styling for dark mode */
+            input, textarea, select {
+                background: #374151;
+                color: #f9fafb;
+                border: 1px solid #4b5563;
+            }
+
+            /* Additional overrides for better dark mode integration */
+            .bg-gray-200 { background-color: #4a5568; }
+            .bg-gray-300 { background-color: #718096; }
+            .bg-gray-400 { background-color: #718096; }
+            .text-gray-500 { color: #a0aec0; }
+            .border-gray-300 { border-color: #718096; }
+
+            /* Hover states for dark mode */
+            .hover\:bg-gray-50:hover { background-color: #2d3748; }
+            .hover\:bg-gray-100:hover { background-color: #4a5568; }
+            .hover\:bg-gray-300:hover { background-color: #718096; }
+            .hover\:border-gray-400:hover { border-color: #a0aec0; }
+
+            /* Adjust hover-bg-primary for dark mode */
+            .hover-bg-primary:hover {
+                color: var(--color-text);
+            }
+        }
     `;
 
     return (

@@ -8,3 +8,10 @@
   --color-primary: #1a202c;
   --color-brand: #2b6cb0;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #f7fafc;
+    --color-brand: #63b3ed;
+  }
+}
