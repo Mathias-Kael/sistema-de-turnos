@@ -33,6 +33,7 @@ export const StyleInjector: React.FC = () => {
             --color-state-danger-text: #721c24;
             --color-state-neutral-bg: #e2e8f0;
             --color-state-neutral-text: #2d3748;
+            --color-state-danger-strong: #b91c1c; /* Added for light mode */
 
             /* Branding Colors */
             --color-brand-primary: ${branding.primaryColor};
@@ -62,6 +63,7 @@ export const StyleInjector: React.FC = () => {
                 --color-state-danger-text: #ff8a80;
                 --color-state-neutral-bg: #2c2c2c;
                 --color-state-neutral-text: #E0E0E0;
+                --color-state-danger-strong: #dc2626; /* Added for dark mode */
 
                 /* Adapt branding colors for dark mode */
                 --color-brand-primary: ${adjustColorForDarkMode(branding.primaryColor)};
@@ -82,6 +84,7 @@ export const StyleInjector: React.FC = () => {
         .bg-secondary { background-color: var(--color-brand-secondary); }
         .text-brand-primary { color: var(--color-brand-primary); } /* Renamed from .text-primary */
         .text-brand { color: var(--color-brand-text); }
+        .text-brand-text { color: var(--color-brand-text); } /* Added utility for text-brand-text */
         .border-primary { border-color: var(--color-brand-primary); }
         .accent-primary { accent-color: var(--color-brand-primary); }
 
@@ -122,6 +125,7 @@ export const StyleInjector: React.FC = () => {
         .hover\\:bg-surface-hover:hover { background-color: var(--color-surface-hover); }
         .bg-primary-dark { background-color: var(--color-brand-primary-dark); }
         .hover\\:bg-primary-dark:hover { background-color: var(--color-brand-primary-dark); color: var(--color-brand-text); } /* Added hover for primary-dark */
+        .hover\\:text-primary-dark:hover { color: var(--color-brand-primary-dark); } /* Added hover for text-primary-dark */
         .bg-primary-light { background-color: var(--color-brand-primary-light); }
     `;
 
