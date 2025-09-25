@@ -16,8 +16,8 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
     // Si no hay empleados elegibles, no mostrar nada.
     if (employees.length === 0) {
         return (
-             <div className="p-4 border border-default rounded-lg bg-yellow-50 text-yellow-800">
-                <p className="text-primary">No hay un único empleado que pueda realizar todos los servicios seleccionados. Por favor, ajusta tu selección.</p>
+             <div className="p-4 border border-default rounded-lg bg-[color:var(--color-state-warning-bg)] text-[color:var(--color-state-warning-text)]">
+                <p className="text-[color:var(--color-state-warning-text)]">No hay un único empleado que pueda realizar todos los servicios seleccionados. Por favor, ajusta tu selección.</p>
             </div>
         )
     }

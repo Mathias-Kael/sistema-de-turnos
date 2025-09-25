@@ -109,7 +109,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                         <legend className="font-semibold px-2 text-primary">Servicios</legend>
                         <div className="flex flex-wrap gap-2">
                             {business.services.map(service => (
-                                <label key={service.id} className={`p-2 border border-default rounded-full text-sm cursor-pointer text-primary ${selectedServices.some(s => s.id === service.id) ? 'bg-primary text-white' : 'bg-background'}`}>
+                                <label key={service.id} className={`p-2 border border-default rounded-full text-sm cursor-pointer text-primary ${selectedServices.some(s => s.id === service.id) ? 'bg-primary text-brand-text' : 'bg-background'}`}>
                                     <input type="checkbox" className="hidden" onChange={() => handleServiceToggle(service)} />
                                     {service.name}
                                 </label>
@@ -144,7 +144,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                             {loadingSlots ? <p className="text-primary">Cargando horarios...</p> : (
                                 <div className="flex flex-wrap gap-2">
                                     {availableSlots.length > 0 ? availableSlots.map(s => (
-                                        <button type="button" key={s} onClick={() => setSlot(s)} className={`p-2 border border-default rounded-md text-primary ${slot === s ? 'bg-primary text-white' : 'bg-background'}`}>{s}</button>
+                                        <button type="button" key={s} onClick={() => setSlot(s)} className={`p-2 border border-default rounded-md text-primary ${slot === s ? 'bg-primary text-brand-text' : 'bg-background'}`}>{s}</button>
                                     )) : <p className="text-primary">No hay horarios disponibles.</p>}
                                 </div>
                             )}
@@ -154,7 +154,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-default">
                     <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover">Cancelar</button>
-                    <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary" disabled={!slot}>Guardar Reserva</button>
+                    <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary" disabled={!slot}>Guardar Reserva</button>
                 </div>
             </form>
         </div>

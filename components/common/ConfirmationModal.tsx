@@ -57,7 +57,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
         return (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
                 <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center text-primary" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-2xl font-bold text-green-600 mb-4">¡Turno Confirmado!</h2>
+                    <h2 className="text-2xl font-bold text-[color:var(--color-state-success-text)] mb-4">¡Turno Confirmado!</h2>
                     <p className="text-primary mb-4">
                         Recibirás un recordatorio por email. Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
                     </p>
@@ -66,14 +66,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                             href={whatsappUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full block bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors"
+                            className="w-full block bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
                         >
                             Confirmar por WhatsApp
                         </a>
                         <button
                             type="button"
                             onClick={() => generateICS(date, slot, selectedServices, business)}
-                            className="w-full block bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                            className="w-full block bg-[color:var(--color-state-neutral-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
                         >
                             Añadir al Calendario
                         </button>
@@ -128,7 +128,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                     <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity">
+                    <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity">
                         Confirmar Reserva
                     </button>
                 </div>

@@ -19,11 +19,11 @@ const ExpirationLabel: Record<ExpirationOption, string> = {
     '1y': '1 año',
 };
 
-const StatusInfo: Record<DerivedStatus, { text: string; color: string }> = {
-    active: { text: 'Activo', color: 'bg-green-100 text-green-800' },
-    paused: { text: 'Pausado', color: 'bg-yellow-100 text-yellow-800' },
-    revoked: { text: 'Revocado', color: 'bg-red-100 text-red-800' },
-    expired: { text: 'Expirado', color: 'bg-gray-100 text-gray-800' },
+const StatusInfo: Record<DerivedStatus, { text: string; className: string }> = {
+    active: { text: 'Activo', className: 'bg-[color:var(--color-state-success-bg)] text-[color:var(--color-state-success-text)]' },
+    paused: { text: 'Pausado', className: 'bg-[color:var(--color-state-warning-bg)] text-[color:var(--color-state-warning-text)]' },
+    revoked: { text: 'Revocado', className: 'bg-[color:var(--color-state-danger-bg)] text-[color:var(--color-state-danger-text)]' },
+    expired: { text: 'Expirado', className: 'bg-[color:var(--color-state-neutral-bg)] text-[color:var(--color-state-neutral-text)]' },
 };
 
 export const SharePanel: React.FC = () => {
@@ -147,7 +147,7 @@ export const SharePanel: React.FC = () => {
                 <div className="p-4 border border-default rounded-md bg-surface space-y-4">
                     <h4 className="font-semibold text-primary">Estado del Enlace</h4>
                     <div className="flex items-center justify-between">
-                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${StatusInfo[derivedStatus].color}`}>
+                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${StatusInfo[derivedStatus].className}`}>
                             {StatusInfo[derivedStatus].text}
                         </span>
                         <div className="text-right text-xs text-secondary">
@@ -171,7 +171,11 @@ export const SharePanel: React.FC = () => {
                             </button>
                         )}
                         {derivedStatus !== 'revoked' && derivedStatus !== 'expired' && (
-                             <button type="button" onClick={handleRevoke} className="text-sm font-medium text-red-600 hover:text-red-800">
+                            <button
+                                type="button"
+                                onClick={handleRevoke}
+                                className="text-sm font-medium text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)]"
+                            >
                                 Revocar Ahora
                             </button>
                         )}
@@ -197,9 +201,9 @@ export const SharePanel: React.FC = () => {
                         ))}
                     </select>
                 </div>
-                 <button type="button" onClick={handleGenerateLink} className="w-full px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark">
-                    {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Enlace'}
-                </button>
+                 <button type="button" onClick={handleGenerateLink} className="w-full px-4 py-2 bg-primary text-brand-text font-bold rounded-lg hover:bg-primary-dark">
+                     {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Enlace'}
+                 </button>
             </div>
         </div>
     );

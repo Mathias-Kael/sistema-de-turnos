@@ -31,7 +31,7 @@ export const AdminView: React.FC = () => {
         <button
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
-                activeTab === tab ? 'bg-primary text-white' : 'hover:bg-surface-hover'
+                activeTab === tab ? 'bg-primary text-brand-text' : 'hover:bg-surface-hover'
             }`}
         >
             {label}
@@ -46,7 +46,7 @@ export const AdminView: React.FC = () => {
                         {logoUrl && <img src={logoUrl} alt="logo" className="h-10 w-10 rounded-full object-cover" />}
                         <h1 className="text-xl font-bold">{name}</h1>
                     </div>
-                    <a href="/?token=preview" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                    <a href="/?token=preview" target="_blank" rel="noopener noreferrer" className="text-sm text-brand-primary hover:underline">
                         Abrir vista de cliente
                     </a>
                 </div>

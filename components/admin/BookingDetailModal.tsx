@@ -71,7 +71,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                         <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                             Cerrar
                         </button>
-                        <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity">
+                        <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity">
                             Guardar Cambios
                         </button>
                     </div>

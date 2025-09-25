@@ -61,7 +61,7 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateChange }
                     const buttonClasses = `w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
                         isPast ? 'text-secondary cursor-not-allowed' : 'hover:bg-surface-hover'
                     } ${
-                        isSelected ? 'bg-primary text-white font-bold' : ''
+                        isSelected ? 'bg-primary text-brand-text font-bold' : ''
                     }`;
 
                     return (

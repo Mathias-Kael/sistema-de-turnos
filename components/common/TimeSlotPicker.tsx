@@ -52,7 +52,7 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
         }
 
         if (error) {
-            return <p className="text-center text-red-500">{error}</p>;
+            return <p className="text-center text-[color:var(--color-state-danger-text)]">{error}</p>;
         }
 
         if (slots.length === 0) {

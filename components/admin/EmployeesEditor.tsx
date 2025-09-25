@@ -55,7 +55,7 @@ export const EmployeesEditor: React.FC = () => {
         <div className="space-y-6">
              <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Gestión de Empleados</h3>
-                <button onClick={() => setIsAdding(!isAdding)} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark">
+                <button onClick={() => setIsAdding(!isAdding)} className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark">
                     {isAdding ? 'Cancelar' : 'Añadir Empleado'}
                 </button>
             </div>
@@ -65,7 +65,7 @@ export const EmployeesEditor: React.FC = () => {
                     <h4 className="font-semibold text-primary">Nuevo Empleado</h4>
                     <input type="text" placeholder="Nombre Completo" value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
                     <input type="text" placeholder="URL del Avatar" value={newEmployee.avatarUrl} onChange={(e) => setNewEmployee({...newEmployee, avatarUrl: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                    <button onClick={handleAddEmployee} className="w-full py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700">Guardar Empleado</button>
+                    <button onClick={handleAddEmployee} className="w-full py-2 bg-[color:var(--color-state-success-bg)] text-brand-text font-bold rounded-md hover:opacity-90">Guardar Empleado</button>
                 </div>
             )}
             
@@ -81,7 +81,7 @@ export const EmployeesEditor: React.FC = () => {
                              <input type="text" value={emp.name} onChange={(e) => handleEmployeeChange(emp.id, 'name', e.target.value)} className="text-md font-semibold border-b border-default focus:border-b-primary focus:outline-none w-full bg-surface text-primary" />
                              <input type="text" value={emp.avatarUrl} onChange={(e) => handleEmployeeChange(emp.id, 'avatarUrl', e.target.value)} className="mt-1 w-full text-sm text-secondary border-b border-default focus:border-b-primary focus:outline-none bg-surface" placeholder="URL del Avatar"/>
                         </div>
-                        <button onClick={() => handleDeleteEmployee(emp.id)} className="text-red-500 hover:text-red-700 ml-4 p-1 rounded-full hover:bg-red-100 transition-colors">&#x1F5D1;</button>
+                        <button onClick={() => handleDeleteEmployee(emp.id)} className="text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)] ml-4 p-1 rounded-full hover:bg-[color:var(--color-state-danger-bg)] transition-colors">&#x1F5D1;</button>
                     </div>
                 ))}
             </div>

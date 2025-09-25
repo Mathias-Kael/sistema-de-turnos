@@ -87,7 +87,7 @@ export const HoursEditor: React.FC = () => {
                                     />
                                     <button
                                         onClick={() => removeInterval(dayKey, index)}
-                                        className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
+                                        className="p-2 bg-[color:var(--color-state-danger-bg)] text-[color:var(--color-state-danger-text)] rounded-full hover:opacity-90 transition-colors"
                                         aria-label="Eliminar intervalo"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" /></svg>

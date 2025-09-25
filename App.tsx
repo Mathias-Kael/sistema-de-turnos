@@ -60,10 +60,10 @@ const TokenValidationView: React.FC<{ token: string }> = ({ token }) => {
 
   if (validationStatus === 'paused') {
      return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
-          <div className="p-8 bg-white shadow-md rounded-lg text-center max-w-sm mx-auto">
-            <h1 className="text-2xl font-bold text-yellow-600">Agenda Pausada</h1>
-            <p className="mt-4 text-gray-700">
+        <div className="flex items-center justify-center h-screen bg-background">
+          <div className="p-8 bg-surface shadow-md rounded-lg text-center max-w-sm mx-auto">
+            <h1 className="text-2xl font-bold text-[color:var(--color-state-warning-text)]">Agenda Pausada</h1>
+            <p className="mt-4 text-secondary">
               La agenda está temporalmente pausada. Volvé a intentar más tarde.
             </p>
           </div>
@@ -73,10 +73,10 @@ const TokenValidationView: React.FC<{ token: string }> = ({ token }) => {
 
   // Para 'invalid', 'revoked', 'expired'
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="p-8 bg-white shadow-md rounded-lg text-center max-w-sm mx-auto">
-        <h1 className="text-2xl font-bold text-red-600">Enlace Inválido o Expirado</h1>
-        <p className="mt-4 text-gray-700">
+    <div className="flex items-center justify-center h-screen bg-background">
+      <div className="p-8 bg-surface shadow-md rounded-lg text-center max-w-sm mx-auto">
+        <h1 className="text-2xl font-bold text-[color:var(--color-state-danger-text)]">Enlace Inválido o Expirado</h1>
+        <p className="mt-4 text-secondary">
           Este enlace ya no está activo. Pedí al negocio el nuevo link para reservar.
         </p>
       </div>

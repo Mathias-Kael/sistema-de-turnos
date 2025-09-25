@@ -74,7 +74,7 @@ export const ServicesEditor: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-primary">Gestión de Servicios</h3>
-                <button onClick={() => setIsAdding(!isAdding)} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark">
+                <button onClick={() => setIsAdding(!isAdding)} className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark">
                     {isAdding ? 'Cancelar' : 'Añadir Servicio'}
                 </button>
             </div>
@@ -93,7 +93,7 @@ export const ServicesEditor: React.FC = () => {
                         <input type="checkbox" checked={newService.requiresDeposit} onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} className="rounded accent-primary"/>
                         <span>Requiere depósito</span>
                     </label>
-                    <button onClick={handleAddService} className="w-full py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700">Guardar Servicio</button>
+                    <button onClick={handleAddService} className="w-full py-2 bg-[color:var(--color-state-success-bg)] text-brand-text font-bold rounded-md hover:opacity-90">Guardar Servicio</button>
                 </div>
             )}
 
@@ -102,7 +102,7 @@ export const ServicesEditor: React.FC = () => {
                     <div key={service.id} className="p-4 border border-default rounded-md space-y-3 bg-surface">
                         <div className="flex justify-between items-start">
                             <input type="text" value={service.name} onChange={(e) => handleServiceChange(service.id, 'name', e.target.value)} className="text-md font-semibold border-b border-default focus:border-b-primary w-full focus:outline-none bg-surface text-primary" />
-                            <button onClick={() => handleDeleteService(service.id)} className="text-red-500 hover:text-red-700 ml-4 p-1 rounded-full hover:bg-red-100 transition-colors">&#x1F5D1;</button>
+                            <button onClick={() => handleDeleteService(service.id)} className="text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)] ml-4 p-1 rounded-full hover:bg-[color:var(--color-state-danger-bg)] transition-colors">&#x1F5D1;</button>
                         </div>
                         <textarea value={service.description} onChange={(e) => handleServiceChange(service.id, 'description', e.target.value)} className="w-full text-sm text-secondary border border-default rounded-md p-2 focus:ring-primary focus:border-primary bg-surface" rows={2}></textarea>
                         <div className="grid grid-cols-3 gap-4">

@@ -36,9 +36,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ selectedDate, 
                     const isSelected = isSameDay(date, selectedDate);
                     return (
                         <div key={dateStr} className="relative group">
-                            <button onClick={() => onDateChange(date)} className={`w-10 h-10 flex items-center justify-center rounded-full ${isSelected ? 'bg-primary text-white' : 'hover:bg-surface-hover'}`}>
+                            <button onClick={() => onDateChange(date)} className={`w-10 h-10 flex items-center justify-center rounded-full ${isSelected ? 'bg-primary text-brand-text' : 'hover:bg-surface-hover'}`}>
                                 {date.getDate()}
-                                {hasBookings && <span className="absolute bottom-1 right-1 h-2 w-2 bg-green-500 rounded-full"></span>}
+                                {hasBookings && <span className="absolute bottom-1 right-1 h-2 w-2 bg-[color:var(--color-state-success-bg)] rounded-full"></span>}
                             </button>
                              <button onClick={() => onAddBooking(date)} className="absolute top-0 right-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity">+</button>
                         </div>
