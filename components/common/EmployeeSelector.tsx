@@ -16,26 +16,26 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
     // Si no hay empleados elegibles, no mostrar nada.
     if (employees.length === 0) {
         return (
-             <div className="p-4 border rounded-lg bg-yellow-50 text-yellow-800">
-                <p>No hay un único empleado que pueda realizar todos los servicios seleccionados. Por favor, ajusta tu selección.</p>
+             <div className="p-4 border border-default rounded-lg bg-yellow-50 text-yellow-800">
+                <p className="text-primary">No hay un único empleado que pueda realizar todos los servicios seleccionados. Por favor, ajusta tu selección.</p>
             </div>
         )
     }
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-4 text-brand">¿Con quién prefieres tu turno?</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary">¿Con quién prefieres tu turno?</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Opción "Cualquiera" */}
                 <div
                     onClick={() => onSelectEmployee('any')}
                     className={`p-4 border rounded-lg cursor-pointer text-center transition-all duration-200 ${
                         selectedEmployeeId === 'any'
-                            ? 'border-2 border-primary shadow-md'
-                            : 'bg-white hover:shadow-sm border-gray-200'
+                            ? 'border-2 border-primary shadow-md bg-surface'
+                            : 'bg-surface hover:shadow-sm border-default'
                     }`}
                 >
-                     <div className="font-bold text-brand">Cualquiera disponible</div>
+                     <div className="font-bold text-primary">Cualquiera disponible</div>
                 </div>
 
                 {/* Opciones por empleado */}
@@ -45,16 +45,16 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                         onClick={() => onSelectEmployee(employee.id)}
                         className={`p-4 border rounded-lg cursor-pointer text-center transition-all duration-200 ${
                             selectedEmployeeId === employee.id
-                                ? 'border-2 border-primary shadow-md'
-                                : 'bg-white hover:shadow-sm border-gray-200'
+                                ? 'border-2 border-primary shadow-md bg-surface'
+                                : 'bg-surface hover:shadow-sm border-default'
                         }`}
                     >
-                        <img 
-                            src={employee.avatarUrl || `https://ui-avatars.com/api/?name=${employee.name.replace(' ', '+')}&background=random`} 
+                        <img
+                            src={employee.avatarUrl || `https://ui-avatars.com/api/?name=${employee.name.replace(' ', '+')}&background=random`}
                             alt={employee.name}
                             className="w-16 h-16 rounded-full mx-auto mb-2"
                         />
-                         <div className="font-bold text-brand">{employee.name}</div>
+                         <div className="font-bold text-primary">{employee.name}</div>
                     </div>
                 ))}
             </div>

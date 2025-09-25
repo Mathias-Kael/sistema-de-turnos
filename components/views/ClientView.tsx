@@ -86,7 +86,7 @@ export const ClientView: React.FC = () => {
                 {/* Steps 3 & 4: Date and Time */}
                 {selectedEmployeeId && (
                     <section>
-                        <h2 className="text-2xl font-bold my-4 text-brand">Elige fecha y hora</h2>
+                        <h2 className="text-2xl font-bold my-4 text-primary">Elige fecha y hora</h2>
                         <div className="grid md:grid-cols-2 gap-8">
                             <Calendar
                                 selectedDate={selectedDate}

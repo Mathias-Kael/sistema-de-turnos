@@ -137,36 +137,36 @@ export const SharePanel: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-medium">Compartir con clientes</h3>
-                <p className="mt-1 text-sm text-gray-600">
+                <h3 className="text-lg font-medium text-primary">Compartir con clientes</h3>
+                <p className="mt-1 text-sm text-secondary">
                     Gestiona el enlace único para que tus clientes puedan ver tu disponibilidad y reservar turnos.
                 </p>
             </div>
 
             {link && derivedStatus && (
-                <div className="p-4 border rounded-md bg-white space-y-4">
-                    <h4 className="font-semibold text-gray-800">Estado del Enlace</h4>
+                <div className="p-4 border border-default rounded-md bg-surface space-y-4">
+                    <h4 className="font-semibold text-primary">Estado del Enlace</h4>
                     <div className="flex items-center justify-between">
                          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${StatusInfo[derivedStatus].color}`}>
                             {StatusInfo[derivedStatus].text}
                         </span>
-                        <div className="text-right text-xs text-gray-500">
+                        <div className="text-right text-xs text-secondary">
                             <p>Creado: {new Date(link.createdAt).toLocaleDateString()}</p>
                             <p>Expira: {link.expiresAt ? new Date(link.expiresAt).toLocaleDateString() : 'Nunca'}</p>
                         </div>
                     </div>
                     {shareableLink && (derivedStatus === 'active' || derivedStatus === 'paused') && (
                          <div>
-                            <input type="text" readOnly value={shareableLink} className="w-full p-2 border rounded bg-gray-100" />
+                            <input type="text" readOnly value={shareableLink} className="w-full p-2 border border-default rounded bg-background text-primary" />
                             <div className="flex gap-2 mt-2">
-                                <button type="button" onClick={handleCopyLink} className="flex-1 px-4 py-2 border rounded-md hover:bg-gray-50">Copiar Link</button>
-                                <button type="button" onClick={handleDownloadQR} className="flex-1 px-4 py-2 border rounded-md hover:bg-gray-50">Descargar QR</button>
+                                <button type="button" onClick={handleCopyLink} className="flex-1 px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary">Copiar Link</button>
+                                <button type="button" onClick={handleDownloadQR} className="flex-1 px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary">Descargar QR</button>
                             </div>
                         </div>
                     )}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t mt-2">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-default mt-2">
                         {(derivedStatus === 'active' || derivedStatus === 'paused') && (
-                             <button type="button" onClick={handleTogglePause} className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                             <button type="button" onClick={handleTogglePause} className="text-sm font-medium text-primary hover:text-primary-dark">
                                 {derivedStatus === 'active' ? 'Pausar Enlace' : 'Reactivar Enlace'}
                             </button>
                         )}
@@ -179,25 +179,25 @@ export const SharePanel: React.FC = () => {
                 </div>
             )}
             
-            <div className="p-4 border rounded-md bg-gray-50 space-y-3">
-                <h4 className="font-semibold">{link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Nuevo Enlace'}</h4>
-                 <p className="text-xs text-gray-600">
+            <div className="p-4 border border-default rounded-md bg-surface space-y-3">
+                <h4 className="font-semibold text-primary">{link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Nuevo Enlace'}</h4>
+                 <p className="text-xs text-secondary">
                     {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Esto creará un nuevo enlace e invalidará el actual.' : 'Define la duración del enlace que compartirás.'}
                 </p>
                 <div>
-                    <label htmlFor="expiration" className="block text-sm font-medium">Duración</label>
+                    <label htmlFor="expiration" className="block text-sm font-medium text-secondary">Duración</label>
                     <select
                         id="expiration"
                         value={expirationOption}
                         onChange={(e) => setExpirationOption(e.target.value as ExpirationOption)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md"
+                        className="mt-1 block w-full px-3 py-2 border border-default bg-surface rounded-md text-primary"
                     >
                         {Object.entries(ExpirationLabel).map(([key, label]) => (
                              <option key={key} value={key}>{label}</option>
                         ))}
                     </select>
                 </div>
-                 <button type="button" onClick={handleGenerateLink} className="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
+                 <button type="button" onClick={handleGenerateLink} className="w-full px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark">
                     {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Enlace'}
                 </button>
             </div>

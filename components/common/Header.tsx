@@ -14,7 +14,7 @@ export const Header: React.FC = () => {
                 />
             )}
             <h1 className="text-4xl font-bold text-primary">{name}</h1>
-            <p className="mt-2 text-lg text-brand/90 max-w-2xl mx-auto">{description}</p>
+            <p className="mt-2 text-lg text-secondary max-w-2xl mx-auto">{description}</p>
         </header>
     );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
+import { adjustColorForDarkMode } from '../../utils/colors';
 
 /**
  * A component that injects dynamic branding styles into the document head.
@@ -15,81 +16,70 @@ export const StyleInjector: React.FC = () => {
 
     const dynamicStyles = `
         :root {
-            --color-primary: ${branding.primaryColor};
-            --color-secondary: ${branding.secondaryColor};
-            --color-text: ${branding.textColor};
-            --font-family: ${branding.font};
-        }
-        
-        /* Utility classes to apply branding colors */
-        .bg-primary { background-color: var(--color-primary); }
-        .bg-secondary { background-color: var(--color-secondary); }
-        .text-primary { color: var(--color-primary); }
-        .text-brand { color: var(--color-text); }
-        .text-brand\\/90 { color: var(--color-text); opacity: 0.9; }
-        .text-brand\\/80 { color: var(--color-text); opacity: 0.8; }
-        .border-primary { border-color: var(--color-primary); }
-        .accent-primary { accent-color: var(--color-primary); }
+            /* Light Mode Semantic Colors */
+            --color-background: #ffffff;
+            --color-surface: #f7fafc;
+            --color-text-primary: #2d3748;
+            --color-text-secondary: #718096;
+            --color-border: #e2e8f0;
 
-        /* Custom hover class for buttons */
-        .hover-bg-primary:hover {
-            background-color: var(--color-primary);
-            color: #ffffff; /* Assuming white text on primary hover */
+            /* Branding Colors */
+            --color-brand-primary: ${branding.primaryColor};
+            --color-brand-secondary: ${branding.secondaryColor};
+            --color-brand-text: ${branding.textColor};
+            --font-family-brand: ${branding.font};
+            --color-brand-primary-dark: color-mix(in srgb, var(--color-brand-primary) 80%, black);
+            --color-brand-primary-light: color-mix(in srgb, var(--color-brand-primary) 15%, white);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark Mode Professional Palette */
+                --color-background: #121212;
+                --color-surface: #1e1e1e;
+                --color-text-primary: #E0E0E0;
+                --color-text-secondary: #A0A0A0;
+                --color-border: #2c2c2c;
+                --color-surface-hover: #2a2a2a;
+
+                /* Adapt branding colors for dark mode */
+                --color-brand-primary: ${adjustColorForDarkMode(branding.primaryColor)};
+                --color-brand-secondary: ${adjustColorForDarkMode(branding.secondaryColor)};
+            }
         }
         
         /* Global styles */
         body {
-            font-family: var(--font-family);
-            color: var(--color-text);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            font-family: var(--font-family-brand);
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Dark mode styles */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --color-primary: #e2e8f0;
-                --color-secondary: #cbd5e0;
-                --color-text: #f7fafc;
-            }
+        /* Utility classes to apply branding colors */
+        .bg-primary { background-color: var(--color-brand-primary); }
+        .bg-secondary { background-color: var(--color-brand-secondary); }
+        .text-primary { color: var(--color-brand-primary); }
+        .text-brand { color: var(--color-brand-text); }
+        .border-primary { border-color: var(--color-brand-primary); }
+        .accent-primary { accent-color: var(--color-brand-primary); }
 
-            body {
-                background-color: #1a202c;
-                color: #f7fafc;
-            }
-
-            /* Override common Tailwind classes for dark mode */
-            .bg-white { background-color: #2d3748; }
-            .bg-gray-50 { background-color: #1a202c; }
-            .bg-gray-100 { background-color: #4a5568; }
-            .text-gray-700 { color: #e2e8f0; }
-            .text-gray-800 { color: #f7fafc; }
-            .border-gray-200 { border-color: #4a5568; }
-            .border-gray-300 { border-color: #718096; }
-
-            /* Input fields styling for dark mode */
-            input, textarea, select {
-                background: #374151;
-                color: #f9fafb;
-                border: 1px solid #4b5563;
-            }
-
-            /* Additional overrides for better dark mode integration */
-            .bg-gray-200 { background-color: #4a5568; }
-            .bg-gray-300 { background-color: #718096; }
-            .bg-gray-400 { background-color: #718096; }
-            .text-gray-500 { color: #a0aec0; }
-            .border-gray-300 { border-color: #718096; }
-
-            /* Hover states for dark mode */
-            .hover\:bg-gray-50:hover { background-color: #2d3748; }
-            .hover\:bg-gray-100:hover { background-color: #4a5568; }
-            .hover\:bg-gray-300:hover { background-color: #718096; }
-            .hover\:border-gray-400:hover { border-color: #a0aec0; }
-
-            /* Adjust hover-bg-primary for dark mode */
-            .hover-bg-primary:hover {
-                color: var(--color-text);
-            }
+        /* Custom hover class for buttons */
+        .hover-bg-primary:hover {
+            background-color: var(--color-brand-primary);
+            /* TODO: Determine appropriate text color on hover */
+            color: #ffffff;
         }
+
+        /* New Semantic Utility Classes */
+        .bg-background { background-color: var(--color-background); }
+        .bg-surface { background-color: var(--color-surface); }
+        .text-primary { color: var(--color-text-primary); }
+        .text-secondary { color: var(--color-text-secondary); }
+        .border-default { border-color: var(--color-border); }
+        .hover\\:bg-surface-hover:hover { background-color: var(--color-surface-hover); }
+        .bg-primary-dark { background-color: var(--color-brand-primary-dark); }
+        .bg-primary-light { background-color: var(--color-brand-primary-light); }
     `;
 
     return (

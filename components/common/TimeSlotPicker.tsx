@@ -41,14 +41,14 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
 
     const renderContent = () => {
         if (selectedServices.length === 0) {
-            return <p className="text-center text-gray-500">Selecciona un servicio para ver los horarios.</p>;
+            return <p className="text-center text-secondary">Selecciona un servicio para ver los horarios.</p>;
         }
         if (!selectedEmployeeId) {
-             return <p className="text-center text-gray-500">Selecciona un empleado para continuar.</p>;
+             return <p className="text-center text-secondary">Selecciona un empleado para continuar.</p>;
         }
 
         if (loading) {
-            return <p className="text-center text-gray-500">Buscando horarios...</p>;
+            return <p className="text-center text-secondary">Buscando horarios...</p>;
         }
 
         if (error) {
@@ -56,7 +56,7 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
         }
 
         if (slots.length === 0) {
-            return <p className="text-center text-gray-500">No hay horarios disponibles para este día.</p>;
+            return <p className="text-center text-secondary">No hay horarios disponibles para este día.</p>;
         }
 
         return (
@@ -75,8 +75,8 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
     };
 
     return (
-        <div className="p-4 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-brand">Elige un horario</h2>
+        <div className="p-4 bg-surface rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-primary">Elige un horario</h2>
             {renderContent()}
         </div>
     );

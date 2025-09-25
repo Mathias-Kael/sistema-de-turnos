@@ -22,7 +22,7 @@ export const AdminView: React.FC = () => {
             case 'hours': return <HoursEditor />;
             case 'share': return <SharePanel />;
             case 'reservations': return <ReservationsManager />;
-            case 'preview': return <div className="border rounded-lg p-2 bg-gray-100"><ClientView /></div>;
+            case 'preview': return <div className="border-default rounded-lg p-2 bg-background"><ClientView /></div>;
             default: return null;
         }
     };
@@ -31,7 +31,7 @@ export const AdminView: React.FC = () => {
         <button
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
-                activeTab === tab ? 'bg-blue-600 text-white' : 'hover:bg-gray-200'
+                activeTab === tab ? 'bg-primary text-white' : 'hover:bg-surface-hover'
             }`}
         >
             {label}
@@ -39,12 +39,12 @@ export const AdminView: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm">
+        <div className="min-h-screen bg-background text-primary">
+            <header className="bg-surface shadow-sm border-b border-default">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                      <div className="flex items-center gap-4">
                         {logoUrl && <img src={logoUrl} alt="logo" className="h-10 w-10 rounded-full object-cover" />}
-                        <h1 className="text-xl font-bold text-gray-800">{name}</h1>
+                        <h1 className="text-xl font-bold">{name}</h1>
                     </div>
                     <a href="/?token=preview" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
                         Abrir vista de cliente
@@ -67,7 +67,7 @@ export const AdminView: React.FC = () => {
                     </aside>
 
                     <div className="lg:col-span-9 xl:col-span-10 mt-6 lg:mt-0">
-                        <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="bg-surface p-6 rounded-lg shadow">
                             {renderContent()}
                         </div>
                     </div>

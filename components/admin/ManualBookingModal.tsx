@@ -89,27 +89,27 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Nueva Reserva Manual</h2>
-                <p className="mb-4">Fecha: <strong>{selectedDate.toLocaleDateString('es-AR')}</strong></p>
+            <form onSubmit={handleSubmit} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto text-primary" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold text-primary mb-4">Nueva Reserva Manual</h2>
+                <p className="mb-4 text-primary">Fecha: <strong>{selectedDate.toLocaleDateString('es-AR')}</strong></p>
 
                 <div className="space-y-4">
                     {/* Client Info */}
-                    <fieldset className="border p-4 rounded-md">
-                        <legend className="font-semibold px-2">Datos del Cliente</legend>
+                    <fieldset className="border border-default p-4 rounded-md bg-surface">
+                        <legend className="font-semibold px-2 text-primary">Datos del Cliente</legend>
                         <div className="grid sm:grid-cols-3 gap-4">
-                            <input type="text" placeholder="Nombre" value={clientName} onChange={e => setClientName(e.target.value)} required className="p-2 border rounded-md"/>
-                            <input type="email" placeholder="Email (Opcional)" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="p-2 border rounded-md"/>
-                            <input type="tel" placeholder="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required className="p-2 border rounded-md"/>
+                            <input type="text" placeholder="Nombre" value={clientName} onChange={e => setClientName(e.target.value)} required className="p-2 border border-default rounded-md bg-background text-primary"/>
+                            <input type="email" placeholder="Email (Opcional)" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="p-2 border border-default rounded-md bg-background text-primary"/>
+                            <input type="tel" placeholder="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required className="p-2 border border-default rounded-md bg-background text-primary"/>
                         </div>
                     </fieldset>
 
                     {/* Service Selection */}
-                    <fieldset className="border p-4 rounded-md">
-                        <legend className="font-semibold px-2">Servicios</legend>
+                    <fieldset className="border border-default p-4 rounded-md bg-surface">
+                        <legend className="font-semibold px-2 text-primary">Servicios</legend>
                         <div className="flex flex-wrap gap-2">
                             {business.services.map(service => (
-                                <label key={service.id} className={`p-2 border rounded-full text-sm cursor-pointer ${selectedServices.some(s => s.id === service.id) ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+                                <label key={service.id} className={`p-2 border border-default rounded-full text-sm cursor-pointer text-primary ${selectedServices.some(s => s.id === service.id) ? 'bg-primary text-white' : 'bg-background'}`}>
                                     <input type="checkbox" className="hidden" onChange={() => handleServiceToggle(service)} />
                                     {service.name}
                                 </label>
@@ -119,9 +119,9 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
 
                     {/* Employee Selection */}
                     {selectedServices.length > 0 && (
-                        <fieldset className="border p-4 rounded-md">
-                             <legend className="font-semibold px-2">Empleado</legend>
-                             <select value={selectedEmployeeId || ''} onChange={e => setSelectedEmployeeId(e.target.value)} required className="p-2 w-full border rounded-md bg-white" disabled={eligibleEmployees.length === 0}>
+                        <fieldset className="border border-default p-4 rounded-md bg-surface">
+                             <legend className="font-semibold px-2 text-primary">Empleado</legend>
+                             <select value={selectedEmployeeId || ''} onChange={e => setSelectedEmployeeId(e.target.value)} required className="p-2 w-full border border-default rounded-md bg-surface text-primary" disabled={eligibleEmployees.length === 0}>
                                 <option value="" disabled>Seleccionar empleado</option>
                                 {eligibleEmployees.length > 0 ? (
                                     <>
@@ -139,22 +139,22 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                     
                      {/* Time Slot Selection */}
                     {selectedEmployeeId && (
-                         <fieldset className="border p-4 rounded-md">
-                            <legend className="font-semibold px-2">Horario</legend>
-                            {loadingSlots ? <p>Cargando horarios...</p> : (
+                         <fieldset className="border border-default p-4 rounded-md bg-surface">
+                            <legend className="font-semibold px-2 text-primary">Horario</legend>
+                            {loadingSlots ? <p className="text-primary">Cargando horarios...</p> : (
                                 <div className="flex flex-wrap gap-2">
                                     {availableSlots.length > 0 ? availableSlots.map(s => (
-                                        <button type="button" key={s} onClick={() => setSlot(s)} className={`p-2 border rounded-md ${slot === s ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>{s}</button>
-                                    )) : <p>No hay horarios disponibles.</p>}
+                                        <button type="button" key={s} onClick={() => setSlot(s)} className={`p-2 border border-default rounded-md text-primary ${slot === s ? 'bg-primary text-white' : 'bg-background'}`}>{s}</button>
+                                    )) : <p className="text-primary">No hay horarios disponibles.</p>}
                                 </div>
                             )}
                         </fieldset>
                     )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t">
-                    <button type="button" onClick={onClose} className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300">Cancelar</button>
-                    <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400" disabled={!slot}>Guardar Reserva</button>
+                <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-default">
+                    <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover">Cancelar</button>
+                    <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary" disabled={!slot}>Guardar Reserva</button>
                 </div>
             </form>
         </div>

@@ -27,14 +27,14 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Detalle de la Reserva</h2>
+            <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-primary" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold text-primary mb-4">Detalle de la Reserva</h2>
 
-                <div className="mb-6 space-y-2 text-gray-700">
+                <div className="mb-6 space-y-2 text-primary">
                     <p><strong>Cliente:</strong> {booking.client.name}</p>
                     <p><strong>Email:</strong> {booking.client.email || 'No especificado'}</p>
                     <p><strong>Teléfono:</strong> {booking.client.phone}</p>
-                    <hr className="my-2"/>
+                    <hr className="my-2 border-default"/>
                     <p><strong>Fecha:</strong> {new Date(booking.date + 'T00:00:00').toLocaleDateString('es-AR')}</p>
                     <p><strong>Hora:</strong> {booking.start} - {booking.end}</p>
                     {employee && <p><strong>Empleado:</strong> {employee.name}</p>}
@@ -43,13 +43,13 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700">Estado</label>
+                        <label htmlFor="status" className="block text-sm font-medium text-secondary">Estado</label>
                         <select
                             id="status"
                             name="status"
                             value={editedBooking.status}
                             onChange={handleChange}
-                            className="mt-1 w-full p-2 border rounded-md bg-white"
+                            className="mt-1 w-full p-2 border border-default rounded-md bg-surface text-primary"
                         >
                             <option value="pending">Pendiente</option>
                             <option value="confirmed">Confirmada</option>
@@ -57,21 +57,21 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                         </select>
                     </div>
                      <div>
-                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notas Internas</label>
+                        <label htmlFor="notes" className="block text-sm font-medium text-secondary">Notas Internas</label>
                         <textarea
                             id="notes"
                             name="notes"
                             rows={3}
                             value={editedBooking.notes || ''}
                             onChange={handleChange}
-                            className="mt-1 w-full p-2 border rounded-md"
+                            className="mt-1 w-full p-2 border border-default rounded-md bg-surface text-primary"
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                        <button type="button" onClick={onClose} className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">
+                        <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                             Cerrar
                         </button>
-                        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-opacity">
+                        <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity">
                             Guardar Cambios
                         </button>
                     </div>

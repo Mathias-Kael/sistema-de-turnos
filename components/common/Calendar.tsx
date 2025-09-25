@@ -42,24 +42,24 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateChange }
     const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
     return (
-        <div className="p-4 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Selecciona una fecha</h2>
+        <div className="p-4 bg-surface rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-primary">Selecciona una fecha</h2>
             <div className="flex justify-between items-center mb-4">
-                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-gray-100">&lt;</button>
-                <h3 className="font-semibold text-lg">
+                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-surface-hover text-primary">&lt;</button>
+                <h3 className="font-semibold text-lg text-primary">
                     {displayDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-100">&gt;</button>
+                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-surface-hover text-primary">&gt;</button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center">
-                {weekDays.map(day => <div key={day} className="font-bold text-sm text-gray-500">{day}</div>)}
+                {weekDays.map(day => <div key={day} className="font-bold text-sm text-secondary">{day}</div>)}
                 {dates.map((date, index) => {
                     if (!date) return <div key={index}></div>;
                     const isPast = date < today;
                     const isSelected = isSameDay(date, selectedDate);
                     
                     const buttonClasses = `w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-                        isPast ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100'
+                        isPast ? 'text-secondary cursor-not-allowed' : 'hover:bg-surface-hover'
                     } ${
                         isSelected ? 'bg-primary text-white font-bold' : ''
                     }`;

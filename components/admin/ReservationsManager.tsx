@@ -53,14 +53,14 @@ export const ReservationsManager: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Gestión de Reservas</h3>
-                 <button onClick={() => openCreateModal(new Date())} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-                    + Nueva Reserva
-                </button>
+                <h3 className="text-lg font-medium text-primary">Gestión de Reservas</h3>
+                 <button onClick={() => openCreateModal(new Date())} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark">
+                     + Nueva Reserva
+                 </button>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
                 <div className="md:col-span-1">
-                     <BookingCalendar 
+                     <BookingCalendar
                         selectedDate={selectedDate}
                         onDateChange={setSelectedDate}
                         onAddBooking={openCreateModal}
@@ -68,7 +68,7 @@ export const ReservationsManager: React.FC = () => {
                     />
                 </div>
                 <div className="md:col-span-2">
-                    <h4 className="font-semibold mb-4">
+                    <h4 className="font-semibold mb-4 text-primary">
                         Reservas para el {selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                     </h4>
                     {bookingsForSelectedDay.length > 0 ? (
@@ -76,16 +76,16 @@ export const ReservationsManager: React.FC = () => {
                             {bookingsForSelectedDay.map(booking => {
                                 const employee = business.employees.find(e => e.id === booking.employeeId);
                                 return (
-                                <li key={booking.id} onClick={() => setSelectedBooking(booking)} className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                                    <p className="font-bold">{booking.start} - {booking.client.name}</p>
-                                    <p className="text-sm text-gray-600">{booking.services.map(s => s.name).join(', ')}</p>
-                                    {employee && <p className="text-xs text-gray-500 mt-1">Con: {employee.name}</p>}
+                                <li key={booking.id} onClick={() => setSelectedBooking(booking)} className="p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover">
+                                    <p className="font-bold text-primary">{booking.start} - {booking.client.name}</p>
+                                    <p className="text-sm text-secondary">{booking.services.map(s => s.name).join(', ')}</p>
+                                    {employee && <p className="text-xs text-secondary mt-1">Con: {employee.name}</p>}
                                 </li>
                             );
                             })}
                         </ul>
                     ) : (
-                        <p className="text-gray-500">No hay reservas para este día.</p>
+                        <p className="text-secondary">No hay reservas para este día.</p>
                     )}
                 </div>
             </div>

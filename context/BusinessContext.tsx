@@ -8,7 +8,9 @@ const loadInitialState = (): Business => {
   try {
     const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (storedData) {
-      return JSON.parse(storedData);
+      // Merge stored data with initial data to prevent crashes from missing fields
+      const parsedData = JSON.parse(storedData);
+      return { ...INITIAL_BUSINESS_DATA, ...parsedData };
     }
   } catch (error) {
     console.error("Failed to parse business data from localStorage", error);

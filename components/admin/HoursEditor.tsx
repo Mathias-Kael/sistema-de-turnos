@@ -52,17 +52,17 @@ export const HoursEditor: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-medium">Horario Semanal</h3>
+            <h3 className="text-lg font-medium text-primary">Horario Semanal</h3>
             {daysOfWeek.map(({ key: dayKey, label }) => (
-                <div key={dayKey} className="p-4 border rounded-md bg-gray-50/70">
+                <div key={dayKey} className="p-4 border border-default rounded-md bg-surface">
                     <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-gray-800">{label}</span>
-                        <label className="flex items-center space-x-2 cursor-pointer">
+                        <span className="font-semibold text-primary">{label}</span>
+                        <label className="flex items-center space-x-2 cursor-pointer text-secondary">
                             <input
                                 type="checkbox"
                                 checked={business.hours[dayKey].enabled}
                                 onChange={(e) => handleDayToggle(dayKey, e.target.checked)}
-                                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="h-5 w-5 rounded border-default accent-primary focus:ring-primary"
                             />
                             <span>{business.hours[dayKey].enabled ? 'Abierto' : 'Cerrado'}</span>
                         </label>
@@ -76,14 +76,14 @@ export const HoursEditor: React.FC = () => {
                                         type="time"
                                         value={interval.open}
                                         onChange={(e) => handleIntervalChange(dayKey, index, 'open', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                                        className="w-full px-3 py-2 border border-default rounded-md shadow-sm bg-surface text-primary"
                                     />
-                                    <span className="text-gray-500">-</span>
+                                    <span className="text-secondary">-</span>
                                     <input
                                         type="time"
                                         value={interval.close}
                                         onChange={(e) => handleIntervalChange(dayKey, index, 'close', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                                        className="w-full px-3 py-2 border border-default rounded-md shadow-sm bg-surface text-primary"
                                     />
                                     <button
                                         onClick={() => removeInterval(dayKey, index)}
@@ -96,7 +96,7 @@ export const HoursEditor: React.FC = () => {
                             ))}
                             <button
                                 onClick={() => addInterval(dayKey)}
-                                className="w-full mt-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:bg-gray-100 hover:border-gray-400 transition-all"
+                                className="w-full mt-2 px-4 py-2 border-2 border-dashed border-default text-secondary rounded-md hover:bg-surface-hover hover:border-primary transition-all"
                             >
                                 + Añadir Turno
                             </button>
