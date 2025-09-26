@@ -1,13 +1,13 @@
 import { Business, Service, Booking } from '../types';
 import { calcularTurnosDisponibles, ReservaOcupada } from '../utils/availability';
-import { MOCK_BOOKINGS } from './mockData';
+import { mockBackend } from './mockBackend';
 
 // This is a mock function. In a real application, this would make a network request.
 const getBookingsForDate = async (date: Date): Promise<Booking[]> => {
     const dateString = date.toISOString().split('T')[0];
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_BOOKINGS.filter(booking => booking.date === dateString);
+    return mockBackend.getBookingsForDate(dateString);
 };
 
 
@@ -37,33 +37,49 @@ export const getAvailableSlots = async (
     // 3. Fetch all bookings for the selected date to check for conflicts
     const allBookingsForDay = await getBookingsForDate(date);
 
-    // 4. Filter bookings to consider only relevant ones for conflict checking.
-    // If a specific employee is chosen, we only need to check their schedule.
-    // If 'any' employee is chosen, we need to find an employee who can perform all services
-    // and then check their availability. For simplicity here, we'll assume that if 'any'
-    // is selected, we should check against all bookings. A more complex system might
-    // check each available employee's schedule. For this mock, we'll keep it simple:
-    // if a specific employee is selected, only their bookings matter. If 'any', all bookings matter
-    // as we need to find *any* free slot for *any* qualified employee. The logic in the component
-    // already pre-filters employees, so we can trust `employeeId` is valid.
-    
-    const relevantBookings = (employeeId === 'any')
-        ? allBookingsForDay
-        : allBookingsForDay.filter(b => b.employeeId === employeeId);
+    // 4. Calculate available slots based on employee selection.
+    let finalAvailableSlots: Set<string> = new Set();
 
-    const occupiedSlots: ReservaOcupada[] = relevantBookings.map(b => ({
-        date: b.date,
-        start: b.start,
-        end: b.end,
-    }));
-    
-    // 5. Calculate available slots using the utility function
-    const availableSlots = calcularTurnosDisponibles({
-        fecha: date,
-        duracionTotal: totalDuration,
-        horarioDelDia: businessHoursForDay,
-        reservasOcupadas: occupiedSlots,
-    });
+    if (employeeId === 'any') {
+        // Find employees who can perform all selected services
+        const qualifiedEmployees = business.employees.filter(emp =>
+            services.every(service => service.employeeIds.includes(emp.id))
+        );
 
-    return availableSlots;
+        for (const emp of qualifiedEmployees) {
+            const employeeBookings = allBookingsForDay.filter(b => b.employeeId === emp.id);
+            const occupiedSlots: ReservaOcupada[] = employeeBookings.map(b => ({
+                date: b.date,
+                start: b.start,
+                end: b.end,
+            }));
+
+            const slotsForEmployee = calcularTurnosDisponibles({
+                fecha: date,
+                duracionTotal: totalDuration,
+                horarioDelDia: businessHoursForDay,
+                reservasOcupadas: occupiedSlots,
+            });
+            slotsForEmployee.forEach(slot => finalAvailableSlots.add(slot));
+        }
+    } else {
+        // Specific employee selected, use existing logic
+        const relevantBookings = allBookingsForDay.filter(b => b.employeeId === employeeId);
+        const occupiedSlots: ReservaOcupada[] = relevantBookings.map(b => ({
+            date: b.date,
+            start: b.start,
+            end: b.end,
+        }));
+
+        const slots = calcularTurnosDisponibles({
+            fecha: date,
+            duracionTotal: totalDuration,
+            horarioDelDia: businessHoursForDay,
+            reservasOcupadas: occupiedSlots,
+        });
+        slots.forEach(slot => finalAvailableSlots.add(slot));
+    }
+
+    // 5. Return sorted unique available slots
+    return Array.from(finalAvailableSlots).sort();
 };

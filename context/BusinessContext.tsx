@@ -1,21 +1,16 @@
-import React, { createContext, useReducer, useContext, Dispatch, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, Dispatch, useEffect, useState } from 'react';
 import { Business, Service, Branding, Hours, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
+import { mockBackend } from '../services/mockBackend';
 
-const LOCAL_STORAGE_KEY = 'businessData';
-
-const loadInitialState = (): Business => {
+const loadInitialState = async (): Promise<Business> => {
   try {
-    const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedData) {
-      // Merge stored data with initial data to prevent crashes from missing fields
-      const parsedData = JSON.parse(storedData);
-      return { ...INITIAL_BUSINESS_DATA, ...parsedData };
-    }
+    const data = await mockBackend.getBusinessData();
+    return data;
   } catch (error) {
-    console.error("Failed to parse business data from localStorage", error);
+    console.error("Failed to load business data from mockBackend", error);
+    return INITIAL_BUSINESS_DATA;
   }
-  return INITIAL_BUSINESS_DATA;
 };
 
 
@@ -25,8 +20,10 @@ type Action =
     | { type: 'SET_BRANDING'; payload: Branding }
     | { type: 'SET_SERVICES'; payload: Service[] }
     | { type: 'SET_HOURS'; payload: Hours }
-    // FIX: Add actions for employee management to avoid hacks in editor components.
     | { type: 'SET_EMPLOYEES'; payload: Employee[] }
+    | { type: 'ADD_EMPLOYEE'; payload: Employee }
+    | { type: 'UPDATE_EMPLOYEE'; payload: Employee }
+    | { type: 'DELETE_EMPLOYEE'; payload: string } // payload es el employeeId
     | { type: 'SET_EMPLOYEES_AND_SERVICES'; payload: { employees: Employee[], services: Service[] } };
 
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -44,9 +41,27 @@ const businessReducer = (state: Business, action: Action): Business => {
             return { ...state, services: action.payload };
         case 'SET_HOURS':
             return { ...state, hours: action.payload };
-        // FIX: Implement reducer cases for new employee actions.
         case 'SET_EMPLOYEES':
             return { ...state, employees: action.payload };
+        case 'ADD_EMPLOYEE':
+            return { ...state, employees: [...state.employees, action.payload] };
+        case 'UPDATE_EMPLOYEE':
+            return {
+                ...state,
+                employees: state.employees.map(emp =>
+                    emp.id === action.payload.id ? action.payload : emp
+                ),
+            };
+        case 'DELETE_EMPLOYEE':
+            return {
+                ...state,
+                employees: state.employees.filter(emp => emp.id !== action.payload),
+                // También eliminar al empleado de los servicios si estaba asignado
+                services: state.services.map(service => ({
+                    ...service,
+                    employeeIds: service.employeeIds.filter(id => id !== action.payload)
+                }))
+            };
         case 'SET_EMPLOYEES_AND_SERVICES':
             return { ...state, employees: action.payload.employees, services: action.payload.services };
         default:
@@ -55,16 +70,32 @@ const businessReducer = (state: Business, action: Action): Business => {
 };
 
 export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, dispatch] = useReducer(businessReducer, loadInitialState());
+    const [state, dispatch] = useReducer(businessReducer, INITIAL_BUSINESS_DATA);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Persist state to localStorage whenever it changes
     useEffect(() => {
-        try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-        } catch (error) {
-            console.error("Failed to save business data to localStorage", error);
+        const init = async () => {
+            const initialData = await loadInitialState();
+            // Dispatch actions to set the initial state from the backend
+            dispatch({ type: 'SET_BUSINESS_INFO', payload: { name: initialData.name, description: initialData.description, logoUrl: initialData.logoUrl } });
+            dispatch({ type: 'SET_PHONE', payload: initialData.phone });
+            dispatch({ type: 'SET_BRANDING', payload: initialData.branding });
+            dispatch({ type: 'SET_SERVICES', payload: initialData.services });
+            dispatch({ type: 'SET_HOURS', payload: initialData.hours });
+            dispatch({ type: 'SET_EMPLOYEES', payload: initialData.employees }); // Asegurarse de que los empleados se carguen
+            setIsLoaded(true);
+        };
+        init();
+    }, []);
+
+    // Persist state to mockBackend whenever it changes
+    useEffect(() => {
+        if (isLoaded) {
+            mockBackend.updateBusinessData(state).catch(error => {
+                console.error("Failed to save business data to mockBackend", error);
+            });
         }
-    }, [state]);
+    }, [state, isLoaded]);
 
     return (
         <BusinessStateContext.Provider value={state}>

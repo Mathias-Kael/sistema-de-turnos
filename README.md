@@ -22,38 +22,68 @@ Una aplicación web que permite a cualquier negocio que trabaje con reservas ges
 
 ---
 
+## 🆕 Nuevas Características y Mejoras
+
+*   **Gestión Avanzada de Enlaces Compartidos:**
+    *   Los enlaces de acceso para clientes ahora pueden ser `activos`, `pausados` o `revocados` desde el panel de administración.
+    *   Posibilidad de establecer una `fecha de caducidad` para los enlaces, asegurando un control temporal sobre el acceso.
+    *   Validación robusta de tokens para asegurar que solo los enlaces válidos y no expirados permitan el acceso a la vista del cliente.
+
+---
+
 ## 🚀 Cómo Empezarlo
 
-Este proyecto está construido con **React y TypeScript** utilizando módulos ES nativos a través de `esm.sh`, por lo que **no requiere un paso de `npm install` ni `build`**.
+Este proyecto está construido con **React y TypeScript** y utiliza **Vite** como herramienta de construcción.
 
 1.  **Clona el repositorio:**
     ```bash
     git clone https://github.com/tu-usuario/nombre-del-repo.git
     ```
-2.  **Navega al directorio:**
+2.  **Navega al directorio del proyecto:**
     ```bash
     cd nombre-del-repo
     ```
-3.  **Inicia un servidor local:**
-    La forma más sencilla es usar una extensión como **"Live Server"** en Visual Studio Code. Simplemente haz clic derecho en el archivo `index.html` y selecciona "Open with Live Server".
-
-    Alternativamente, puedes usar cualquier servidor web estático. Por ejemplo, con Python:
+3.  **Instala las dependencias:**
     ```bash
-    # Para Python 3
-    python -m http.server
+    npm install
     ```
-    O con Node.js (si lo tienes instalado):
+4.  **Inicia el servidor de desarrollo:**
     ```bash
-    npx serve
+    npm run dev
     ```
-4.  Abre tu navegador en la dirección que te indique el servidor (ej. `http://localhost:8000` o `http://localhost:3000`).
+    Esto iniciará la aplicación en modo de desarrollo, generalmente accesible en `http://localhost:5173` (o un puerto similar).
+5.  **Para construir la aplicación para producción:**
+    ```bash
+    npm run build
+    ```
+    Esto generará los archivos estáticos en la carpeta `dist/`, listos para ser desplegados.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-*   **React 18**
-*   **TypeScript**
-*   **Tailwind CSS** (vía CDN para prototipado rápido)
-*   **Módulos ES Nativos** (servidos desde `esm.sh` para una configuración sin `build`)
-*   **qrcode** (para generar códigos QR en el panel de compartir)
+*   **React 18:** Biblioteca de JavaScript para construir interfaces de usuario.
+*   **TypeScript:** Un superset de JavaScript que añade tipado estático.
+*   **Vite:** Herramienta de construcción rápida para proyectos web modernos.
+*   **Tailwind CSS:** Framework CSS de utilidad para un diseño rápido y personalizado.
+*   **qrcode:** Librería para generar códigos QR.
+*   **PostCSS & Autoprefixer:** Para procesar CSS y añadir prefijos de proveedor automáticamente.
+
+---
+
+## 🤝 Contribución
+
+¡Las contribuciones son bienvenidas! Si deseas mejorar este proyecto, sigue estos pasos:
+
+1.  Haz un fork del repositorio.
+2.  Crea una nueva rama (`git checkout -b feature/nueva-funcionalidad`).
+3.  Realiza tus cambios y asegúrate de que el código pase las pruebas (si las hubiera).
+4.  Haz commit de tus cambios (`git commit -m 'feat: Añade nueva funcionalidad'`).
+5.  Sube tus cambios a tu fork (`git push origin feature/nueva-funcionalidad`).
+6.  Abre un Pull Request detallando tus cambios.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
