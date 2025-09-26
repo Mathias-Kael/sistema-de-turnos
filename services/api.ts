@@ -1,4 +1,4 @@
-import { Business, Service, Booking } from '../types';
+import { Business, Service, Booking, Employee } from '../types';
 import { calcularTurnosDisponibles, ReservaOcupada } from '../utils/availability';
 import { mockBackend } from './mockBackend';
 
@@ -30,10 +30,6 @@ export const getAvailableSlots = async (
     const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()] as keyof Business['hours'];
     const businessHoursForDay = business.hours[dayOfWeek];
 
-    if (!businessHoursForDay || !businessHoursForDay.enabled) {
-        return [];
-    }
-
     // 3. Fetch all bookings for the selected date to check for conflicts
     const allBookingsForDay = await getBookingsForDate(date);
 
@@ -41,12 +37,20 @@ export const getAvailableSlots = async (
     let finalAvailableSlots: Set<string> = new Set();
 
     if (employeeId === 'any') {
-        // Find employees who can perform all selected services
         const qualifiedEmployees = business.employees.filter(emp =>
             services.every(service => service.employeeIds.includes(emp.id))
         );
 
         for (const emp of qualifiedEmployees) {
+            const employeeHoursForDay = emp.hours?.[dayOfWeek];
+            const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
+                ? employeeHoursForDay
+                : businessHoursForDay;
+
+            if (!effectiveHours || !effectiveHours.enabled) {
+                continue;
+            }
+
             const employeeBookings = allBookingsForDay.filter(b => b.employeeId === emp.id);
             const occupiedSlots: ReservaOcupada[] = employeeBookings.map(b => ({
                 date: b.date,
@@ -57,13 +61,26 @@ export const getAvailableSlots = async (
             const slotsForEmployee = calcularTurnosDisponibles({
                 fecha: date,
                 duracionTotal: totalDuration,
-                horarioDelDia: businessHoursForDay,
+                horarioDelDia: effectiveHours,
                 reservasOcupadas: occupiedSlots,
             });
             slotsForEmployee.forEach(slot => finalAvailableSlots.add(slot));
         }
     } else {
-        // Specific employee selected, use existing logic
+        const selectedEmployee = business.employees.find(emp => emp.id === employeeId);
+        if (!selectedEmployee) {
+            return [];
+        }
+
+        const employeeHoursForDay = selectedEmployee.hours?.[dayOfWeek];
+        const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
+            ? employeeHoursForDay
+            : businessHoursForDay;
+
+        if (!effectiveHours || !effectiveHours.enabled) {
+            return [];
+        }
+
         const relevantBookings = allBookingsForDay.filter(b => b.employeeId === employeeId);
         const occupiedSlots: ReservaOcupada[] = relevantBookings.map(b => ({
             date: b.date,
@@ -74,7 +91,7 @@ export const getAvailableSlots = async (
         const slots = calcularTurnosDisponibles({
             fecha: date,
             duracionTotal: totalDuration,
-            horarioDelDia: businessHoursForDay,
+            horarioDelDia: effectiveHours,
             reservasOcupadas: occupiedSlots,
         });
         slots.forEach(slot => finalAvailableSlots.add(slot));

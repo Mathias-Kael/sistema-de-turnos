@@ -30,23 +30,37 @@ export const HoursEditor: React.FC = () => {
     };
 
     const addInterval = (day: keyof Hours) => {
-        // FIX: Explicitly type the result of JSON.parse to ensure type safety.
-        const updatedHours: Hours = JSON.parse(JSON.stringify(business.hours)); // Deep copy
-        updatedHours[day].intervals.push({ open: '14:00', close: '17:00' });
+        const updatedHours = {
+            ...business.hours,
+            [day]: {
+                ...business.hours[day],
+                intervals: [...business.hours[day].intervals, { open: '14:00', close: '17:00' }],
+            },
+        };
         dispatch({ type: 'SET_HOURS', payload: updatedHours });
     };
 
     const removeInterval = (day: keyof Hours, index: number) => {
-        // FIX: Explicitly type the result of JSON.parse to ensure type safety.
-        const updatedHours: Hours = JSON.parse(JSON.stringify(business.hours)); // Deep copy
-        updatedHours[day].intervals.splice(index, 1);
+        const updatedHours = {
+            ...business.hours,
+            [day]: {
+                ...business.hours[day],
+                intervals: business.hours[day].intervals.filter((_, i) => i !== index),
+            },
+        };
         dispatch({ type: 'SET_HOURS', payload: updatedHours });
     };
     
     const handleIntervalChange = (day: keyof Hours, index: number, field: 'open' | 'close', value: string) => {
-        // FIX: Explicitly type the result of JSON.parse to ensure type safety.
-        const updatedHours: Hours = JSON.parse(JSON.stringify(business.hours)); // Deep copy
-        updatedHours[day].intervals[index][field] = value;
+        const updatedHours = {
+            ...business.hours,
+            [day]: {
+                ...business.hours[day],
+                intervals: business.hours[day].intervals.map((interval, i) =>
+                    i === index ? { ...interval, [field]: value } : interval
+                ),
+            },
+        };
         dispatch({ type: 'SET_HOURS', payload: updatedHours });
     };
 

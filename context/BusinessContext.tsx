@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, Dispatch, useEffect, useState } from 'react';
+import React, { createContext, useReducer, useContext, Dispatch, useEffect, useState, useMemo } from 'react';
 import { Business, Service, Branding, Hours, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { mockBackend } from '../services/mockBackend';
@@ -15,6 +15,7 @@ const loadInitialState = async (): Promise<Business> => {
 
 
 type Action =
+    | { type: 'HYDRATE_STATE'; payload: Business }
     | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string; logoUrl: string } }
     | { type: 'SET_PHONE'; payload: string }
     | { type: 'SET_BRANDING'; payload: Branding }
@@ -24,6 +25,7 @@ type Action =
     | { type: 'ADD_EMPLOYEE'; payload: Employee }
     | { type: 'UPDATE_EMPLOYEE'; payload: Employee }
     | { type: 'DELETE_EMPLOYEE'; payload: string } // payload es el employeeId
+    | { type: 'UPDATE_EMPLOYEE_HOURS'; payload: { employeeId: string; hours: Hours } }
     | { type: 'SET_EMPLOYEES_AND_SERVICES'; payload: { employees: Employee[], services: Service[] } };
 
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -31,6 +33,8 @@ const BusinessDispatchContext = createContext<Dispatch<Action> | undefined>(unde
 
 const businessReducer = (state: Business, action: Action): Business => {
     switch (action.type) {
+        case 'HYDRATE_STATE':
+            return { ...state, ...action.payload };
         case 'SET_BUSINESS_INFO':
             return { ...state, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
         case 'SET_PHONE':
@@ -64,6 +68,15 @@ const businessReducer = (state: Business, action: Action): Business => {
             };
         case 'SET_EMPLOYEES_AND_SERVICES':
             return { ...state, employees: action.payload.employees, services: action.payload.services };
+        case 'UPDATE_EMPLOYEE_HOURS':
+            return {
+                ...state,
+                employees: state.employees.map(emp =>
+                    emp.id === action.payload.employeeId
+                        ? { ...emp, hours: action.payload.hours }
+                        : emp
+                ),
+            };
         default:
             return state;
     }
@@ -76,13 +89,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     useEffect(() => {
         const init = async () => {
             const initialData = await loadInitialState();
-            // Dispatch actions to set the initial state from the backend
-            dispatch({ type: 'SET_BUSINESS_INFO', payload: { name: initialData.name, description: initialData.description, logoUrl: initialData.logoUrl } });
-            dispatch({ type: 'SET_PHONE', payload: initialData.phone });
-            dispatch({ type: 'SET_BRANDING', payload: initialData.branding });
-            dispatch({ type: 'SET_SERVICES', payload: initialData.services });
-            dispatch({ type: 'SET_HOURS', payload: initialData.hours });
-            dispatch({ type: 'SET_EMPLOYEES', payload: initialData.employees }); // Asegurarse de que los empleados se carguen
+            dispatch({ type: 'HYDRATE_STATE', payload: initialData });
             setIsLoaded(true);
         };
         init();
@@ -97,8 +104,14 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, [state, isLoaded]);
 
+    const memoizedBusinessData = useMemo(() => ({
+        ...state,
+        totalEmployees: state.employees.length,
+        activeServices: state.services.filter(s => s.active).length // Asumiendo que 'active' es una propiedad de Service
+    }), [state]);
+
     return (
-        <BusinessStateContext.Provider value={state}>
+        <BusinessStateContext.Provider value={memoizedBusinessData}>
             <BusinessDispatchContext.Provider value={dispatch}>
                 {children}
             </BusinessDispatchContext.Provider>

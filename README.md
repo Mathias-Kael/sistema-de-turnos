@@ -24,10 +24,53 @@ Una aplicación web que permite a cualquier negocio que trabaje con reservas ges
 
 ## 🆕 Nuevas Características y Mejoras
 
-*   **Gestión Avanzada de Enlaces Compartidos:**
-    *   Los enlaces de acceso para clientes ahora pueden ser `activos`, `pausados` o `revocados` desde el panel de administración.
-    *   Posibilidad de establecer una `fecha de caducidad` para los enlaces, asegurando un control temporal sobre el acceso.
-    *   Validación robusta de tokens para asegurar que solo los enlaces válidos y no expirados permitan el acceso a la vista del cliente.
+Este proyecto ha pasado por varias fases de refactorización y mejora para optimizar su arquitectura, añadir funcionalidades clave y mejorar la experiencia de usuario y la estabilidad.
+
+### Historial de Fases y Registro de Cambios
+
+#### **Fase 1: Refactorización Arquitectónica**
+*   **Objetivo:** Centralizar la gestión de datos y abstraer la persistencia de `localStorage` para preparar el proyecto para una futura migración a un backend real.
+*   **Logros Principales:**
+    *   Creación de `services/mockBackend.ts` para simular un backend, gestionando el estado de `Business` y `Booking` en memoria con persistencia en `localStorage`.
+    *   Modificación de `context/BusinessContext.tsx` para cargar y persistir datos a través de `mockBackend`, eliminando la dependencia directa de `localStorage`.
+    *   Actualización de `services/api.ts` para obtener reservas de `mockBackend`, centralizando la gestión de reservas.
+
+#### **Fase 2: Módulo de Agenda Individual por Empleado**
+*   **Objetivo:** Implementar la capacidad de definir horarios de trabajo y asignación de servicios de forma individual para cada empleado.
+*   **Logros Principales:**
+    *   Extensión de la interfaz `Employee` en `types.ts` para incluir la propiedad `hours: Hours;`.
+    *   Adaptación de `context/BusinessContext.tsx` con la acción `UPDATE_EMPLOYEE_HOURS` para gestionar los horarios individuales de los empleados.
+    *   Refactorización de `services/api.ts` (`getAvailableSlots`) para considerar los horarios individuales de los empleados (con fallback al horario del negocio).
+    *   Creación de `components/admin/EmployeeHoursEditor.tsx` para la edición de horarios por empleado.
+    *   Creación de `components/admin/ServiceAssignmentEditor.tsx` para la asignación de servicios a empleados.
+    *   Integración de los nuevos editores en `components/admin/EmployeesEditor.tsx` y `components/admin/ServicesEditor.tsx`.
+
+#### **Fase 3: Corrección y Validación de Agenda**
+*   **Objetivo:** Resolver bugs críticos en la lógica de disponibilidad y mejorar la integridad de los datos de horarios mediante validaciones en la UI.
+*   **Logros Principales:**
+    *   Corrección del bug en `services/api.ts` (`getAvailableSlots`) que causaba disponibilidad fuera del horario asignado a un empleado.
+    *   Adición de la función `validarIntervalos` en `utils/availability.ts` para detectar solapamientos de horarios.
+    *   Implementación de validaciones en `components/admin/EmployeeHoursEditor.tsx` para:
+        *   Prevenir el guardado de intervalos de tiempo solapados.
+        *   Asegurar que todos los campos de hora de inicio y fin estén completos.
+        *   Verificar que la hora de cierre sea posterior a la hora de inicio en cada intervalo.
+
+#### **Fase 4: Optimización y Estabilidad (Inicial)**
+*   **Objetivo:** Abordar mejoras de rendimiento, corregir errores lógicos y asegurar la consistencia de estilos.
+*   **Logros Principales:**
+    *   Implementación de la acción `HYDRATE_STATE` en `context/BusinessContext.tsx` para una carga inicial más eficiente.
+    *   Corrección de la lógica duplicada en `components/admin/EmployeesEditor.tsx` (`handleDeleteEmployee`) para usar la acción `DELETE_EMPLOYEE` del reducer.
+    *   Mejora de la inmutabilidad en `components/admin/HoursEditor.tsx`, reemplazando `JSON.parse(JSON.stringify(...))` por desestructuración.
+    *   Corrección de inconsistencia de estilo en el botón "Cancelar" de `components/admin/ServiceAssignmentEditor.tsx`.
+
+#### **Fase 5: Optimización y Estabilidad (Adicional)**
+*   **Objetivo:** Refinar la experiencia de usuario, la accesibilidad y el rendimiento con validaciones adicionales y optimizaciones de React.
+*   **Logros Principales:**
+    *   **Validaciones (`components/admin/ServiceAssignmentEditor.tsx`):** Implementación de validación para asegurar que al menos un empleado sea asignado a un servicio.
+    *   **Manejo de Errores (`components/admin/ServiceAssignmentEditor.tsx`):** Adición de `try...catch` en `handleSave` para un manejo de errores más robusto y notificación al usuario.
+    *   **Accesibilidad (`components/admin/ServiceAssignmentEditor.tsx`):** Inclusión de atributos ARIA (`role="dialog"`, `aria-labelledby`) en el modal para mejorar la accesibilidad.
+    *   **Optimización de Estado (`components/admin/ServiceAssignmentEditor.tsx`):** El componente fue envuelto con `React.memo` y la función `handleToggleEmployee` fue memorizada con `useCallback` para optimizar el rendimiento.
+    *   **Rendimiento (`context/BusinessContext.tsx`):** Implementación de `useMemo` para memorizar valores derivados del estado (`totalEmployees`, `activeServices`), mejorando el rendimiento general del contexto.
 
 ---
 

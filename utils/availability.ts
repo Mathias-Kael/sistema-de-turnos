@@ -118,3 +118,33 @@ export const calcularTurnosDisponibles = ({
 
     return turnosDisponibles;
 };
+
+/**
+ * Valida si hay solapamiento entre un conjunto de intervalos de tiempo.
+ * @param intervals Array de objetos { open: "HH:mm", close: "HH:mm" }.
+ * @returns `true` si no hay solapamientos, `false` si los hay.
+ */
+export const validarIntervalos = (intervals: { open: string; close: string }[]): boolean => {
+    if (intervals.length <= 1) {
+        return true;
+    }
+
+    // Convertir a minutos y ordenar por hora de inicio
+    const intervalosEnMinutos = intervals.map(interval => ({
+        start: timeToMinutes(interval.open),
+        end: timeToMinutes(interval.close),
+    })).sort((a, b) => a.start - b.start);
+
+    // Verificar solapamientos
+    for (let i = 0; i < intervalosEnMinutos.length - 1; i++) {
+        const current = intervalosEnMinutos[i];
+        const next = intervalosEnMinutos[i + 1];
+
+        // Si el fin del intervalo actual es después del inicio del siguiente, hay solapamiento
+        if (current.end > next.start) {
+            return false;
+        }
+    }
+
+    return true;
+};

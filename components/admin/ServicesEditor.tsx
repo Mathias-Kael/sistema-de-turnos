@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Service } from '../../types';
+import ServiceAssignmentEditor from './ServiceAssignmentEditor';
 
 const newServiceTemplate: Omit<Service, 'id'> = {
     name: '',
@@ -18,6 +19,7 @@ export const ServicesEditor: React.FC = () => {
     
     const [isAdding, setIsAdding] = useState(false);
     const [newService, setNewService] = useState(newServiceTemplate);
+    const [editingServiceAssignment, setEditingServiceAssignment] = useState<Service | null>(null);
 
     const handleServiceChange = (id: string, field: keyof Service, value: any) => {
         const updatedServices = business.services.map(service => {
@@ -27,21 +29,6 @@ export const ServicesEditor: React.FC = () => {
                     value = Number(value) || 0;
                 }
                 return { ...service, [field]: value };
-            }
-            return service;
-        });
-        dispatch({ type: 'SET_SERVICES', payload: updatedServices });
-    };
-
-    const handleEmployeeAssignment = (serviceId: string, employeeId: string) => {
-        const updatedServices = business.services.map(service => {
-            if (service.id === serviceId) {
-                const currentEmployeeIds = service.employeeIds || [];
-                const isAssigned = currentEmployeeIds.includes(employeeId);
-                const newEmployeeIds = isAssigned
-                    ? currentEmployeeIds.filter(id => id !== employeeId)
-                    : [...currentEmployeeIds, employeeId];
-                return { ...service, employeeIds: newEmployeeIds };
             }
             return service;
         });
@@ -115,24 +102,23 @@ export const ServicesEditor: React.FC = () => {
                             <span>Requiere depósito</span>
                         </label>
                         <div>
-                            <h5 className="text-sm font-medium mt-2 mb-2 text-primary">Empleados Asignados:</h5>
-                            <div className="flex flex-wrap gap-2">
-                                {business.employees.map(emp => (
-                                    <label key={emp.id} className="flex items-center space-x-1.5 text-sm p-2 border border-default rounded-full cursor-pointer hover:bg-surface-hover transition-colors text-secondary">
-                                        <input
-                                            type="checkbox"
-                                            checked={(service.employeeIds || []).includes(emp.id)}
-                                            onChange={() => handleEmployeeAssignment(service.id, emp.id)}
-                                            className="rounded accent-primary"
-                                        />
-                                        <span>{emp.name}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            <button
+                                onClick={() => setEditingServiceAssignment(service)}
+                                className="btn btn-sm btn-outline btn-info mt-2"
+                            >
+                                Asignar Empleados ({service.employeeIds?.length || 0})
+                            </button>
                         </div>
                     </div>
                 ))}
             </div>
+
+            {editingServiceAssignment && (
+                <ServiceAssignmentEditor
+                    service={editingServiceAssignment}
+                    onClose={() => setEditingServiceAssignment(null)}
+                />
+            )}
         </div>
     );
 };
