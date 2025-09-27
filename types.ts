@@ -11,6 +11,7 @@ export interface Employee {
   id: string;
   name: string;
   avatarUrl: string;
+  hours: Hours; // Horario individual del empleado
 }
 
 export interface Service {

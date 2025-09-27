@@ -22,38 +22,111 @@ Una aplicación web que permite a cualquier negocio que trabaje con reservas ges
 
 ---
 
+## 🆕 Nuevas Características y Mejoras
+
+Este proyecto ha pasado por varias fases de refactorización y mejora para optimizar su arquitectura, añadir funcionalidades clave y mejorar la experiencia de usuario y la estabilidad.
+
+### Historial de Fases y Registro de Cambios
+
+#### **Fase 1: Refactorización Arquitectónica**
+*   **Objetivo:** Centralizar la gestión de datos y abstraer la persistencia de `localStorage` para preparar el proyecto para una futura migración a un backend real.
+*   **Logros Principales:**
+    *   Creación de `services/mockBackend.ts` para simular un backend, gestionando el estado de `Business` y `Booking` en memoria con persistencia en `localStorage`.
+    *   Modificación de `context/BusinessContext.tsx` para cargar y persistir datos a través de `mockBackend`, eliminando la dependencia directa de `localStorage`.
+    *   Actualización de `services/api.ts` para obtener reservas de `mockBackend`, centralizando la gestión de reservas.
+
+#### **Fase 2: Módulo de Agenda Individual por Empleado**
+*   **Objetivo:** Implementar la capacidad de definir horarios de trabajo y asignación de servicios de forma individual para cada empleado.
+*   **Logros Principales:**
+    *   Extensión de la interfaz `Employee` en `types.ts` para incluir la propiedad `hours: Hours;`.
+    *   Adaptación de `context/BusinessContext.tsx` con la acción `UPDATE_EMPLOYEE_HOURS` para gestionar los horarios individuales de los empleados.
+    *   Refactorización de `services/api.ts` (`getAvailableSlots`) para considerar los horarios individuales de los empleados (con fallback al horario del negocio).
+    *   Creación de `components/admin/EmployeeHoursEditor.tsx` para la edición de horarios por empleado.
+    *   Creación de `components/admin/ServiceAssignmentEditor.tsx` para la asignación de servicios a empleados.
+    *   Integración de los nuevos editores en `components/admin/EmployeesEditor.tsx` y `components/admin/ServicesEditor.tsx`.
+
+#### **Fase 3: Corrección y Validación de Agenda**
+*   **Objetivo:** Resolver bugs críticos en la lógica de disponibilidad y mejorar la integridad de los datos de horarios mediante validaciones en la UI.
+*   **Logros Principales:**
+    *   Corrección del bug en `services/api.ts` (`getAvailableSlots`) que causaba disponibilidad fuera del horario asignado a un empleado.
+    *   Adición de la función `validarIntervalos` en `utils/availability.ts` para detectar solapamientos de horarios.
+    *   Implementación de validaciones en `components/admin/EmployeeHoursEditor.tsx` para:
+        *   Prevenir el guardado de intervalos de tiempo solapados.
+        *   Asegurar que todos los campos de hora de inicio y fin estén completos.
+        *   Verificar que la hora de cierre sea posterior a la hora de inicio en cada intervalo.
+
+#### **Fase 4: Optimización y Estabilidad (Inicial)**
+*   **Objetivo:** Abordar mejoras de rendimiento, corregir errores lógicos y asegurar la consistencia de estilos.
+*   **Logros Principales:**
+    *   Implementación de la acción `HYDRATE_STATE` en `context/BusinessContext.tsx` para una carga inicial más eficiente.
+    *   Corrección de la lógica duplicada en `components/admin/EmployeesEditor.tsx` (`handleDeleteEmployee`) para usar la acción `DELETE_EMPLOYEE` del reducer.
+    *   Mejora de la inmutabilidad en `components/admin/HoursEditor.tsx`, reemplazando `JSON.parse(JSON.stringify(...))` por desestructuración.
+    *   Corrección de inconsistencia de estilo en el botón "Cancelar" de `components/admin/ServiceAssignmentEditor.tsx`.
+
+#### **Fase 5: Optimización y Estabilidad (Adicional)**
+*   **Objetivo:** Refinar la experiencia de usuario, la accesibilidad y el rendimiento con validaciones adicionales y optimizaciones de React.
+*   **Logros Principales:**
+    *   **Validaciones (`components/admin/ServiceAssignmentEditor.tsx`):** Implementación de validación para asegurar que al menos un empleado sea asignado a un servicio.
+    *   **Manejo de Errores (`components/admin/ServiceAssignmentEditor.tsx`):** Adición de `try...catch` en `handleSave` para un manejo de errores más robusto y notificación al usuario.
+    *   **Accesibilidad (`components/admin/ServiceAssignmentEditor.tsx`):** Inclusión de atributos ARIA (`role="dialog"`, `aria-labelledby`) en el modal para mejorar la accesibilidad.
+    *   **Optimización de Estado (`components/admin/ServiceAssignmentEditor.tsx`):** El componente fue envuelto con `React.memo` y la función `handleToggleEmployee` fue memorizada con `useCallback` para optimizar el rendimiento.
+    *   **Rendimiento (`context/BusinessContext.tsx`):** Implementación de `useMemo` para memorizar valores derivados del estado (`totalEmployees`, `activeServices`), mejorando el rendimiento general del contexto.
+
+---
+
 ## 🚀 Cómo Empezarlo
 
-Este proyecto está construido con **React y TypeScript** utilizando módulos ES nativos a través de `esm.sh`, por lo que **no requiere un paso de `npm install` ni `build`**.
+Este proyecto está construido con **React y TypeScript** y utiliza **Vite** como herramienta de construcción.
 
 1.  **Clona el repositorio:**
     ```bash
     git clone https://github.com/tu-usuario/nombre-del-repo.git
     ```
-2.  **Navega al directorio:**
+2.  **Navega al directorio del proyecto:**
     ```bash
     cd nombre-del-repo
     ```
-3.  **Inicia un servidor local:**
-    La forma más sencilla es usar una extensión como **"Live Server"** en Visual Studio Code. Simplemente haz clic derecho en el archivo `index.html` y selecciona "Open with Live Server".
-
-    Alternativamente, puedes usar cualquier servidor web estático. Por ejemplo, con Python:
+3.  **Instala las dependencias:**
     ```bash
-    # Para Python 3
-    python -m http.server
+    npm install
     ```
-    O con Node.js (si lo tienes instalado):
+4.  **Inicia el servidor de desarrollo:**
     ```bash
-    npx serve
+    npm run dev
     ```
-4.  Abre tu navegador en la dirección que te indique el servidor (ej. `http://localhost:8000` o `http://localhost:3000`).
+    Esto iniciará la aplicación en modo de desarrollo, generalmente accesible en `http://localhost:5173` (o un puerto similar).
+5.  **Para construir la aplicación para producción:**
+    ```bash
+    npm run build
+    ```
+    Esto generará los archivos estáticos en la carpeta `dist/`, listos para ser desplegados.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-*   **React 18**
-*   **TypeScript**
-*   **Tailwind CSS** (vía CDN para prototipado rápido)
-*   **Módulos ES Nativos** (servidos desde `esm.sh` para una configuración sin `build`)
-*   **qrcode** (para generar códigos QR en el panel de compartir)
+*   **React 18:** Biblioteca de JavaScript para construir interfaces de usuario.
+*   **TypeScript:** Un superset de JavaScript que añade tipado estático.
+*   **Vite:** Herramienta de construcción rápida para proyectos web modernos.
+*   **Tailwind CSS:** Framework CSS de utilidad para un diseño rápido y personalizado.
+*   **qrcode:** Librería para generar códigos QR.
+*   **PostCSS & Autoprefixer:** Para procesar CSS y añadir prefijos de proveedor automáticamente.
+
+---
+
+## 🤝 Contribución
+
+¡Las contribuciones son bienvenidas! Si deseas mejorar este proyecto, sigue estos pasos:
+
+1.  Haz un fork del repositorio.
+2.  Crea una nueva rama (`git checkout -b feature/nueva-funcionalidad`).
+3.  Realiza tus cambios y asegúrate de que el código pase las pruebas (si las hubiera).
+4.  Haz commit de tus cambios (`git commit -m 'feat: Añade nueva funcionalidad'`).
+5.  Sube tus cambios a tu fork (`git push origin feature/nueva-funcionalidad`).
+6.  Abre un Pull Request detallando tus cambios.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.

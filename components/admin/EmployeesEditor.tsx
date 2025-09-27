@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
-import { Employee } from '../../types';
+import { Employee, Hours } from '../../types';
+import EmployeeHoursEditor from './EmployeeHoursEditor';
+import { INITIAL_BUSINESS_DATA } from '../../constants';
 
-const newEmployeeTemplate: Omit<Employee, 'id'> = {
+const newEmployeeTemplate: Omit<Employee, 'id' | 'hours'> = {
     name: '',
     avatarUrl: '',
 };
@@ -13,6 +15,7 @@ export const EmployeesEditor: React.FC = () => {
     
     const [isAdding, setIsAdding] = useState(false);
     const [newEmployee, setNewEmployee] = useState(newEmployeeTemplate);
+    const [editingEmployeeHours, setEditingEmployeeHours] = useState<Employee | null>(null);
 
     const handleEmployeeChange = (id: string, field: keyof Employee, value: string) => {
         const updatedEmployees = business.employees.map(emp => {
@@ -31,23 +34,17 @@ export const EmployeesEditor: React.FC = () => {
         }
         const employeeToAdd: Employee = {
             id: `e${Date.now()}`,
+            hours: INITIAL_BUSINESS_DATA.hours, // Asignar horarios por defecto al nuevo empleado
             ...newEmployee
         };
-        const updatedEmployees = [...business.employees, employeeToAdd];
-        dispatch({ type: 'SET_EMPLOYEES', payload: updatedEmployees });
+        dispatch({ type: 'ADD_EMPLOYEE', payload: employeeToAdd }); // Usar ADD_EMPLOYEE
         setIsAdding(false);
         setNewEmployee(newEmployeeTemplate);
     };
 
     const handleDeleteEmployee = (id: string) => {
         if (window.confirm('¿Seguro que quieres eliminar a este empleado? También se desasignará de todos los servicios.')) {
-            const updatedEmployees = business.employees.filter(emp => emp.id !== id);
-            // Desasignar de los servicios
-            const updatedServices = business.services.map(service => {
-                const employeeIds = service.employeeIds?.filter(empId => empId !== id);
-                return { ...service, employeeIds };
-            });
-            dispatch({ type: 'SET_EMPLOYEES_AND_SERVICES', payload: { employees: updatedEmployees, services: updatedServices } });
+            dispatch({ type: 'DELETE_EMPLOYEE', payload: id });
         }
     };
 
@@ -81,10 +78,22 @@ export const EmployeesEditor: React.FC = () => {
                              <input type="text" value={emp.name} onChange={(e) => handleEmployeeChange(emp.id, 'name', e.target.value)} className="text-md font-semibold border-b border-default focus:border-b-primary focus:outline-none w-full bg-surface text-primary" />
                              <input type="text" value={emp.avatarUrl} onChange={(e) => handleEmployeeChange(emp.id, 'avatarUrl', e.target.value)} className="mt-1 w-full text-sm text-secondary border-b border-default focus:border-b-primary focus:outline-none bg-surface" placeholder="URL del Avatar"/>
                         </div>
-                        <button onClick={() => handleDeleteEmployee(emp.id)} className="text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)] ml-4 p-1 rounded-full hover:bg-[color:var(--color-state-danger-bg)] transition-colors">&#x1F5D1;</button>
+                        <div className="flex flex-col gap-2 ml-4">
+                            <button onClick={() => setEditingEmployeeHours(emp)} className="btn btn-sm btn-outline btn-info">
+                                Horarios
+                            </button>
+                            <button onClick={() => handleDeleteEmployee(emp.id)} className="text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)] p-1 rounded-full hover:bg-[color:var(--color-state-danger-bg)] transition-colors">&#x1F5D1;</button>
+                        </div>
                     </div>
                 ))}
             </div>
+
+            {editingEmployeeHours && (
+                <EmployeeHoursEditor
+                    employee={editingEmployeeHours}
+                    onClose={() => setEditingEmployeeHours(null)}
+                />
+            )}
         </div>
     );
 };

@@ -1,80 +1,85 @@
-import React, { createContext, useReducer, useContext, Dispatch, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, Dispatch, useEffect, useState, useMemo } from 'react';
 import { Business, Service, Branding, Hours, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
+import { mockBackend } from '../services/mockBackend';
 
-const LOCAL_STORAGE_KEY = 'businessData';
-
-const loadInitialState = (): Business => {
-  try {
-    const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedData) {
-      // Merge stored data with initial data to prevent crashes from missing fields
-      const parsedData = JSON.parse(storedData);
-      return { ...INITIAL_BUSINESS_DATA, ...parsedData };
-    }
-  } catch (error) {
-    console.error("Failed to parse business data from localStorage", error);
-  }
-  return INITIAL_BUSINESS_DATA;
-};
-
-
+// --- Tipos de Acción ---
 type Action =
-    | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string; logoUrl: string } }
-    | { type: 'SET_PHONE'; payload: string }
-    | { type: 'SET_BRANDING'; payload: Branding }
-    | { type: 'SET_SERVICES'; payload: Service[] }
-    | { type: 'SET_HOURS'; payload: Hours }
-    // FIX: Add actions for employee management to avoid hacks in editor components.
-    | { type: 'SET_EMPLOYEES'; payload: Employee[] }
-    | { type: 'SET_EMPLOYEES_AND_SERVICES'; payload: { employees: Employee[], services: Service[] } };
+    | { type: 'HYDRATE_STATE'; payload: Business }
+    | { type: 'UPDATE_BUSINESS'; payload: Business };
 
+// --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
-const BusinessDispatchContext = createContext<Dispatch<Action> | undefined>(undefined);
+// El dispatch ahora puede manejar promesas para operaciones asíncronas
+const BusinessDispatchContext = createContext<((action: Action) => Promise<void>) | undefined>(undefined);
 
+// --- Reducer (sólo maneja el estado síncrono) ---
 const businessReducer = (state: Business, action: Action): Business => {
     switch (action.type) {
-        case 'SET_BUSINESS_INFO':
-            return { ...state, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
-        case 'SET_PHONE':
-            return { ...state, phone: action.payload };
-        case 'SET_BRANDING':
-            return { ...state, branding: action.payload };
-        case 'SET_SERVICES':
-            return { ...state, services: action.payload };
-        case 'SET_HOURS':
-            return { ...state, hours: action.payload };
-        // FIX: Implement reducer cases for new employee actions.
-        case 'SET_EMPLOYEES':
-            return { ...state, employees: action.payload };
-        case 'SET_EMPLOYEES_AND_SERVICES':
-            return { ...state, employees: action.payload.employees, services: action.payload.services };
+        case 'HYDRATE_STATE':
+        case 'UPDATE_BUSINESS':
+            return { ...state, ...action.payload };
         default:
             return state;
     }
 };
 
+// --- Provider ---
 export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, dispatch] = useReducer(businessReducer, loadInitialState());
+    const [state, dispatch] = useReducer(businessReducer, INITIAL_BUSINESS_DATA);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Persist state to localStorage whenever it changes
+    // Carga inicial de datos
     useEffect(() => {
-        try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-        } catch (error) {
-            console.error("Failed to save business data to localStorage", error);
+        const init = async () => {
+            try {
+                const initialData = await mockBackend.getBusinessData();
+                dispatch({ type: 'HYDRATE_STATE', payload: initialData });
+            } catch (error) {
+                console.error("Failed to load initial business data", error);
+                // Opcional: podrías querer un estado de error global aquí
+            } finally {
+                setIsLoaded(true);
+            }
+        };
+        init();
+    }, []);
+
+    // Wrapper asíncrono para el dispatch que interactúa con el backend
+    const asyncDispatch = async (action: Action) => {
+        switch (action.type) {
+            case 'UPDATE_BUSINESS':
+                // Llama al backend primero. Si falla, lanza un error.
+                const updatedData = await mockBackend.updateBusinessData(action.payload);
+                // Si tiene éxito, actualiza el estado de la UI.
+                dispatch({ type: 'UPDATE_BUSINESS', payload: updatedData });
+                break;
+            // Otros casos asíncronos (como ADD_EMPLOYEE, etc.) irían aquí
+            default:
+                // Las acciones síncronas simplemente pasan por el reducer
+                dispatch(action);
         }
-    }, [state]);
+    };
+    
+    const memoizedBusinessData = useMemo(() => ({
+        ...state,
+    }), [state]);
+
+    if (!isLoaded) {
+        // Podrías mostrar un spinner de carga global aquí
+        return <div>Cargando negocio...</div>;
+    }
 
     return (
-        <BusinessStateContext.Provider value={state}>
-            <BusinessDispatchContext.Provider value={dispatch}>
+        <BusinessStateContext.Provider value={memoizedBusinessData}>
+            <BusinessDispatchContext.Provider value={asyncDispatch}>
                 {children}
             </BusinessDispatchContext.Provider>
         </BusinessStateContext.Provider>
     );
 };
 
+// --- Hooks de conveniencia ---
 export const useBusinessState = () => {
     const context = useContext(BusinessStateContext);
     if (context === undefined) {
