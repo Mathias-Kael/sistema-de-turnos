@@ -1,8 +1,9 @@
-// FIX: Implemented HoursEditor.tsx. This file was previously a placeholder.
-// FIX: Renamed 'key' destructured variable to 'dayKey' to avoid potential shadowing issues.
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
-import { Hours } from '../../types';
+import { Hours, DayHours, Interval } from '../../types';
+import { Button } from '../ui/Button';
+import { ErrorMessage } from '../ui/ErrorMessage';
+import { validarIntervalos } from '../../utils/availability';
 
 const daysOfWeek: { key: keyof Hours; label: string }[] = [
     { key: 'monday', label: 'Lunes' },
@@ -18,51 +19,80 @@ export const HoursEditor: React.FC = () => {
     const business = useBusinessState();
     const dispatch = useBusinessDispatch();
 
+    const [draftHours, setDraftHours] = useState<Hours>(business.hours);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setDraftHours(business.hours);
+    }, [business.hours]);
+
+    const handleHoursChange = (day: keyof Hours, newDayHours: DayHours) => {
+        const updatedHours = { ...draftHours, [day]: newDayHours };
+        setDraftHours(updatedHours);
+        validateHours(updatedHours);
+    };
+
     const handleDayToggle = (day: keyof Hours, enabled: boolean) => {
-        const updatedHours = {
-            ...business.hours,
-            [day]: {
-                ...business.hours[day],
-                enabled,
-            },
-        };
-        dispatch({ type: 'SET_HOURS', payload: updatedHours });
+        handleHoursChange(day, { ...draftHours[day], enabled });
     };
 
     const addInterval = (day: keyof Hours) => {
-        const updatedHours = {
-            ...business.hours,
-            [day]: {
-                ...business.hours[day],
-                intervals: [...business.hours[day].intervals, { open: '14:00', close: '17:00' }],
-            },
-        };
-        dispatch({ type: 'SET_HOURS', payload: updatedHours });
+        const newIntervals = [...draftHours[day].intervals, { open: '09:00', close: '17:00' }];
+        handleHoursChange(day, { ...draftHours[day], intervals: newIntervals });
     };
 
     const removeInterval = (day: keyof Hours, index: number) => {
-        const updatedHours = {
-            ...business.hours,
-            [day]: {
-                ...business.hours[day],
-                intervals: business.hours[day].intervals.filter((_, i) => i !== index),
-            },
-        };
-        dispatch({ type: 'SET_HOURS', payload: updatedHours });
+        const newIntervals = draftHours[day].intervals.filter((_, i) => i !== index);
+        handleHoursChange(day, { ...draftHours[day], intervals: newIntervals });
     };
-    
+
     const handleIntervalChange = (day: keyof Hours, index: number, field: 'open' | 'close', value: string) => {
-        const updatedHours = {
-            ...business.hours,
-            [day]: {
-                ...business.hours[day],
-                intervals: business.hours[day].intervals.map((interval, i) =>
-                    i === index ? { ...interval, [field]: value } : interval
-                ),
-            },
-        };
-        dispatch({ type: 'SET_HOURS', payload: updatedHours });
+        const newIntervals = draftHours[day].intervals.map((interval, i) =>
+            i === index ? { ...interval, [field]: value } : interval
+        );
+        handleHoursChange(day, { ...draftHours[day], intervals: newIntervals });
     };
+
+    const validateHours = (hours: Hours): boolean => {
+        for (const dayKey of Object.keys(hours) as (keyof Hours)[]) {
+            const dayHours = hours[dayKey];
+            const dayLabel = daysOfWeek.find(d => d.key === dayKey)?.label || dayKey;
+
+            if (dayHours.enabled) {
+                for (const interval of dayHours.intervals) {
+                    if (!interval.open || !interval.close || interval.open >= interval.close) {
+                        setError(`Intervalo inválido para el ${dayLabel}. La hora de inicio debe ser menor que la de fin.`);
+                        return false;
+                    }
+                }
+                if (!validarIntervalos(dayHours.intervals)) {
+                    setError(`Los intervalos para el ${dayLabel} se solapan.`);
+                    return false;
+                }
+            }
+        }
+        setError(null);
+        return true;
+    };
+
+    const handleSave = async () => {
+        if (!validateHours(draftHours)) return;
+        try {
+            // Creamos el payload completo para la actualización
+            const updatedBusiness = { ...business, hours: draftHours };
+            await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
+            // Aquí podrías mostrar una notificación de éxito
+        } catch (e: any) {
+            setError(e.message);
+        }
+    };
+
+    const handleCancel = () => {
+        setDraftHours(business.hours);
+        setError(null);
+    };
+
+    const hasChanges = JSON.stringify(draftHours) !== JSON.stringify(business.hours);
 
     return (
         <div className="space-y-4">
@@ -74,17 +104,17 @@ export const HoursEditor: React.FC = () => {
                         <label className="flex items-center space-x-2 cursor-pointer text-secondary">
                             <input
                                 type="checkbox"
-                                checked={business.hours[dayKey].enabled}
+                                checked={draftHours[dayKey].enabled}
                                 onChange={(e) => handleDayToggle(dayKey, e.target.checked)}
                                 className="h-5 w-5 rounded border-default accent-primary focus:ring-primary"
                             />
-                            <span>{business.hours[dayKey].enabled ? 'Abierto' : 'Cerrado'}</span>
+                            <span>{draftHours[dayKey].enabled ? 'Abierto' : 'Cerrado'}</span>
                         </label>
                     </div>
 
-                    {business.hours[dayKey].enabled && (
+                    {draftHours[dayKey].enabled && (
                         <div className="space-y-3">
-                            {business.hours[dayKey].intervals.map((interval, index) => (
+                            {draftHours[dayKey].intervals.map((interval, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <input
                                         type="time"
@@ -101,7 +131,7 @@ export const HoursEditor: React.FC = () => {
                                     />
                                     <button
                                         onClick={() => removeInterval(dayKey, index)}
-                                        className="p-2 bg-[color:var(--color-state-danger-bg)] text-[color:var(--color-state-danger-text)] rounded-full hover:opacity-90 transition-colors"
+                                        className="p-2 bg-state-danger-bg text-state-danger-text rounded-full hover:opacity-90 transition-colors"
                                         aria-label="Eliminar intervalo"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
@@ -118,6 +148,13 @@ export const HoursEditor: React.FC = () => {
                     )}
                 </div>
             ))}
+            {error && <ErrorMessage message={error} />}
+            {hasChanges && (
+                <div className="flex justify-end gap-4 mt-6">
+                    <Button variant="secondary" onClick={handleCancel}>Cancelar</Button>
+                    <Button onClick={handleSave} disabled={!!error}>Guardar Cambios</Button>
+                </div>
+            )}
         </div>
     );
 };

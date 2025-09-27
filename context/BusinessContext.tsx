@@ -3,122 +3,83 @@ import { Business, Service, Branding, Hours, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { mockBackend } from '../services/mockBackend';
 
-const loadInitialState = async (): Promise<Business> => {
-  try {
-    const data = await mockBackend.getBusinessData();
-    return data;
-  } catch (error) {
-    console.error("Failed to load business data from mockBackend", error);
-    return INITIAL_BUSINESS_DATA;
-  }
-};
-
-
+// --- Tipos de Acción ---
 type Action =
     | { type: 'HYDRATE_STATE'; payload: Business }
-    | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string; logoUrl: string } }
-    | { type: 'SET_PHONE'; payload: string }
-    | { type: 'SET_BRANDING'; payload: Branding }
-    | { type: 'SET_SERVICES'; payload: Service[] }
-    | { type: 'SET_HOURS'; payload: Hours }
-    | { type: 'SET_EMPLOYEES'; payload: Employee[] }
-    | { type: 'ADD_EMPLOYEE'; payload: Employee }
-    | { type: 'UPDATE_EMPLOYEE'; payload: Employee }
-    | { type: 'DELETE_EMPLOYEE'; payload: string } // payload es el employeeId
-    | { type: 'UPDATE_EMPLOYEE_HOURS'; payload: { employeeId: string; hours: Hours } }
-    | { type: 'SET_EMPLOYEES_AND_SERVICES'; payload: { employees: Employee[], services: Service[] } };
+    | { type: 'UPDATE_BUSINESS'; payload: Business };
 
+// --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
-const BusinessDispatchContext = createContext<Dispatch<Action> | undefined>(undefined);
+// El dispatch ahora puede manejar promesas para operaciones asíncronas
+const BusinessDispatchContext = createContext<((action: Action) => Promise<void>) | undefined>(undefined);
 
+// --- Reducer (sólo maneja el estado síncrono) ---
 const businessReducer = (state: Business, action: Action): Business => {
     switch (action.type) {
         case 'HYDRATE_STATE':
+        case 'UPDATE_BUSINESS':
             return { ...state, ...action.payload };
-        case 'SET_BUSINESS_INFO':
-            return { ...state, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
-        case 'SET_PHONE':
-            return { ...state, phone: action.payload };
-        case 'SET_BRANDING':
-            return { ...state, branding: action.payload };
-        case 'SET_SERVICES':
-            return { ...state, services: action.payload };
-        case 'SET_HOURS':
-            return { ...state, hours: action.payload };
-        case 'SET_EMPLOYEES':
-            return { ...state, employees: action.payload };
-        case 'ADD_EMPLOYEE':
-            return { ...state, employees: [...state.employees, action.payload] };
-        case 'UPDATE_EMPLOYEE':
-            return {
-                ...state,
-                employees: state.employees.map(emp =>
-                    emp.id === action.payload.id ? action.payload : emp
-                ),
-            };
-        case 'DELETE_EMPLOYEE':
-            return {
-                ...state,
-                employees: state.employees.filter(emp => emp.id !== action.payload),
-                // También eliminar al empleado de los servicios si estaba asignado
-                services: state.services.map(service => ({
-                    ...service,
-                    employeeIds: service.employeeIds.filter(id => id !== action.payload)
-                }))
-            };
-        case 'SET_EMPLOYEES_AND_SERVICES':
-            return { ...state, employees: action.payload.employees, services: action.payload.services };
-        case 'UPDATE_EMPLOYEE_HOURS':
-            return {
-                ...state,
-                employees: state.employees.map(emp =>
-                    emp.id === action.payload.employeeId
-                        ? { ...emp, hours: action.payload.hours }
-                        : emp
-                ),
-            };
         default:
             return state;
     }
 };
 
+// --- Provider ---
 export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(businessReducer, INITIAL_BUSINESS_DATA);
     const [isLoaded, setIsLoaded] = useState(false);
 
+    // Carga inicial de datos
     useEffect(() => {
         const init = async () => {
-            const initialData = await loadInitialState();
-            dispatch({ type: 'HYDRATE_STATE', payload: initialData });
-            setIsLoaded(true);
+            try {
+                const initialData = await mockBackend.getBusinessData();
+                dispatch({ type: 'HYDRATE_STATE', payload: initialData });
+            } catch (error) {
+                console.error("Failed to load initial business data", error);
+                // Opcional: podrías querer un estado de error global aquí
+            } finally {
+                setIsLoaded(true);
+            }
         };
         init();
     }, []);
 
-    // Persist state to mockBackend whenever it changes
-    useEffect(() => {
-        if (isLoaded) {
-            mockBackend.updateBusinessData(state).catch(error => {
-                console.error("Failed to save business data to mockBackend", error);
-            });
+    // Wrapper asíncrono para el dispatch que interactúa con el backend
+    const asyncDispatch = async (action: Action) => {
+        switch (action.type) {
+            case 'UPDATE_BUSINESS':
+                // Llama al backend primero. Si falla, lanza un error.
+                const updatedData = await mockBackend.updateBusinessData(action.payload);
+                // Si tiene éxito, actualiza el estado de la UI.
+                dispatch({ type: 'UPDATE_BUSINESS', payload: updatedData });
+                break;
+            // Otros casos asíncronos (como ADD_EMPLOYEE, etc.) irían aquí
+            default:
+                // Las acciones síncronas simplemente pasan por el reducer
+                dispatch(action);
         }
-    }, [state, isLoaded]);
-
+    };
+    
     const memoizedBusinessData = useMemo(() => ({
         ...state,
-        totalEmployees: state.employees.length,
-        activeServices: state.services.filter(s => s.active).length // Asumiendo que 'active' es una propiedad de Service
     }), [state]);
+
+    if (!isLoaded) {
+        // Podrías mostrar un spinner de carga global aquí
+        return <div>Cargando negocio...</div>;
+    }
 
     return (
         <BusinessStateContext.Provider value={memoizedBusinessData}>
-            <BusinessDispatchContext.Provider value={dispatch}>
+            <BusinessDispatchContext.Provider value={asyncDispatch}>
                 {children}
             </BusinessDispatchContext.Provider>
         </BusinessStateContext.Provider>
     );
 };
 
+// --- Hooks de conveniencia ---
 export const useBusinessState = () => {
     const context = useContext(BusinessStateContext);
     if (context === undefined) {

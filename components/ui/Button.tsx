@@ -38,7 +38,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
  * @param {ButtonProps} props - Las props para el componente.
  * @returns {React.ReactElement} El componente de botón renderizado.
  */
- */
 export const Button: React.FC<ButtonProps> = ({
     variant = 'primary',
     size = 'md',

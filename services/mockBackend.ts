@@ -1,4 +1,5 @@
 import { Business, Booking, Service, Employee, DayHours, Interval } from '../types';
+import { validarIntervalos } from '../utils/availability';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { MOCK_BOOKINGS } from './mockData'; // Usaremos esto como base inicial para las reservas
 
@@ -61,6 +62,61 @@ export const mockBackend = {
 
     updateBusinessData: async (newData: Business): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        // --- Lógica de Validación de Integridad ---
+        const changedDays = Object.keys(newData.hours).filter(day =>
+            JSON.stringify(newData.hours[day as keyof Business['hours']]) !== JSON.stringify(businessData.hours[day as keyof Business['hours']])
+        );
+
+        if (changedDays.length > 0) {
+            // 1. Validar la integridad de los nuevos intervalos (inicio < fin, sin solapamientos)
+            for (const day of changedDays) {
+                const dayHours = newData.hours[day as keyof Business['hours']];
+                if (dayHours.enabled) {
+                    for (const interval of dayHours.intervals) {
+                        if (interval.open >= interval.close) {
+                            throw new Error(`El horario de inicio debe ser anterior al de fin para el día ${day}.`);
+                        }
+                    }
+                    if (!validarIntervalos(dayHours.intervals)) {
+                        throw new Error(`Los intervalos de horario para el día ${day} se solapan.`);
+                    }
+                }
+            }
+
+            // 2. Validar que un cambio de horario no invalide reservas futuras.
+            const today = new Date().toISOString().split('T')[0];
+            const futureBookings = bookingsData.filter(b => b.date >= today);
+
+            for (const day of changedDays) {
+                const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
+                const bookingsForDay = futureBookings.filter(b => new Date(b.date + 'T12:00:00Z').getDay() === dayIndex);
+                
+                if (bookingsForDay.length === 0) continue;
+
+                const newDayHours = newData.hours[day as keyof Business['hours']];
+
+                for (const booking of bookingsForDay) {
+                    if (!newDayHours.enabled) {
+                        throw new Error(`Deshabilitar el ${day} cancelaría la reserva #${booking.id} del ${booking.date}.`);
+                    }
+
+                    const bookingStart = parseInt(booking.start.replace(':', ''), 10);
+                    const bookingEnd = parseInt(booking.end.replace(':', ''), 10);
+
+                    const isBookingValid = newDayHours.intervals.some(interval => {
+                        const intervalStart = parseInt(interval.open.replace(':', ''), 10);
+                        const intervalEnd = parseInt(interval.close.replace(':', ''), 10);
+                        return bookingStart >= intervalStart && bookingEnd <= intervalEnd;
+                    });
+
+                    if (!isBookingValid) {
+                        throw new Error(`El nuevo horario para el ${day} entra en conflicto con la reserva #${booking.id} de ${booking.start} a ${booking.end} el día ${booking.date}.`);
+                    }
+                }
+            }
+        }
+        
         businessData = { ...businessData, ...newData };
         saveBusinessData(businessData);
         return businessData;
@@ -73,8 +129,10 @@ export const mockBackend = {
 
     createBooking: async (newBooking: Booking): Promise<Booking> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        // Asignar un ID simple para la simulación
-        newBooking.id = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Si la reserva no tiene ID, se le asigna uno. Si lo tiene, se respeta (útil para tests).
+        if (!newBooking.id) {
+            newBooking.id = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
         bookingsData.push(newBooking);
         saveBookingsData(bookingsData);
         return newBooking;
@@ -110,6 +168,15 @@ export const mockBackend = {
 
     deleteEmployee: async (employeeId: string): Promise<void> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        // --- Lógica de Validación de Integridad ---
+        const today = new Date().toISOString().split('T')[0];
+        const hasFutureBookings = bookingsData.some(b => b.employeeId === employeeId && b.date >= today);
+
+        if (hasFutureBookings) {
+            throw new Error(`No se puede eliminar el empleado porque tiene reservas futuras.`);
+        }
+
         businessData.employees = businessData.employees.filter(emp => emp.id !== employeeId);
         // También eliminar al empleado de los servicios si estaba asignado
         businessData.services = businessData.services.map(service => ({
@@ -135,7 +202,22 @@ export const mockBackend = {
 
     deleteService: async (serviceId: string): Promise<void> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        // --- Lógica de Validación de Integridad ---
+        const today = new Date().toISOString().split('T')[0];
+        const hasFutureBookings = bookingsData.some(b => b.date >= today && b.services.some(s => s.id === serviceId));
+
+        if (hasFutureBookings) {
+            throw new Error(`No se puede eliminar el servicio porque tiene reservas futuras.`);
+        }
+
         businessData.services = businessData.services.filter(s => s.id !== serviceId);
         saveBusinessData(businessData);
     },
+
+    // --- Funciones de utilidad para Testing ---
+    loadDataForTests: () => {
+        businessData = loadBusinessData();
+        bookingsData = loadBookingsData();
+    }
 };
