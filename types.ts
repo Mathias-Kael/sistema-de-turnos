@@ -55,6 +55,7 @@ export interface Business {
   employees: Employee[];
   services: Service[];
   hours: Hours;
+  bookings: Booking[]; // Añadido para gestionar reservas en el contexto
 }
 
 // Types related to bookings/reservations

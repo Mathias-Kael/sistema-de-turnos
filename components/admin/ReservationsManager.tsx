@@ -1,48 +1,57 @@
 import React, { useState, useMemo } from 'react';
-import { MOCK_BOOKINGS } from '../../services/mockData';
 import { Booking } from '../../types';
 import { BookingCalendar } from './BookingCalendar';
 import { BookingDetailModal } from './BookingDetailModal';
 import { ManualBookingModal } from './ManualBookingModal';
-import { useBusinessState } from '../../context/BusinessContext';
+import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 
 export const ReservationsManager: React.FC = () => {
     const business = useBusinessState();
-    // In a real app, this would come from an API
-    const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS);
+    const dispatch = useBusinessDispatch();
+    
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [dateForNewBooking, setDateForNewBooking] = useState(new Date());
+    const [error, setError] = useState<string | null>(null);
 
     const bookingsForSelectedDay = useMemo(() => {
         const dateStr = selectedDate.toISOString().split('T')[0];
-        return bookings
+        return (business.bookings || [])
             .filter(b => b.date === dateStr)
             .sort((a, b) => a.start.localeCompare(b.start));
-    }, [selectedDate, bookings]);
+    }, [selectedDate, business.bookings]);
     
     const bookingsByDate = useMemo(() => {
-        return bookings.reduce<Record<string, number>>((acc, booking) => {
+        return (business.bookings || []).reduce<Record<string, number>>((acc, booking) => {
             acc[booking.date] = (acc[booking.date] || 0) + 1;
             return acc;
         }, {});
-    }, [bookings]);
+    }, [business.bookings]);
 
-    const handleUpdateBooking = (updatedBooking: Booking) => {
-        setBookings(prev => prev.map(b => b.id === updatedBooking.id ? updatedBooking : b));
-        setSelectedBooking(null);
+    const handleUpdateBooking = async (updatedBooking: Booking) => {
+        try {
+            await dispatch({ type: 'UPDATE_BOOKING', payload: updatedBooking });
+            setSelectedBooking(null);
+        } catch (e: any) {
+            setError(e.message);
+        }
     };
     
-    const handleAddBooking = (newBooking: Omit<Booking, 'id'>) => {
-        const bookingToAdd: Booking = { ...newBooking, id: `res_${Date.now()}` };
-        setBookings(prev => [...prev, bookingToAdd]);
-        
-        // Actualizar la vista para mostrar la fecha de la nueva reserva
-        const newBookingDate = new Date(bookingToAdd.date + 'T00:00:00');
-        setSelectedDate(newBookingDate);
-        
-        setIsCreating(false);
+    const handleAddBooking = async (newBooking: Omit<Booking, 'id'>) => {
+        setError(null);
+        try {
+            await dispatch({ type: 'CREATE_BOOKING', payload: newBooking });
+            
+            // Actualizar la vista para mostrar la fecha de la nueva reserva
+            const newBookingDate = new Date(newBooking.date + 'T00:00:00');
+            setSelectedDate(newBookingDate);
+            
+            setIsCreating(false);
+        } catch (e: any) {
+            setError(e.message);
+            // No cerramos el modal si hay un error, para que el usuario pueda corregir.
+        }
     };
 
     const openCreateModal = (date: Date) => {
@@ -90,6 +99,8 @@ export const ReservationsManager: React.FC = () => {
                 </div>
             </div>
             
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
             {selectedBooking && (
                 <BookingDetailModal
                     booking={selectedBooking}
@@ -102,7 +113,7 @@ export const ReservationsManager: React.FC = () => {
             {isCreating && (
                 <ManualBookingModal
                     selectedDate={dateForNewBooking}
-                    existingBookings={bookings}
+                    existingBookings={business.bookings || []}
                     onClose={() => setIsCreating(false)}
                     onSave={handleAddBooking}
                 />

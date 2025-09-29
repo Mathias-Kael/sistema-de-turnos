@@ -1,6 +1,17 @@
 import { Business, Branding } from './types';
+import { MOCK_BOOKINGS } from './services/mockData';
 
 // Default business data for initialization
+export const DEFAULT_HOURS_TEMPLATE = {
+    monday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+    tuesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+    wednesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+    thursday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+    friday: { enabled: true, intervals: [{ open: '09:00', close: '20:00' }] },
+    saturday: { enabled: true, intervals: [{ open: '10:00', close: '16:00' }] },
+    sunday: { enabled: false, intervals: [] },
+};
+
 export const INITIAL_BUSINESS_DATA: Business = {
     id: 'biz_1',
     name: 'Autolavado "El Impecable"',
@@ -14,9 +25,9 @@ export const INITIAL_BUSINESS_DATA: Business = {
         font: "'Poppins', sans-serif",
     },
     employees: [
-        { id: 'e1', name: 'Carlos Gomez', avatarUrl: 'https://i.imgur.com/8Km9t4u.png' },
-        { id: 'e2', name: 'Lucía Fernandez', avatarUrl: 'https://i.imgur.com/DeT4v2s.png' },
-        { id: 'e3', name: 'Miguel Angel', avatarUrl: 'https://i.imgur.com/tH1iTLA.png' },
+        { id: 'e1', name: 'Carlos Gomez', avatarUrl: 'https://i.imgur.com/8Km9t4u.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+        { id: 'e2', name: 'Lucía Fernandez', avatarUrl: 'https://i.imgur.com/DeT4v2s.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+        { id: 'e3', name: 'Miguel Angel', avatarUrl: 'https://i.imgur.com/tH1iTLA.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
     ],
     services: [
         { id: 's1', name: 'Lavado Básico Exterior', description: 'Lavado de carrocería y secado a mano.', duration: 25, buffer: 5, price: 20, employeeIds: ['e1', 'e3'] },
@@ -24,15 +35,8 @@ export const INITIAL_BUSINESS_DATA: Business = {
         { id: 's3', name: 'Lavado Premium (Completo)', description: 'Incluye lavado básico y limpieza interior.', duration: 80, buffer: 10, price: 55, requiresDeposit: true, employeeIds: ['e1', 'e2', 'e3'] },
         { id: 's4', name: 'Pulido y Encerado', description: 'Tratamiento para realzar el brillo y proteger la pintura.', duration: 110, buffer: 10, price: 80, employeeIds: ['e1'] },
     ],
-    hours: {
-        monday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
-        tuesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
-        wednesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
-        thursday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
-        friday: { enabled: true, intervals: [{ open: '09:00', close: '20:00' }] },
-        saturday: { enabled: true, intervals: [{ open: '10:00', close: '16:00' }] },
-        sunday: { enabled: false, intervals: [] },
-    },
+    hours: { ...DEFAULT_HOURS_TEMPLATE },
+    bookings: MOCK_BOOKINGS, // Inicializar con las reservas mock
 };
 
 // Color and style presets for the branding editor

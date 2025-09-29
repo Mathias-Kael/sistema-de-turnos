@@ -13,6 +13,8 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
     const dispatch = useBusinessDispatch();
     const businessState = useBusinessState();
     const [employeeHours, setEmployeeHours] = useState<Hours>(employee.hours || INITIAL_BUSINESS_DATA.hours);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setEmployeeHours(employee.hours || INITIAL_BUSINESS_DATA.hours);
@@ -62,32 +64,41 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
         }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        setError(null);
+        setIsSaving(true);
+
         for (const day of daysOfWeek) {
             const dayConfig = employeeHours[day];
             if (dayConfig.enabled) {
-                // Validar campos vacíos
                 for (const interval of dayConfig.intervals) {
-                    // Validar campos vacíos
                     if (!interval.open || !interval.close) {
-                        alert(`Error: Todos los campos de tiempo deben estar completos para el día ${dayNames[day]}.`);
+                        setError(`Error: Todos los campos de tiempo deben estar completos para el día ${dayNames[day]}.`);
+                        setIsSaving(false);
                         return;
                     }
-                    // Validar que la hora de cierre sea posterior a la de inicio
                     if (interval.open >= interval.close) {
-                        alert(`Error: La hora de cierre debe ser posterior a la hora de inicio en todos los intervalos para el día ${dayNames[day]}.`);
+                        setError(`Error: La hora de cierre debe ser posterior a la hora de inicio en todos los intervalos para el día ${dayNames[day]}.`);
+                        setIsSaving(false);
                         return;
                     }
                 }
-                // Validar solapamientos
                 if (!validarIntervalos(dayConfig.intervals)) {
-                    alert(`Error: Se encontraron intervalos de tiempo solapados para el día ${dayNames[day]}.`);
+                    setError(`Error: Se encontraron intervalos de tiempo solapados para el día ${dayNames[day]}.`);
+                    setIsSaving(false);
                     return;
                 }
             }
         }
-        dispatch({ type: 'UPDATE_EMPLOYEE_HOURS', payload: { employeeId: employee.id, hours: employeeHours } });
-        onClose();
+
+        try {
+            await dispatch({ type: 'UPDATE_EMPLOYEE_HOURS', payload: { employeeId: employee.id, hours: employeeHours } });
+            onClose(); // Llamar a onClose solo si el guardado fue exitoso
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const daysOfWeek: (keyof Hours)[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -100,7 +111,8 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
         <div className="fixed inset-0 bg-background-dark bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-center">
             <div className="bg-surface p-8 rounded-lg shadow-xl max-w-2xl w-full text-primary">
                 <h2 className="text-2xl font-bold mb-4 text-primary">Editar Horarios de {employee.name}</h2>
-                <div className="space-y-4">
+                {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                     {daysOfWeek.map(day => (
                         <div key={day} className="border border-default p-3 rounded-md bg-background">
                             <label className="flex items-center justify-between cursor-pointer">
@@ -146,8 +158,10 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                     ))}
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
-                    <button onClick={onClose} className="btn btn-ghost text-secondary hover:bg-background">Cancelar</button>
-                    <button onClick={handleSave} className="btn btn-primary">Guardar Horarios</button>
+                    <button onClick={onClose} className="btn btn-ghost text-secondary hover:bg-background" disabled={isSaving}>Cancelar</button>
+                    <button onClick={handleSave} className="btn btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Guardando...' : 'Guardar Horarios'}
+                    </button>
                 </div>
             </div>
         </div>

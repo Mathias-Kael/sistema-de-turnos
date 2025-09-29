@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Service, Business } from '../../types';
+import { Service, Business, Booking } from '../../types';
 import { formatDuration } from '../../utils/format';
 import { generateICS } from '../../utils/ics';
+import { useBusinessDispatch } from '../../context/BusinessContext';
+import { timeToMinutes, minutesToTime } from '../../utils/availability';
 
 interface ConfirmationModalProps {
     date: Date;
@@ -13,35 +15,60 @@ interface ConfirmationModalProps {
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot, selectedServices, employeeId, business, onClose }) => {
+    const dispatch = useBusinessDispatch();
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     
     const totalDuration = useMemo(() => selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0), [selectedServices]);
     const totalPrice = useMemo(() => selectedServices.reduce((acc, s) => acc + s.price, 0), [selectedServices]);
 
     const employee = useMemo(() => {
         if (employeeId === 'any') {
+            // En un caso real, la lógica para 'any' podría ser más compleja.
+            // Por ahora, si es 'any', no asignamos un empleado específico en la confirmación.
             return null;
         }
         return business.employees.find(e => e.id === employeeId);
     }, [employeeId, business.employees]);
 
-    const handleConfirm = (e: React.FormEvent) => {
+    const handleConfirm = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, here you would send the booking data to your backend API.
-        // For this demo, we'll just show a success message.
-        console.log({
-            clientName,
-            clientEmail,
-            clientPhone,
-            date,
-            slot,
-            selectedServices,
-            employeeId
-        });
-        setIsConfirmed(true);
+        if (isSaving) return;
+
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            const startTimeInMinutes = timeToMinutes(slot);
+            const endTimeInMinutes = startTimeInMinutes + totalDuration;
+            const endTime = minutesToTime(endTimeInMinutes);
+
+            const newBooking: Omit<Booking, 'id'> = {
+                date: date.toISOString().split('T')[0],
+                start: slot,
+                end: endTime,
+                services: selectedServices,
+                client: {
+                    name: clientName,
+                    email: clientEmail,
+                    phone: clientPhone,
+                },
+                employeeId: employeeId,
+                status: 'confirmed',
+            };
+
+            await dispatch({ type: 'CREATE_BOOKING', payload: newBooking });
+            setIsConfirmed(true);
+
+        } catch (err: any) {
+            setError(err.message || 'Ocurrió un error al confirmar la reserva. Por favor, inténtalo de nuevo.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const whatsappMessage = useMemo(() => {
@@ -124,12 +151,18 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                     </div>
                 </div>
 
+                {error && <p className="text-sm text-center text-red-500 mt-4">{error}</p>}
+
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-default">
                     <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity">
-                        Confirmar Reserva
+                    <button
+                        type="submit"
+                        className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isSaving}
+                    >
+                        {isSaving ? 'Confirmando...' : 'Confirmar Reserva'}
                     </button>
                 </div>
             </form>

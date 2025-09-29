@@ -1,15 +1,6 @@
 import { Business, Service, Booking, Employee } from '../types';
 import { calcularTurnosDisponibles, ReservaOcupada } from '../utils/availability';
-import { mockBackend } from './mockBackend';
-
-// This is a mock function. In a real application, this would make a network request.
-const getBookingsForDate = async (date: Date): Promise<Booking[]> => {
-    const dateString = date.toISOString().split('T')[0];
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return mockBackend.getBookingsForDate(dateString);
-};
-
+// import { mockBackend } from './mockBackend'; // No longer needed for getAvailableSlots
 
 /**
  * Calculates available time slots for a given day, services, and employee.
@@ -17,7 +8,7 @@ const getBookingsForDate = async (date: Date): Promise<Booking[]> => {
 export const getAvailableSlots = async (
     date: Date,
     services: Service[],
-    business: Business,
+    business: Business, // Ahora usa este objeto Business para obtener las reservas
     employeeId: string | 'any'
 ): Promise<string[]> => {
     // 1. Calculate total duration including buffers
@@ -30,8 +21,9 @@ export const getAvailableSlots = async (
     const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()] as keyof Business['hours'];
     const businessHoursForDay = business.hours[dayOfWeek];
 
-    // 3. Fetch all bookings for the selected date to check for conflicts
-    const allBookingsForDay = await getBookingsForDate(date);
+    // 3. Obtener todas las reservas para la fecha seleccionada directamente del objeto Business
+    const dateString = date.toISOString().split('T')[0];
+    const allBookingsForDay = business.bookings.filter(booking => booking.date === dateString);
 
     // 4. Calculate available slots based on employee selection.
     let finalAvailableSlots: Set<string> = new Set();
@@ -47,8 +39,8 @@ export const getAvailableSlots = async (
                 ? employeeHoursForDay
                 : businessHoursForDay;
 
-            if (!effectiveHours || !effectiveHours.enabled) {
-                continue;
+            if (!effectiveHours || !effectiveHours.enabled || effectiveHours.intervals.length === 0) {
+                continue; // Si no hay horarios definidos, no hay slots disponibles
             }
 
             const employeeBookings = allBookingsForDay.filter(b => b.employeeId === emp.id);
@@ -77,8 +69,8 @@ export const getAvailableSlots = async (
             ? employeeHoursForDay
             : businessHoursForDay;
 
-        if (!effectiveHours || !effectiveHours.enabled) {
-            return [];
+        if (!effectiveHours || !effectiveHours.enabled || effectiveHours.intervals.length === 0) {
+            return []; // Si no hay horarios definidos, no hay slots disponibles
         }
 
         const relevantBookings = allBookingsForDay.filter(b => b.employeeId === employeeId);

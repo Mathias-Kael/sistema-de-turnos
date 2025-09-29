@@ -24,7 +24,7 @@ interface CalcularTurnosParams {
  * @param timeStr La hora en formato "HH:mm".
  * @returns El número de minutos desde la medianoche.
  */
-const timeToMinutes = (timeStr: string): number => {
+export const timeToMinutes = (timeStr: string): number => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 };
@@ -34,7 +34,7 @@ const timeToMinutes = (timeStr: string): number => {
  * @param totalMinutes Los minutos desde la medianoche.
  * @returns La hora formateada como "HH:mm".
  */
-const minutesToTime = (totalMinutes: number): string => {
+export const minutesToTime = (totalMinutes: number): string => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;

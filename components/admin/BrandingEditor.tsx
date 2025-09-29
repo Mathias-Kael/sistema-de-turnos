@@ -1,48 +1,42 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
-import { Branding } from '../../types';
+import { Branding, Business } from '../../types';
 import { BRANDING_PRESETS } from '../../constants';
+import { ErrorMessage } from '../ui/ErrorMessage';
 
 export const BrandingEditor: React.FC = () => {
     const business = useBusinessState();
     const dispatch = useBusinessDispatch();
 
-    const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        dispatch({
-            type: 'SET_BUSINESS_INFO',
-            payload: {
-                name: name === 'name' ? value : business.name,
-                description: name === 'description' ? value : business.description,
-                logoUrl: name === 'logoUrl' ? value : business.logoUrl,
+    const [error, setError] = useState<string | null>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Función con debounce para actualizar el estado del negocio
+    const debouncedUpdate = useCallback((updatedBusiness: Business) => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(async () => {
+            setError(null);
+            try {
+                await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
+            } catch (e: any) {
+                setError(e.message);
             }
-        });
+        }, 500); // 500ms de espera
+    }, [dispatch]);
+
+    const handleUpdate = (field: keyof Business, value: any) => {
+        const updatedBusiness = { ...business, [field]: value };
+        debouncedUpdate(updatedBusiness);
     };
 
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch({ type: 'SET_PHONE', payload: e.target.value });
-    };
-
-    const handleBrandingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        const updatedBranding = {
-            ...business.branding,
-            [name]: value
-        };
-        dispatch({ type: 'SET_BRANDING', payload: updatedBranding });
+    const handleBrandingChange = (field: keyof Branding, value: string) => {
+        handleUpdate('branding', { ...business.branding, [field]: value });
     };
 
     const applyPreset = (preset: Branding) => {
-        // CORRECCIÓN DEFINITIVA: Se crea un objeto 'newBranding' completamente nuevo y explícito.
-        // Esto elimina cualquier ambigüedad y garantiza que React detecte un cambio de 
-        // referencia en el estado, forzando la actualización de la vista previa en vivo.
-        const newBranding: Branding = {
-            primaryColor: preset.primaryColor,
-            secondaryColor: preset.secondaryColor,
-            textColor: preset.textColor,
-            font: preset.font,
-        };
-        dispatch({ type: 'SET_BRANDING', payload: newBranding });
+        handleUpdate('branding', preset);
     };
 
     return (
@@ -55,9 +49,8 @@ export const BrandingEditor: React.FC = () => {
                         <input
                             type="text"
                             id="name"
-                            name="name"
-                            value={business.name}
-                            onChange={handleInfoChange}
+                            defaultValue={business.name}
+                            onChange={(e) => handleUpdate('name', e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
                         />
                     </div>
@@ -65,10 +58,9 @@ export const BrandingEditor: React.FC = () => {
                         <label htmlFor="description" className="block text-sm font-medium text-secondary">Descripción</label>
                         <textarea
                             id="description"
-                            name="description"
                             rows={3}
-                            value={business.description}
-                            onChange={handleInfoChange}
+                            defaultValue={business.description}
+                            onChange={(e) => handleUpdate('description', e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
                         />
                     </div>
@@ -77,9 +69,8 @@ export const BrandingEditor: React.FC = () => {
                         <input
                             type="text"
                             id="logoUrl"
-                            name="logoUrl"
-                            value={business.logoUrl}
-                            onChange={handleInfoChange}
+                            defaultValue={business.logoUrl}
+                            onChange={(e) => handleUpdate('logoUrl', e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
                         />
                     </div>
@@ -88,10 +79,9 @@ export const BrandingEditor: React.FC = () => {
                         <input
                             type="text"
                             id="phone"
-                            name="phone"
                             placeholder="5491112345678"
-                            value={business.phone || ''}
-                            onChange={handlePhoneChange}
+                            defaultValue={business.phone || ''}
+                            onChange={(e) => handleUpdate('phone', e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
                         />
                     </div>
@@ -117,12 +107,11 @@ export const BrandingEditor: React.FC = () => {
                             <input
                                 type="color"
                                 id="primaryColor"
-                                name="primaryColor"
                                 value={business.branding.primaryColor}
-                                onChange={handleBrandingChange}
+                                onChange={(e) => handleBrandingChange('primaryColor', e.target.value)}
                                 className="h-10 w-10 p-1 border border-default rounded-md cursor-pointer"
                             />
-                            <input type="text" name="primaryColor" value={business.branding.primaryColor} onChange={handleBrandingChange} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
+                            <input type="text" value={business.branding.primaryColor} onChange={(e) => handleBrandingChange('primaryColor', e.target.value)} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                         </div>
                     </div>
                     <div>
@@ -131,12 +120,11 @@ export const BrandingEditor: React.FC = () => {
                             <input
                                 type="color"
                                 id="secondaryColor"
-                                name="secondaryColor"
                                 value={business.branding.secondaryColor}
-                                onChange={handleBrandingChange}
+                                onChange={(e) => handleBrandingChange('secondaryColor', e.target.value)}
                                 className="h-10 w-10 p-1 border border-default rounded-md cursor-pointer"
                             />
-                             <input type="text" name="secondaryColor" value={business.branding.secondaryColor} onChange={handleBrandingChange} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
+                             <input type="text" value={business.branding.secondaryColor} onChange={(e) => handleBrandingChange('secondaryColor', e.target.value)} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                         </div>
                     </div>
                     <div>
@@ -145,21 +133,19 @@ export const BrandingEditor: React.FC = () => {
                             <input
                                 type="color"
                                 id="textColor"
-                                name="textColor"
                                 value={business.branding.textColor}
-                                onChange={handleBrandingChange}
+                                onChange={(e) => handleBrandingChange('textColor', e.target.value)}
                                 className="h-10 w-10 p-1 border border-default rounded-md cursor-pointer"
                             />
-                            <input type="text" name="textColor" value={business.branding.textColor} onChange={handleBrandingChange} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
+                            <input type="text" value={business.branding.textColor} onChange={(e) => handleBrandingChange('textColor', e.target.value)} className="block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                         </div>
                     </div>
                     <div>
                         <label htmlFor="font" className="block text-sm font-medium text-secondary">Fuente</label>
                         <select
                             id="font"
-                            name="font"
                             value={business.branding.font}
-                            onChange={handleBrandingChange}
+                            onChange={(e) => handleBrandingChange('font', e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-default bg-surface rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-primary"
                         >
                             <option value="'Poppins', sans-serif">Poppins</option>
@@ -171,6 +157,8 @@ export const BrandingEditor: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {error && <ErrorMessage message={error} />}
         </div>
     );
 };

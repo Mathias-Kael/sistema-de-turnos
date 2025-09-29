@@ -11,7 +11,7 @@ interface TimeSlotPickerProps {
 }
 
 export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedServices, selectedEmployeeId, onSlotSelect }) => {
-    const { hours, ...business } = useBusinessState();
+    const business = useBusinessState();
     const [slots, setSlots] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
             setLoading(true);
             setError(null);
             try {
-                const availableSlots = await getAvailableSlots(date, selectedServices, { ...business, hours }, selectedEmployeeId);
+                const availableSlots = await getAvailableSlots(date, selectedServices, business, selectedEmployeeId);
                 setSlots(availableSlots);
             } catch (err) {
                 setError('No se pudieron cargar los horarios. Inténtalo de nuevo.');
@@ -37,7 +37,7 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedSe
         };
 
         fetchSlots();
-    }, [date, selectedServices, hours, selectedEmployeeId]); // Añadido selectedEmployeeId a las dependencias
+    }, [date, selectedServices, business, selectedEmployeeId]);
 
     const renderContent = () => {
         if (selectedServices.length === 0) {

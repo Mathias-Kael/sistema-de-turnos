@@ -8,37 +8,34 @@ import { MOCK_BOOKINGS } from './mockData';
 const clone = <T>(data: T): T => JSON.parse(JSON.stringify(data));
 
 describe('API Integration Tests - Business Logic', () => {
-    let testBusinessData: Business;
-    let testBookingsData: Booking[];
+    let initialTestBusinessState: Business;
 
     beforeEach(() => {
         // Limpiar localStorage para asegurar un estado limpio
         localStorage.clear();
 
         // Cargar un conjunto de datos predecible antes de cada prueba
-        testBusinessData = clone(INITIAL_BUSINESS_DATA);
-        testBookingsData = clone(MOCK_BOOKINGS);
+        // Ahora el estado es unificado, pero sin reservas futuras por defecto para evitar interferencias
+        initialTestBusinessState = clone(INITIAL_BUSINESS_DATA);
+        initialTestBusinessState.bookings = []; // Vaciar reservas futuras por defecto
 
         // Sembrar datos en el mockBackend (simulando una base de datos limpia)
-        // Nota: Esto se hace accediendo directamente a las funciones de guardado del mockBackend,
-        // lo cual es aceptable para tests de integración.
-        localStorage.setItem('businessData', JSON.stringify(testBusinessData));
-        localStorage.setItem('bookingsData', JSON.stringify(testBookingsData));
+        localStorage.setItem('businessData', JSON.stringify(initialTestBusinessState));
 
         // Recargar los datos en el backend para que use nuestro estado sembrado
-        mockBackend.loadDataForTests(); 
+        mockBackend.loadDataForTests();
     });
 
     describe('Booking Creation Scenarios', () => {
         it('should return no available slots if the employee does not offer the selected service', async () => {
             // Escenario: Intentar reservar "Lavado Premium" (s3) con "Lucía" (e2).
             // Modificamos los datos de prueba para asegurar que "Lucía" NO ofrece "Lavado Premium".
-            const serviceToModify = testBusinessData.services.find(s => s.id === 's3');
+            const serviceToModify = initialTestBusinessState.services.find(s => s.id === 's3');
             if (serviceToModify) {
                 serviceToModify.employeeIds = serviceToModify.employeeIds.filter(id => id !== 'e2');
             }
 
-            const service = testBusinessData.services.find(s => s.id === 's3'); // Lavado Premium
+            const service = initialTestBusinessState.services.find(s => s.id === 's3'); // Lavado Premium
             const employeeId = 'e2'; // Lucía
             const date = new Date(); // Fecha de hoy
 
@@ -48,7 +45,7 @@ describe('API Integration Tests - Business Logic', () => {
             // Ahora esta aserción es correcta gracias a la modificación de los datos de prueba.
             expect(service.employeeIds.includes(employeeId)).toBe(false);
 
-            const slots = await getAvailableSlots(date, [service], testBusinessData, employeeId);
+            const slots = await getAvailableSlots(date, [service], initialTestBusinessState, employeeId);
 
             // El resultado debe ser un array vacío porque la combinación es inválida.
             expect(slots).toEqual([]);
@@ -56,7 +53,7 @@ describe('API Integration Tests - Business Logic', () => {
 
         it('should return no available slots if the business is closed on that day', async () => {
             // Escenario: Intentar reservar en domingo, que está deshabilitado.
-            const service = testBusinessData.services.find(s => s.id === 's1'); // Lavado Básico
+            const service = initialTestBusinessState.services.find(s => s.id === 's1'); // Lavado Básico
             const employeeId = 'e1'; // Carlos
             
             // Forzar la fecha a ser un domingo
@@ -64,11 +61,11 @@ describe('API Integration Tests - Business Logic', () => {
             date.setDate(date.getDate() + (7 - date.getDay())); // Ir al próximo domingo
             
             expect(date.getDay()).toBe(0); // 0 = Domingo
-            expect(testBusinessData.hours.sunday.enabled).toBe(false);
+            expect(initialTestBusinessState.hours.sunday.enabled).toBe(false);
             expect(service).toBeDefined();
             if (!service) return;
 
-            const slots = await getAvailableSlots(date, [service], testBusinessData, employeeId);
+            const slots = await getAvailableSlots(date, [service], initialTestBusinessState, employeeId);
 
             expect(slots).toEqual([]);
         });
@@ -79,25 +76,31 @@ describe('API Integration Tests - Business Logic', () => {
             const testDateString = testDate.toISOString().split('T')[0];
 
             // Modificar la reserva existente para que coincida con nuestra fecha de prueba
-            const bookingIndex = testBookingsData.findIndex(b => b.id === 'res_1');
-            if (bookingIndex !== -1) {
-                testBookingsData[bookingIndex].date = testDateString;
-                testBookingsData[bookingIndex].start = '10:00';
-                testBookingsData[bookingIndex].end = '11:00';
-                testBookingsData[bookingIndex].employeeId = 'e1';
-            }
+            const updatedBusinessState = clone(initialTestBusinessState);
+            // Crear una nueva reserva para este test, ya que initialTestBusinessState.bookings está vacío
+            const newConflictingBooking: Booking = {
+                id: 'res_1',
+                client: { name: 'Juan Perez', email: 'juan.perez@example.com', phone: '1122334455' },
+                date: testDateString,
+                start: '10:00',
+                end: '11:00',
+                services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+                employeeId: 'e1',
+                status: 'confirmed',
+            };
+            updatedBusinessState.bookings.push(newConflictingBooking);
             
             // Recargar el backend con los datos modificados
-            localStorage.setItem('bookingsData', JSON.stringify(testBookingsData));
+            localStorage.setItem('businessData', JSON.stringify(updatedBusinessState));
             mockBackend.loadDataForTests();
 
-            const service = testBusinessData.services.find(s => s.id === 's1'); // Lavado Básico (30 min)
+            const service = updatedBusinessState.services.find(s => s.id === 's1'); // Lavado Básico (30 min)
             const employeeId = 'e1'; // Carlos
 
             expect(service).toBeDefined();
             if (!service) return;
 
-            const slots = await getAvailableSlots(testDate, [service], testBusinessData, employeeId);
+            const slots = await getAvailableSlots(testDate, [service], updatedBusinessState, employeeId);
 
             // El turno de las 10:00 no debería estar.
             // Tampoco 10:30, porque un servicio de 30 min empezando a las 10:30 chocaría con la reserva que termina a las 11:00.
@@ -127,10 +130,14 @@ describe('API Integration Tests - Business Logic', () => {
                 status: 'confirmed',
             };
 
-            await mockBackend.createBooking(newBooking);
+            // Crear la reserva directamente en el estado inicial para el test
+            const businessWithFutureBooking = clone(initialTestBusinessState);
+            businessWithFutureBooking.bookings.push(newBooking);
+            localStorage.setItem('businessData', JSON.stringify(businessWithFutureBooking));
+            mockBackend.loadDataForTests();
 
             // Ahora, intentamos modificar el horario del Lunes para que cierre antes de la reserva.
-            const updatedBusinessData = clone(testBusinessData);
+            const updatedBusinessData = clone(businessWithFutureBooking); // Clonar el estado con la reserva
             updatedBusinessData.hours.monday.intervals = [{ open: '09:00', close: '16:00' }];
 
             // Esperamos que esta operación falle y lance un error.
@@ -159,7 +166,11 @@ describe('API Integration Tests - Business Logic', () => {
                 status: 'confirmed',
             };
 
-            await mockBackend.createBooking(newBooking);
+            // Crear la reserva directamente en el estado inicial para el test
+            const businessWithFutureBooking = clone(initialTestBusinessState);
+            businessWithFutureBooking.bookings.push(newBooking);
+            localStorage.setItem('businessData', JSON.stringify(businessWithFutureBooking));
+            mockBackend.loadDataForTests();
 
             // Esperamos que esta operación falle.
             await expect(mockBackend.deleteEmployee('e1'))
@@ -185,7 +196,11 @@ describe('API Integration Tests - Business Logic', () => {
                 status: 'confirmed',
             };
 
-            await mockBackend.createBooking(newBooking);
+            // Crear la reserva directamente en el estado inicial para el test
+            const businessWithFutureBooking = clone(initialTestBusinessState);
+            businessWithFutureBooking.bookings.push(newBooking);
+            localStorage.setItem('businessData', JSON.stringify(businessWithFutureBooking));
+            mockBackend.loadDataForTests();
 
             // Esperamos que esta operación falle.
             await expect(mockBackend.deleteService('s1'))
@@ -196,7 +211,7 @@ describe('API Integration Tests - Business Logic', () => {
 
     describe('Business Hours Validation Scenarios', () => {
         it('should throw an error if an interval is invalid (start >= end)', async () => {
-            const invalidBusinessData = clone(testBusinessData);
+            const invalidBusinessData = clone(initialTestBusinessState);
             invalidBusinessData.hours.monday.intervals = [{ open: '14:00', close: '12:00' }];
 
             await expect(mockBackend.updateBusinessData(invalidBusinessData))
@@ -205,7 +220,7 @@ describe('API Integration Tests - Business Logic', () => {
         });
 
         it('should throw an error if intervals overlap', async () => {
-            const overlappingBusinessData = clone(testBusinessData);
+            const overlappingBusinessData = clone(initialTestBusinessState);
             overlappingBusinessData.hours.tuesday.intervals = [
                 { open: '09:00', close: '12:00' },
                 { open: '11:00', close: '15:00' } // Solapamiento de 11:00 a 12:00
