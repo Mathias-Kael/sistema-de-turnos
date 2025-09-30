@@ -10,17 +10,15 @@ type Action =
     | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string; logoUrl: string } }
     | { type: 'SET_PHONE'; payload: string }
     | { type: 'SET_BRANDING'; payload: Branding }
-    | { type: 'SET_SERVICES'; payload: Service[] }
     | { type: 'ADD_SERVICE'; payload: Service }
     | { type: 'UPDATE_SERVICE'; payload: Service }
     | { type: 'DELETE_SERVICE'; payload: string }
     | { type: 'SET_HOURS'; payload: Hours }
-    | { type: 'SET_EMPLOYEES'; payload: Employee[] }
     | { type: 'ADD_EMPLOYEE'; payload: Employee }
     | { type: 'UPDATE_EMPLOYEE'; payload: Employee }
     | { type: 'DELETE_EMPLOYEE'; payload: string }
     | { type: 'UPDATE_EMPLOYEE_HOURS'; payload: { employeeId: string; hours: Hours } }
-    | { type: 'CREATE_BOOKING'; payload: Booking }
+    | { type: 'CREATE_BOOKING'; payload: Omit<Booking, 'id'> }
     | { type: 'UPDATE_BOOKING'; payload: Booking }
     | { type: 'DELETE_BOOKING'; payload: string };
 
@@ -33,53 +31,7 @@ const businessReducer = (state: Business, action: Action): Business => {
     switch (action.type) {
         case 'HYDRATE_STATE':
         case 'UPDATE_BUSINESS':
-            return { ...state, ...action.payload };
-        case 'SET_BUSINESS_INFO':
-            return { ...state, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
-        case 'SET_PHONE':
-            return { ...state, phone: action.payload };
-        case 'SET_BRANDING':
-            return { ...state, branding: action.payload };
-        case 'SET_SERVICES':
-            return { ...state, services: action.payload };
-        case 'ADD_SERVICE':
-            return { ...state, services: [...state.services, action.payload] };
-        case 'UPDATE_SERVICE':
-            return { ...state, services: state.services.map(s => s.id === action.payload.id ? action.payload : s) };
-        case 'DELETE_SERVICE':
-            return { ...state, services: state.services.filter(s => s.id !== action.payload) };
-        case 'SET_HOURS':
-            return { ...state, hours: action.payload };
-        case 'SET_EMPLOYEES':
-            return { ...state, employees: action.payload };
-        case 'ADD_EMPLOYEE':
-            return { ...state, employees: [...state.employees, action.payload] };
-        case 'UPDATE_EMPLOYEE':
-            return { ...state, employees: state.employees.map(emp => emp.id === action.payload.id ? action.payload : emp) };
-        case 'DELETE_EMPLOYEE':
-            return {
-                ...state,
-                employees: state.employees.filter(emp => emp.id !== action.payload),
-                services: state.services.map(service => ({
-                    ...service,
-                    employeeIds: service.employeeIds.filter(id => id !== action.payload)
-                }))
-            };
-        case 'UPDATE_EMPLOYEE_HOURS':
-            return {
-                ...state,
-                employees: state.employees.map(emp =>
-                    emp.id === action.payload.employeeId
-                        ? { ...emp, hours: action.payload.hours }
-                        : emp
-                ),
-            };
-        case 'CREATE_BOOKING':
-            return { ...state, bookings: [...state.bookings, action.payload] };
-        case 'UPDATE_BOOKING':
-            return { ...state, bookings: state.bookings.map(b => b.id === action.payload.id ? action.payload : b) };
-        case 'DELETE_BOOKING':
-            return { ...state, bookings: state.bookings.filter(b => b.id !== action.payload) };
+            return action.payload;
         default:
             return state;
     }
@@ -112,7 +64,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const asyncDispatch = async (action: Action) => {
         try {
-            const currentState = stateRef.current; // Obtener el estado más reciente
+            const currentState = stateRef.current;
 
             switch (action.type) {
                 case 'UPDATE_BUSINESS':
@@ -120,63 +72,76 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
                     break;
                 case 'ADD_SERVICE':
-                    const addedService = await mockBackend.addService(action.payload);
-                    dispatch({ type: 'ADD_SERVICE', payload: addedService });
+                    const updatedBusinessAfterAddService = await mockBackend.addService(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterAddService });
                     break;
                 case 'UPDATE_SERVICE':
-                    const updatedService = await mockBackend.updateService(action.payload);
-                    dispatch({ type: 'UPDATE_SERVICE', payload: updatedService });
+                    const updatedBusinessAfterUpdateService = await mockBackend.updateService(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateService });
                     break;
                 case 'DELETE_SERVICE':
-                    await mockBackend.deleteService(action.payload);
-                    dispatch(action);
+                    const updatedBusinessAfterDeleteService = await mockBackend.deleteService(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteService });
                     break;
                 case 'ADD_EMPLOYEE':
-                    const addedEmployee = await mockBackend.addEmployee(action.payload);
-                    dispatch({ type: 'ADD_EMPLOYEE', payload: addedEmployee });
+                    const updatedBusinessAfterAddEmployee = await mockBackend.addEmployee(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterAddEmployee });
                     break;
                 case 'UPDATE_EMPLOYEE':
-                    const updatedEmployee = await mockBackend.updateEmployee(action.payload);
-                    dispatch({ type: 'UPDATE_EMPLOYEE', payload: updatedEmployee });
+                    const updatedBusinessAfterUpdateEmployee = await mockBackend.updateEmployee(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateEmployee });
                     break;
                 case 'DELETE_EMPLOYEE':
-                    await mockBackend.deleteEmployee(action.payload);
-                    dispatch(action);
+                    const updatedBusinessAfterDeleteEmployee = await mockBackend.deleteEmployee(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteEmployee });
                     break;
                 case 'UPDATE_EMPLOYEE_HOURS':
                     const employeeToUpdateHours = currentState.employees.find(e => e.id === action.payload.employeeId);
                     if (employeeToUpdateHours) {
-                        const updatedEmp = await mockBackend.updateEmployee({ ...employeeToUpdateHours, hours: action.payload.hours });
-                        dispatch({ type: 'UPDATE_EMPLOYEE', payload: updatedEmp });
+                        const updatedBusinessAfterEmployeeHours = await mockBackend.updateEmployee({ ...employeeToUpdateHours, hours: action.payload.hours });
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterEmployeeHours });
                     }
                     break;
                 case 'CREATE_BOOKING':
-                    const createdBooking = await mockBackend.createBooking(action.payload);
-                    dispatch({ type: 'CREATE_BOOKING', payload: createdBooking });
+                    const updatedBusinessAfterCreateBooking = await mockBackend.createBooking(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreateBooking });
                     break;
                 case 'UPDATE_BOOKING':
-                    const updatedBooking = await mockBackend.updateBooking(action.payload);
-                    dispatch({ type: 'UPDATE_BOOKING', payload: updatedBooking });
+                    const updatedBusinessAfterUpdateBooking = await mockBackend.updateBooking(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateBooking });
                     break;
                 case 'DELETE_BOOKING':
-                    await mockBackend.deleteBooking(action.payload);
-                    dispatch(action);
+                    const updatedBusinessAfterDeleteBooking = await mockBackend.deleteBooking(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteBooking });
                     break;
-                // Acciones que actualizan el objeto Business completo
-                case 'SET_HOURS':
                 case 'SET_BUSINESS_INFO':
+                    const updatedBusinessInfo = { ...currentState, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
+                    const updatedBusinessFromInfo = await mockBackend.updateBusinessData(updatedBusinessInfo);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromInfo });
+                    break;
                 case 'SET_PHONE':
+                    const updatedBusinessPhone = { ...currentState, phone: action.payload };
+                    const updatedBusinessFromPhone = await mockBackend.updateBusinessData(updatedBusinessPhone);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromPhone });
+                    break;
                 case 'SET_BRANDING':
-                    const newState = businessReducer(currentState, action);
-                    await mockBackend.updateBusinessData(newState);
-                    dispatch(action);
+                    const updatedBusinessBranding = { ...currentState, branding: action.payload };
+                    const updatedBusinessFromBranding = await mockBackend.updateBusinessData(updatedBusinessBranding);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromBranding });
+                    break;
+                case 'SET_HOURS':
+                    const updatedBusinessHours = { ...currentState, hours: action.payload };
+                    const updatedBusinessFromHours = await mockBackend.updateBusinessData(updatedBusinessHours);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromHours });
                     break;
                 default:
-                    dispatch(action); // Para acciones puramente locales
+                    // Esta rama es para HYDRATE_STATE, que no necesita lógica asíncrona.
+                    // El reducer se encarga de ello.
+                    dispatch(action);
             }
         } catch (error) {
             console.error("Backend operation failed:", error);
-            throw error; // Re-lanzar para que el componente pueda manejarlo
+            throw error;
         }
     };
 

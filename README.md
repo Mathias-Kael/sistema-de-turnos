@@ -72,6 +72,15 @@ Este proyecto ha pasado por varias fases de refactorización y mejora para optim
     *   **Optimización de Estado (`components/admin/ServiceAssignmentEditor.tsx`):** El componente fue envuelto con `React.memo` y la función `handleToggleEmployee` fue memorizada con `useCallback` para optimizar el rendimiento.
     *   **Rendimiento (`context/BusinessContext.tsx`):** Implementación de `useMemo` para memorizar valores derivados del estado (`totalEmployees`, `activeServices`), mejorando el rendimiento general del contexto.
 
+#### **Fase 6: Asignación Inteligente de Empleados y Robustez de Reservas**
+*   **Objetivo:** Resolver el problema de sobre-reserva con la opción "Cualquiera disponible" y mejorar la lógica de disponibilidad.
+*   **Logros Principales:**
+    *   **Corrección de Bug Crítico:** Se solucionó el problema donde las reservas con `employeeId === 'any'` no asignaban un empleado real, lo que podía llevar a sobre-reservas.
+    *   **Refactorización de Lógica de Asignación:** Se introdujo la función centralizada [`findAvailableEmployeeForSlot`](services/api.ts:99) en [`services/api.ts`](services/api.ts:1). Esta función ahora maneja la lógica de búsqueda de un empleado elegible y disponible, mejorando la mantenibilidad y evitando la duplicación de código.
+    *   **Integración en `ConfirmationModal`:** El componente [`ConfirmationModal.tsx`](components/common/ConfirmationModal.tsx:1) fue actualizado para utilizar [`findAvailableEmployeeForSlot`](services/api.ts:99) al confirmar reservas con `employeeId === 'any'`, asegurando que cada reserva tenga un empleado asignado.
+    *   **Mejora en `getAvailableSlots`:** Se corrigió un bug en `getAvailableSlots` que permitía mostrar horarios para empleados no calificados para un servicio específico, mejorando la precisión de la disponibilidad.
+    *   **Pruebas de Integración Robustas:** Se añadieron y ajustaron pruebas de integración en [`services/api.integration.test.ts`](services/api.integration.test.ts:1) para verificar el correcto funcionamiento del flujo "Cualquiera disponible", el bloqueo de turnos y la ausencia de regresiones.
+
 ---
 
 ## 🚀 Cómo Empezarlo

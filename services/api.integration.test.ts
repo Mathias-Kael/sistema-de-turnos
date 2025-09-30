@@ -1,5 +1,5 @@
 import { mockBackend } from './mockBackend';
-import { getAvailableSlots } from './api';
+import { getAvailableSlots, findAvailableEmployeeForSlot } from './api';
 import { Business, Booking, Service, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { MOCK_BOOKINGS } from './mockData';
@@ -229,6 +229,109 @@ describe('API Integration Tests - Business Logic', () => {
             await expect(mockBackend.updateBusinessData(overlappingBusinessData))
                 .rejects
                 .toThrow('Los intervalos de horario para el día tuesday se solapan.');
+        });
+    });
+
+    describe('findAvailableEmployeeForSlot Scenarios', () => {
+        let testDate: Date;
+        let service: Service;
+        let totalDuration: number;
+
+        beforeEach(() => {
+            testDate = new Date('2025-10-20T10:00:00.000Z'); // Lunes
+            service = initialTestBusinessState.services.find(s => s.id === 's1')!; // Lavado Básico (30 min)
+            totalDuration = service.duration + service.buffer; // 30 + 0 = 30
+
+            // Para estos tests, aseguramos que SOLO Carlos (e1) y Lucía (e2) pueden hacer el servicio 's1'
+            const serviceToModify = initialTestBusinessState.services.find(s => s.id === 's1');
+            if (serviceToModify) {
+                serviceToModify.employeeIds = ['e1', 'e2'];
+            }
+            localStorage.setItem('businessData', JSON.stringify(initialTestBusinessState));
+            mockBackend.loadDataForTests();
+        });
+
+        it('should return the first qualified and available employee when multiple are free', () => {
+            const availableEmployee = findAvailableEmployeeForSlot(testDate, '10:00', totalDuration, [service], initialTestBusinessState);
+            
+            // Esperamos que devuelva a Carlos (e1) porque es el primero en la lista de empleados calificados
+            expect(availableEmployee).not.toBeNull();
+            expect(availableEmployee?.id).toBe('e1');
+        });
+
+        it('should return the next available employee if the first one is booked', () => {
+            // Escenario: Carlos (e1) tiene una reserva de 10:00 a 10:30
+            const businessWithBooking = clone(initialTestBusinessState);
+            businessWithBooking.bookings.push({
+                id: 'booking-e1',
+                date: testDate.toISOString().split('T')[0],
+                start: '10:00',
+                end: '10:30',
+                employeeId: 'e1',
+                client: { name: 'Test Client', email: '', phone: '' },
+                services: [service],
+                status: 'confirmed'
+            });
+
+            const availableEmployee = findAvailableEmployeeForSlot(testDate, '10:00', totalDuration, [service], businessWithBooking);
+
+            // Carlos está ocupado, así que debería devolver a Lucía (e2)
+            expect(availableEmployee).not.toBeNull();
+            expect(availableEmployee?.id).toBe('e2');
+        });
+
+        it('should return null if all qualified employees are booked', () => {
+            // Escenario: Carlos (e1) y Lucía (e2) tienen reservas que chocan con el slot de 10:00
+            const businessWithBookings = clone(initialTestBusinessState);
+            businessWithBookings.bookings.push({
+                id: 'booking-e1',
+                date: testDate.toISOString().split('T')[0],
+                start: '09:45',
+                end: '10:15', // Ocupa el slot de 10:00
+                employeeId: 'e1',
+                client: { name: 'Client 1', email: '', phone: '' },
+                services: [service],
+                status: 'confirmed'
+            });
+            businessWithBookings.bookings.push({
+                id: 'booking-e2',
+                date: testDate.toISOString().split('T')[0],
+                start: '10:00',
+                end: '10:30',
+                employeeId: 'e2',
+                client: { name: 'Client 2', email: '', phone: '' },
+                services: [service],
+                status: 'confirmed'
+            });
+
+            const availableEmployee = findAvailableEmployeeForSlot(testDate, '10:00', totalDuration, [service], businessWithBookings);
+
+            // Ambos están ocupados, así que no debería encontrar a nadie
+            expect(availableEmployee).toBeNull();
+        });
+
+        it('should not return an employee who is not qualified for the service', () => {
+            // Escenario: Solo Carlos (e1) puede hacer el servicio. Él está ocupado.
+            const businessWithBooking = clone(initialTestBusinessState);
+            const serviceOnlyForE1 = businessWithBooking.services.find(s => s.id === 's1')!;
+            serviceOnlyForE1.employeeIds = ['e1']; // Solo Carlos puede
+
+            businessWithBooking.bookings.push({
+                id: 'booking-e1',
+                date: testDate.toISOString().split('T')[0],
+                start: '10:00',
+                end: '10:30',
+                employeeId: 'e1',
+                client: { name: 'Test Client', email: '', phone: '' },
+                services: [serviceOnlyForE1],
+                status: 'confirmed'
+            });
+
+            const availableEmployee = findAvailableEmployeeForSlot(testDate, '10:00', totalDuration, [serviceOnlyForE1], businessWithBooking);
+
+            // Lucía (e2) está libre, pero no calificada. Carlos está calificado, pero ocupado.
+            // El resultado debe ser null.
+            expect(availableEmployee).toBeNull();
         });
     });
 });

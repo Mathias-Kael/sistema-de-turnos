@@ -6,18 +6,7 @@ import { INITIAL_BUSINESS_DATA } from '../constants';
 import { Employee } from '../types';
 
 // Mock del backend para espiar sus métodos
-jest.mock('../services/mockBackend', () => ({
-    mockBackend: {
-        getBusinessData: jest.fn(),
-        updateBusinessData: jest.fn(),
-        addEmployee: jest.fn(),
-        updateEmployee: jest.fn(),
-        deleteEmployee: jest.fn(),
-        addService: jest.fn(),
-        updateService: jest.fn(),
-        deleteService: jest.fn(),
-    },
-}));
+jest.mock('../services/mockBackend');
 
 const mockGetBusinessData = mockBackend.getBusinessData as jest.Mock;
 const mockUpdateBusinessData = mockBackend.updateBusinessData as jest.Mock;
@@ -31,15 +20,15 @@ describe('BusinessContext', () => {
         jest.clearAllMocks();
         // Simular una carga inicial exitosa por defecto
         mockGetBusinessData.mockResolvedValue(INITIAL_BUSINESS_DATA);
+        // Mock para updateBusinessData que devuelve lo que se le pasa
+        mockUpdateBusinessData.mockImplementation(data => Promise.resolve(data));
     });
 
     it('should load initial state from the backend', async () => {
         const { result } = renderHook(() => useBusinessState(), { wrapper });
 
         // Esperar a que la carga inicial se complete
-        await act(async () => {
-            // No necesitamos waitForNextUpdate, el act ya espera las promesas
-        });
+        await act(async () => {});
         
         expect(mockBackend.getBusinessData).toHaveBeenCalledTimes(1);
         expect(result.current.name).toBe(INITIAL_BUSINESS_DATA.name);
@@ -51,16 +40,16 @@ describe('BusinessContext', () => {
             dispatch: useBusinessDispatch(),
         }), { wrapper });
 
-        // Esperar a la carga inicial
-        await act(async () => {});
+        await act(async () => {}); // Esperar a la carga inicial
 
         const newPhone = '111-222-3333';
+        
         await act(async () => {
             await result.current.dispatch({ type: 'SET_PHONE', payload: newPhone });
         });
 
         expect(result.current.state.phone).toBe(newPhone);
-        expect(mockUpdateBusinessData).toHaveBeenCalledWith(expect.objectContaining({ ...INITIAL_BUSINESS_DATA, phone: newPhone }));
+        expect(mockUpdateBusinessData).toHaveBeenCalledWith(expect.objectContaining({ phone: newPhone }));
     });
 
     it('should handle an asynchronous action like ADD_EMPLOYEE', async () => {
@@ -72,7 +61,12 @@ describe('BusinessContext', () => {
         await act(async () => {}); // Esperar a la carga inicial
 
         const newEmployee: Employee = { id: 'e4', name: 'Nuevo Empleado', avatarUrl: '', hours: INITIAL_BUSINESS_DATA.hours };
-        mockAddEmployee.mockResolvedValue(newEmployee); // Simular respuesta exitosa del backend
+        
+        // El mock ahora debe devolver el estado completo del negocio
+        mockAddEmployee.mockResolvedValue({
+            ...INITIAL_BUSINESS_DATA,
+            employees: [...INITIAL_BUSINESS_DATA.employees, newEmployee],
+        });
 
         await act(async () => {
             await result.current.dispatch({ type: 'ADD_EMPLOYEE', payload: newEmployee });

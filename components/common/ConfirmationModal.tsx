@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Service, Business, Booking } from '../../types';
+import { Service, Business, Booking, Employee } from '../../types';
 import { formatDuration } from '../../utils/format';
 import { generateICS } from '../../utils/ics';
 import { useBusinessDispatch } from '../../context/BusinessContext';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
+import { findAvailableEmployeeForSlot } from '../../services/api';
 
 interface ConfirmationModalProps {
     date: Date;
@@ -22,18 +23,16 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [assignedEmployee, setAssignedEmployee] = useState<Employee | null>(null);
     
     const totalDuration = useMemo(() => selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0), [selectedServices]);
     const totalPrice = useMemo(() => selectedServices.reduce((acc, s) => acc + s.price, 0), [selectedServices]);
 
     const employee = useMemo(() => {
-        if (employeeId === 'any') {
-            // En un caso real, la lógica para 'any' podría ser más compleja.
-            // Por ahora, si es 'any', no asignamos un empleado específico en la confirmación.
-            return null;
-        }
+        if (assignedEmployee) return assignedEmployee;
+        if (employeeId === 'any') return null;
         return business.employees.find(e => e.id === employeeId);
-    }, [employeeId, business.employees]);
+    }, [employeeId, business.employees, assignedEmployee]);
 
     const handleConfirm = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,6 +46,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             const endTimeInMinutes = startTimeInMinutes + totalDuration;
             const endTime = minutesToTime(endTimeInMinutes);
 
+            let finalEmployeeId = employeeId;
+            
+            if (employeeId === 'any') {
+                const availableEmployee = findAvailableEmployeeForSlot(date, slot, totalDuration, selectedServices, business);
+                if (availableEmployee) {
+                    finalEmployeeId = availableEmployee.id;
+                    setAssignedEmployee(availableEmployee);
+                } else {
+                    setError('Este horario ya no está disponible. Por favor, selecciona otro.');
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             const newBooking: Omit<Booking, 'id'> = {
                 date: date.toISOString().split('T')[0],
                 start: slot,
@@ -57,7 +70,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                     email: clientEmail,
                     phone: clientPhone,
                 },
-                employeeId: employeeId,
+                employeeId: finalEmployeeId,
                 status: 'confirmed',
             };
 

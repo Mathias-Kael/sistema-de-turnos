@@ -1,5 +1,5 @@
 import { Business, Service, Booking, Employee } from '../types';
-import { calcularTurnosDisponibles, ReservaOcupada } from '../utils/availability';
+import { calcularTurnosDisponibles, ReservaOcupada, timeToMinutes } from '../utils/availability';
 // import { mockBackend } from './mockBackend'; // No longer needed for getAvailableSlots
 
 /**
@@ -64,6 +64,12 @@ export const getAvailableSlots = async (
             return [];
         }
 
+        // Verificar que el empleado seleccionado puede realizar todos los servicios.
+        const isQualified = services.every(service => service.employeeIds.includes(selectedEmployee.id));
+        if (!isQualified) {
+            return [];
+        }
+
         const employeeHoursForDay = selectedEmployee.hours?.[dayOfWeek];
         const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
             ? employeeHoursForDay
@@ -91,4 +97,48 @@ export const getAvailableSlots = async (
 
     // 5. Return sorted unique available slots
     return Array.from(finalAvailableSlots).sort();
+};
+
+/**
+ * Finds an available employee for a specific time slot.
+ */
+export const findAvailableEmployeeForSlot = (
+    date: Date,
+    slot: string,
+    totalDuration: number,
+    services: Service[],
+    business: Business
+): Employee | null => {
+    const dateString = date.toISOString().split('T')[0];
+    const slotStartMinutes = timeToMinutes(slot);
+    const slotEndMinutes = slotStartMinutes + totalDuration;
+
+    // 1. Find employees qualified for all selected services
+    const qualifiedEmployees = business.employees.filter(emp =>
+        services.every(service => service.employeeIds.includes(emp.id))
+    );
+
+    // 2. Find an employee who is available during the requested slot
+    for (const emp of qualifiedEmployees) {
+        // Find all bookings for this employee on the given day
+        const employeeBookings = business.bookings.filter(
+            b => b.employeeId === emp.id && b.date === dateString
+        );
+
+        // Check for any overlapping booking
+        const isOverlapping = employeeBookings.some(booking => {
+            const bookingStartMinutes = timeToMinutes(booking.start);
+            const bookingEndMinutes = timeToMinutes(booking.end);
+            // Check for overlap: (StartA < EndB) and (EndA > StartB)
+            return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes;
+        });
+
+        // If there's no overlap, this employee is available
+        if (!isOverlapping) {
+            return emp; // Return the first available employee found
+        }
+    }
+
+    // If no available employee is found
+    return null;
 };

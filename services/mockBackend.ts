@@ -103,81 +103,97 @@ export const mockBackend = {
         return state.bookings.filter(booking => booking.date === dateString);
     },
 
-    createBooking: async (newBooking: Booking): Promise<Booking> => {
+    createBooking: async (newBookingData: Omit<Booking, 'id'>): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        if (!newBooking.id) {
-            newBooking.id = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        }
-        state.bookings.push(newBooking);
+        const newBooking: Booking = {
+            ...newBookingData,
+            id: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        };
+        const updatedState = { ...state, bookings: [...state.bookings, newBooking] };
+        state = updatedState;
         saveState(state);
-        return newBooking;
+        return state;
     },
 
-    updateBooking: async (updatedBooking: Booking): Promise<Booking> => {
+    updateBooking: async (updatedBooking: Booking): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.bookings = state.bookings.map(b => b.id === updatedBooking.id ? updatedBooking : b);
+        const updatedState = { ...state, bookings: state.bookings.map(b => b.id === updatedBooking.id ? updatedBooking : b) };
+        state = updatedState;
         saveState(state);
-        return updatedBooking;
+        return state;
     },
 
-    deleteBooking: async (bookingId: string): Promise<void> => {
+    deleteBooking: async (bookingId: string): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.bookings = state.bookings.filter(b => b.id !== bookingId);
+        const updatedState = { ...state, bookings: state.bookings.filter(b => b.id !== bookingId) };
+        state = updatedState;
         saveState(state);
+        return state;
     },
 
-    addEmployee: async (employee: Employee): Promise<Employee> => {
+    addEmployee: async (employee: Employee): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.employees.push(employee);
+        const updatedState = { ...state, employees: [...state.employees, employee] };
+        state = updatedState;
         saveState(state);
-        return employee;
+        return state;
     },
 
-    updateEmployee: async (updatedEmployee: Employee): Promise<Employee> => {
+    updateEmployee: async (updatedEmployee: Employee): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.employees = state.employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp);
+        const updatedState = { ...state, employees: state.employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp) };
+        state = updatedState;
         saveState(state);
-        return updatedEmployee;
+        return state;
     },
 
-    deleteEmployee: async (employeeId: string): Promise<void> => {
+    deleteEmployee: async (employeeId: string): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         const today = new Date().toISOString().split('T')[0];
         const hasFutureBookings = state.bookings.some(b => b.employeeId === employeeId && b.date >= today);
         if (hasFutureBookings) {
             throw new Error(`No se puede eliminar el empleado porque tiene reservas futuras.`);
         }
-        state.employees = state.employees.filter(emp => emp.id !== employeeId);
-        state.services = state.services.map(service => ({
-            ...service,
-            employeeIds: service.employeeIds.filter(id => id !== employeeId)
-        }));
+        const updatedState = {
+            ...state,
+            employees: state.employees.filter(emp => emp.id !== employeeId),
+            services: state.services.map(service => ({
+                ...service,
+                employeeIds: service.employeeIds.filter(id => id !== employeeId)
+            }))
+        };
+        state = updatedState;
         saveState(state);
+        return state;
     },
 
-    addService: async (service: Service): Promise<Service> => {
+    addService: async (service: Service): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.services.push(service);
+        const updatedState = { ...state, services: [...state.services, service] };
+        state = updatedState;
         saveState(state);
-        return service;
+        return state;
     },
 
-    updateService: async (updatedService: Service): Promise<Service> => {
+    updateService: async (updatedService: Service): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        state.services = state.services.map(s => s.id === updatedService.id ? updatedService : s);
+        const updatedState = { ...state, services: state.services.map(s => s.id === updatedService.id ? updatedService : s) };
+        state = updatedState;
         saveState(state);
-        return updatedService;
+        return state;
     },
 
-    deleteService: async (serviceId: string): Promise<void> => {
+    deleteService: async (serviceId: string): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         const today = new Date().toISOString().split('T')[0];
         const hasFutureBookings = state.bookings.some(b => b.date >= today && b.services.some(s => s.id === serviceId));
         if (hasFutureBookings) {
             throw new Error(`No se puede eliminar el servicio porque tiene reservas futuras.`);
         }
-        state.services = state.services.filter(s => s.id !== serviceId);
+        const updatedState = { ...state, services: state.services.filter(s => s.id !== serviceId) };
+        state = updatedState;
         saveState(state);
+        return state;
     },
 
     loadDataForTests: () => {
