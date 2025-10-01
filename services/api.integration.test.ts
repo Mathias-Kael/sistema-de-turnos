@@ -110,6 +110,32 @@ describe('API Integration Tests - Business Logic', () => {
             expect(slots).toContain('09:30');
             expect(slots).toContain('11:00');
         });
+
+        it('should return no slots if business is closed, even if an employee has personal hours', async () => {
+            // Escenario: El negocio cierra los martes, pero un empleado se configura un horario personal.
+            const businessWithClosedDay = clone(initialTestBusinessState);
+            
+            // 1. Cerrar el negocio los martes
+            businessWithClosedDay.hours.tuesday.enabled = false;
+            
+            // 2. Darle a un empleado un horario personal ese día
+            const employeeWithHours = businessWithClosedDay.employees.find(e => e.id === 'e1')!;
+            employeeWithHours.hours = {
+                ...employeeWithHours.hours,
+                tuesday: { enabled: true, intervals: [{ open: '10:00', close: '12:00' }] }
+            };
+
+            // 3. Intentar obtener turnos para ese martes
+            const service = businessWithClosedDay.services.find(s => s.id === 's1')!;
+            let testDate = new Date();
+            const dayOffset = (2 - testDate.getDay() + 7) % 7; // Offset para llegar al próximo martes
+            testDate.setDate(testDate.getDate() + dayOffset);
+
+            const slots = await getAvailableSlots(testDate, [service], businessWithClosedDay, 'any');
+
+            // El resultado debe ser vacío porque el negocio está cerrado.
+            expect(slots).toEqual([]);
+        });
     });
 
     describe('Entity Modification Scenarios', () => {
@@ -332,6 +358,112 @@ describe('API Integration Tests - Business Logic', () => {
             // Lucía (e2) está libre, pero no calificada. Carlos está calificado, pero ocupado.
             // El resultado debe ser null.
             expect(availableEmployee).toBeNull();
+        });
+
+        it('should return the correct employee when only one is on schedule', () => {
+            // Escenario: Carlos (e1) y Lucía (e2) están calificados.
+            // Carlos trabaja de 14:00 a 18:00. Lucía de 09:00 a 13:00.
+            // El slot solicitado es a las 10:00. Debería elegir a Lucía.
+            const businessWithCustomHours = clone(initialTestBusinessState);
+            
+            const carlos = businessWithCustomHours.employees.find(e => e.id === 'e1')!;
+            const lucia = businessWithCustomHours.employees.find(e => e.id === 'e2')!;
+
+            // Horario de Carlos (solo tarde)
+            carlos.hours = {
+                ...carlos.hours,
+                monday: { enabled: true, intervals: [{ open: '14:00', close: '18:00' }] }
+            };
+            // Horario de Lucía (solo mañana)
+            lucia.hours = {
+                ...lucia.hours,
+                monday: { enabled: true, intervals: [{ open: '09:00', close: '13:00' }] }
+            };
+
+            const availableEmployee = findAvailableEmployeeForSlot(testDate, '10:00', totalDuration, [service], businessWithCustomHours);
+
+            // Aunque Carlos es el primero en la lista, no está de turno. Debe devolver a Lucía.
+            expect(availableEmployee).not.toBeNull();
+            expect(availableEmployee?.id).toBe('e2');
+        });
+    });
+
+    describe('Advanced findAvailableEmployeeForSlot Scenarios', () => {
+        it('should assign the correct employee when their schedules do not overlap', () => {
+            // Escenario del bug reportado:
+            // Carlos (e1) trabaja de 09:00-18:00. Carla (e2) de 19:00-21:00.
+            // El turno es a las 19:00. Debe ser asignado a Carla.
+            const businessWithNonOverlappingHours = clone(initialTestBusinessState);
+            const service = businessWithNonOverlappingHours.services.find(s => s.id === 's1')!;
+            const totalDuration = service.duration + service.buffer;
+
+            const carlos = businessWithNonOverlappingHours.employees.find(e => e.id === 'e1')!;
+            const carla = businessWithNonOverlappingHours.employees.find(e => e.id === 'e2')!;
+            
+            // Asegurarse que ambos están calificados
+            service.employeeIds = ['e1', 'e2'];
+
+            // Horario de Carlos (mañana/tarde)
+            carlos.hours = {
+                ...carlos.hours,
+                monday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] }
+            };
+            // Horario de Carla (noche)
+            carla.hours = {
+                ...carla.hours,
+                monday: { enabled: true, intervals: [{ open: '19:00', close: '21:00' }] }
+            };
+
+            const testDate = new Date('2025-10-20T10:00:00.000Z'); // Lunes
+
+            // Primero, verificamos que getAvailableSlots ofrece el turno de las 19:00 (gracias a Carla)
+            const availableSlots = getAvailableSlots(testDate, [service], businessWithNonOverlappingHours, 'any');
+            expect(availableSlots).resolves.toContain('19:00');
+
+            // Ahora, el test clave: a quién se le asigna el turno de las 19:00.
+            const assignedEmployee = findAvailableEmployeeForSlot(testDate, '19:00', totalDuration, [service], businessWithNonOverlappingHours);
+
+            // Debe ser Carla (e2), no Carlos (e1).
+            expect(assignedEmployee).not.toBeNull();
+            expect(assignedEmployee?.id).toBe('e2');
+        });
+
+        it('should assign correct employee when one has a split schedule (bug reproduction)', () => {
+            // Escenario del bug reportado con el horario partido de Carlos.
+            const businessData = clone(initialTestBusinessState);
+            const service = businessData.services.find(s => s.id === 's1')!;
+            const totalDuration = service.duration + service.buffer;
+
+            const carlos = businessData.employees.find(e => e.id === 'e1')!;
+            const carla = businessData.employees.find(e => e.id === 'e2')!;
+            
+            service.employeeIds = ['e1', 'e2'];
+
+            // Horario de Carlos para el Jueves (con hueco de 17:00 a 20:00)
+            carlos.hours = {
+                ...carlos.hours,
+                thursday: { enabled: true, intervals: [
+                    { open: '09:00', close: '12:00' },
+                    { open: '12:10', close: '17:00' },
+                    { open: '20:00', close: '23:59' }
+                ]}
+            };
+            // Horario de Carla para el Jueves (cubre el hueco)
+            carla.hours = {
+                ...carla.hours,
+                thursday: { enabled: true, intervals: [{ open: '17:00', close: '21:00' }] }
+            };
+
+            // Forzar la fecha a ser un Jueves (ej. 2 de Octubre de 2025)
+            const testDate = new Date('2025-10-02T12:00:00.000Z'); // Jueves
+            
+            // Test clave: a quién se le asigna el turno de las 18:00.
+            const assignedEmployee = findAvailableEmployeeForSlot(testDate, '18:00', totalDuration, [service], businessData);
+
+            // Debe ser Carla (e2), no Carlos (e1).
+            // Esta es la aserción que esperamos que falle.
+            expect(assignedEmployee).not.toBeNull();
+            expect(assignedEmployee?.id).toBe('e2');
         });
     });
 });

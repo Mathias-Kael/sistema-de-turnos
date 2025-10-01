@@ -1,5 +1,5 @@
 import { Business, Service, Booking, Employee } from '../types';
-import { calcularTurnosDisponibles, ReservaOcupada, timeToMinutes } from '../utils/availability';
+import { calcularTurnosDisponibles, ReservaOcupada, timeToMinutes, getEffectiveDayHours } from '../utils/availability';
 // import { mockBackend } from './mockBackend'; // No longer needed for getAvailableSlots
 
 /**
@@ -21,6 +21,11 @@ export const getAvailableSlots = async (
     const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()] as keyof Business['hours'];
     const businessHoursForDay = business.hours[dayOfWeek];
 
+    // Si el negocio está cerrado ese día, no hay nada más que hacer.
+    if (!businessHoursForDay.enabled) {
+        return [];
+    }
+
     // 3. Obtener todas las reservas para la fecha seleccionada directamente del objeto Business
     const dateString = date.toISOString().split('T')[0];
     const allBookingsForDay = business.bookings.filter(booking => booking.date === dateString);
@@ -34,13 +39,10 @@ export const getAvailableSlots = async (
         );
 
         for (const emp of qualifiedEmployees) {
-            const employeeHoursForDay = emp.hours?.[dayOfWeek];
-            const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
-                ? employeeHoursForDay
-                : businessHoursForDay;
+            const effectiveHours = getEffectiveDayHours(emp, businessHoursForDay, dayOfWeek);
 
-            if (!effectiveHours || !effectiveHours.enabled || effectiveHours.intervals.length === 0) {
-                continue; // Si no hay horarios definidos, no hay slots disponibles
+            if (!effectiveHours) {
+                continue;
             }
 
             const employeeBookings = allBookingsForDay.filter(b => b.employeeId === emp.id);
@@ -70,13 +72,10 @@ export const getAvailableSlots = async (
             return [];
         }
 
-        const employeeHoursForDay = selectedEmployee.hours?.[dayOfWeek];
-        const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
-            ? employeeHoursForDay
-            : businessHoursForDay;
+        const effectiveHours = getEffectiveDayHours(selectedEmployee, businessHoursForDay, dayOfWeek);
 
-        if (!effectiveHours || !effectiveHours.enabled || effectiveHours.intervals.length === 0) {
-            return []; // Si no hay horarios definidos, no hay slots disponibles
+        if (!effectiveHours) {
+            return [];
         }
 
         const relevantBookings = allBookingsForDay.filter(b => b.employeeId === employeeId);
@@ -109,9 +108,11 @@ export const findAvailableEmployeeForSlot = (
     services: Service[],
     business: Business
 ): Employee | null => {
+    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()] as keyof Business['hours'];
     const dateString = date.toISOString().split('T')[0];
     const slotStartMinutes = timeToMinutes(slot);
     const slotEndMinutes = slotStartMinutes + totalDuration;
+    const businessHoursForDay = business.hours[dayOfWeek];
 
     // 1. Find employees qualified for all selected services
     const qualifiedEmployees = business.employees.filter(emp =>
@@ -120,20 +121,34 @@ export const findAvailableEmployeeForSlot = (
 
     // 2. Find an employee who is available during the requested slot
     for (const emp of qualifiedEmployees) {
-        // Find all bookings for this employee on the given day
+        // A. Check if the employee is scheduled to work during the slot
+        const effectiveHours = getEffectiveDayHours(emp, businessHoursForDay, dayOfWeek);
+        if (!effectiveHours) {
+            continue; // Not scheduled to work at all on this day
+        }
+
+        const isWithinWorkingHours = effectiveHours.intervals.some(interval => {
+            const intervalStartMinutes = timeToMinutes(interval.open);
+            const intervalEndMinutes = timeToMinutes(interval.close);
+            return slotStartMinutes >= intervalStartMinutes && slotEndMinutes <= intervalEndMinutes;
+        });
+
+        if (!isWithinWorkingHours) {
+            continue; // The requested slot is outside of this employee's working hours
+        }
+
+        // B. Check for any overlapping booking
         const employeeBookings = business.bookings.filter(
             b => b.employeeId === emp.id && b.date === dateString
         );
 
-        // Check for any overlapping booking
         const isOverlapping = employeeBookings.some(booking => {
             const bookingStartMinutes = timeToMinutes(booking.start);
             const bookingEndMinutes = timeToMinutes(booking.end);
-            // Check for overlap: (StartA < EndB) and (EndA > StartB)
             return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes;
         });
 
-        // If there's no overlap, this employee is available
+        // If the employee is working and has no overlapping bookings, they are available
         if (!isOverlapping) {
             return emp; // Return the first available employee found
         }

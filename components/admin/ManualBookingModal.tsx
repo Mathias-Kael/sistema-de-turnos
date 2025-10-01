@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Booking, Service } from '../../types';
 import { useBusinessState } from '../../context/BusinessContext';
-import { getAvailableSlots } from '../../services/api';
+import { getAvailableSlots, findAvailableEmployeeForSlot } from '../../services/api';
 
 interface ManualBookingModalProps {
     selectedDate: Date;
@@ -58,18 +58,20 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
             return;
         }
 
+        const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0);
+
         let finalEmployeeId = selectedEmployeeId;
         if (selectedEmployeeId === 'any') {
-            if (eligibleEmployees.length > 0) {
-                finalEmployeeId = eligibleEmployees[0].id; // Asigna al primer empleado elegible
+            const availableEmployee = findAvailableEmployeeForSlot(selectedDate, slot, totalDuration, selectedServices, business);
+            if (availableEmployee) {
+                finalEmployeeId = availableEmployee.id;
             } else {
-                alert("No hay empleados elegibles para realizar los servicios seleccionados.");
+                alert("No se encontró un empleado disponible para este horario. Por favor, verifica los horarios del personal.");
                 return;
             }
         }
 
 
-        const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0);
         const startDate = new Date(`${dateStr}T${slot}:00`);
         const endDate = new Date(startDate.getTime() + totalDuration * 60000);
         const end = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;

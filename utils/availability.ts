@@ -1,4 +1,32 @@
-import { DayHours } from '../types';
+import { DayHours, Employee } from '../types';
+
+/**
+ * Determina el horario laboral efectivo para un empleado en un día específico.
+ * Devuelve el horario personal del empleado si está activado; de lo contrario,
+ * devuelve el horario general del negocio.
+ *
+ * @param employee El empleado para el cual se determinan los horarios.
+ * @param businessHoursForDay El horario del negocio para el día especificado.
+ * @param dayOfWeek El día de la semana (ej. 'monday').
+ * @returns El objeto DayHours efectivo o null si no hay horario aplicable.
+ */
+export const getEffectiveDayHours = (
+    employee: Employee,
+    businessHoursForDay: DayHours,
+    dayOfWeek: keyof Employee['hours']
+): DayHours | null => {
+    const employeeHoursForDay = employee.hours?.[dayOfWeek];
+    const effectiveHours = (employeeHoursForDay && employeeHoursForDay.enabled)
+        ? employeeHoursForDay
+        : businessHoursForDay;
+
+    if (!effectiveHours || !effectiveHours.enabled || effectiveHours.intervals.length === 0) {
+        return null;
+    }
+
+    return effectiveHours;
+};
+
 
 /**
  * Representa una reserva existente. La fecha no se usa en el cálculo
