@@ -171,6 +171,11 @@ export const ServicesEditor: React.FC = () => {
             {editingServiceAssignment && (
                 <ServiceAssignmentEditor
                     service={editingServiceAssignment}
+                    onSave={(updatedEmployeeIds) => {
+                        const serviceToUpdate = { ...editingServiceAssignment, employeeIds: updatedEmployeeIds };
+                        dispatch({ type: 'UPDATE_SERVICE', payload: serviceToUpdate }).catch(e => setError(e.message));
+                        setEditingServiceAssignment(null);
+                    }}
                     onClose={() => setEditingServiceAssignment(null)}
                 />
             )}

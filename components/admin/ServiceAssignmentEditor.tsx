@@ -5,9 +5,10 @@ import { Service, Employee } from '../../types';
 interface ServiceAssignmentEditorProps {
     service: Service;
     onClose: () => void;
+    onSave: (employeeIds: string[]) => void;
 }
 
-const ServiceAssignmentEditor: React.FC<ServiceAssignmentEditorProps> = memo(({ service, onClose }) => {
+const ServiceAssignmentEditor: React.FC<ServiceAssignmentEditorProps> = memo(({ service, onClose, onSave }) => {
     const business = useBusinessState();
     const dispatch = useBusinessDispatch();
     const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<string[]>(service.employeeIds || []);
@@ -34,24 +35,11 @@ const ServiceAssignmentEditor: React.FC<ServiceAssignmentEditorProps> = memo(({ 
         return true;
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!validateAssignments(assignedEmployeeIds)) {
             return;
         }
-        try {
-            const updatedServices = business.services.map(s =>
-                s.id === service.id ? { ...s, employeeIds: assignedEmployeeIds } : s
-            );
-            // Asumiendo que dispatch puede ser asíncrono o que queremos simularlo
-            // En un entorno real, la acción SET_SERVICES podría interactuar con un backend
-            // y por lo tanto podría fallar.
-            await new Promise(resolve => setTimeout(resolve, 100)); // Simular asincronía
-            dispatch({ type: 'SET_SERVICES', payload: updatedServices });
-            onClose();
-        } catch (error) {
-            console.error('Error al guardar asignaciones:', error);
-            alert('Hubo un error al guardar las asignaciones. Inténtalo de nuevo.'); // Notificación de error simple
-        }
+        onSave(assignedEmployeeIds);
     };
 
     return (
