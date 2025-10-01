@@ -6,9 +6,10 @@ interface BookingDetailModalProps {
     employee?: Employee;
     onClose: () => void;
     onUpdate: (updatedBooking: Booking) => void;
+    onDelete: (bookingId: string) => void;
 }
 
-export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, employee, onClose, onUpdate }) => {
+export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, employee, onClose, onUpdate, onDelete }) => {
     const [editedBooking, setEditedBooking] = useState<Booking>(booking);
 
     useEffect(() => {
@@ -75,6 +76,21 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                             Guardar Cambios
                         </button>
                     </div>
+                    {editedBooking.status === 'cancelled' && (
+                        <div className="mt-4">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (window.confirm('¿Estás seguro de que quieres eliminar esta reserva permanentemente? Esta acción no se puede deshacer.')) {
+                                        onDelete(booking.id);
+                                    }
+                                }}
+                                className="w-full bg-state-danger-bg text-state-danger-text font-bold py-3 px-4 rounded-lg hover:bg-state-danger-strong transition-colors"
+                            >
+                                Eliminar Reserva Permanentemente
+                            </button>
+                        </div>
+                    )}
                 </form>
             </div>
         </div>

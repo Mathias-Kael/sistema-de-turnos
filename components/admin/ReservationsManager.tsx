@@ -1,9 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Booking } from '../../types';
+import { Booking, BookingStatus } from '../../types';
 import { BookingCalendar } from './BookingCalendar';
 import { BookingDetailModal } from './BookingDetailModal';
 import { ManualBookingModal } from './ManualBookingModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
+
+const statusColors: Record<BookingStatus, string> = {
+    pending: '#FFD700', // Amarillo
+    confirmed: '#32CD32', // Verde Lima
+    cancelled: '#FF4500', // Rojo Naranja
+};
 
 export const ReservationsManager: React.FC = () => {
     const business = useBusinessState();
@@ -23,8 +29,12 @@ export const ReservationsManager: React.FC = () => {
     }, [selectedDate, business.bookings]);
     
     const bookingsByDate = useMemo(() => {
-        return (business.bookings || []).reduce<Record<string, number>>((acc, booking) => {
-            acc[booking.date] = (acc[booking.date] || 0) + 1;
+        return (business.bookings || []).reduce<Record<string, BookingStatus[]>>((acc, booking) => {
+            const dateStr = booking.date;
+            if (!acc[dateStr]) {
+                acc[dateStr] = [];
+            }
+            acc[dateStr].push(booking.status);
             return acc;
         }, {});
     }, [business.bookings]);
@@ -32,6 +42,15 @@ export const ReservationsManager: React.FC = () => {
     const handleUpdateBooking = async (updatedBooking: Booking) => {
         try {
             await dispatch({ type: 'UPDATE_BOOKING', payload: updatedBooking });
+            setSelectedBooking(null);
+        } catch (e: any) {
+            setError(e.message);
+        }
+    };
+
+    const handleDeleteBooking = async (bookingId: string) => {
+        try {
+            await dispatch({ type: 'DELETE_BOOKING', payload: bookingId });
             setSelectedBooking(null);
         } catch (e: any) {
             setError(e.message);
@@ -85,7 +104,12 @@ export const ReservationsManager: React.FC = () => {
                             {bookingsForSelectedDay.map(booking => {
                                 const employee = business.employees.find(e => e.id === booking.employeeId);
                                 return (
-                                <li key={booking.id} onClick={() => setSelectedBooking(booking)} className="p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover">
+                                <li
+                                    key={booking.id}
+                                    onClick={() => setSelectedBooking(booking)}
+                                    className={`p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover border-l-4 shadow-md`}
+                                    style={{ borderColor: statusColors[booking.status] }}
+                                >
                                     <p className="font-bold text-primary">{booking.start} - {booking.client.name}</p>
                                     <p className="text-sm text-secondary">{booking.services.map(s => s.name).join(', ')}</p>
                                     {employee && <p className="text-xs text-secondary mt-1">Con: {employee.name}</p>}
@@ -107,6 +131,7 @@ export const ReservationsManager: React.FC = () => {
                     employee={business.employees.find(e => e.id === selectedBooking.employeeId)}
                     onClose={() => setSelectedBooking(null)}
                     onUpdate={handleUpdateBooking}
+                    onDelete={handleDeleteBooking}
                 />
             )}
 

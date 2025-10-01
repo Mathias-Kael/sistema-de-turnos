@@ -4,6 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
   --color-primary: #1a202c;
   --color-brand: #2b6cb0;
