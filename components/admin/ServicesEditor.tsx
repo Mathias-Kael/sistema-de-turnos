@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Service } from '../../types';
 import ServiceAssignmentEditor from './ServiceAssignmentEditor';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Button } from '../ui/Button';
+import { Employee } from '../../types'; // Importar Employee
 
 const newServiceTemplate: Omit<Service, 'id'> = {
     name: '',
@@ -21,6 +22,7 @@ export const ServicesEditor: React.FC = () => {
     
     const [isAdding, setIsAdding] = useState(false);
     const [newService, setNewService] = useState(newServiceTemplate);
+    const [newServiceAssignedEmployeeIds, setNewServiceAssignedEmployeeIds] = useState<string[]>([]); // Nuevo estado
     const [editingServiceAssignment, setEditingServiceAssignment] = useState<Service | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -41,14 +43,20 @@ export const ServicesEditor: React.FC = () => {
             setError('El nombre del servicio es obligatorio.');
             return;
         }
+        if (newServiceAssignedEmployeeIds.length === 0) { // Usar el nuevo estado
+            setError('Debes asignar al menos un empleado a este servicio.');
+            return;
+        }
         const serviceToAdd: Service = {
             id: `s${Date.now()}`,
-            ...newService
+            ...newService,
+            employeeIds: newServiceAssignedEmployeeIds, // Asignar los IDs seleccionados
         };
         try {
             await dispatch({ type: 'ADD_SERVICE', payload: serviceToAdd });
             setIsAdding(false);
             setNewService(newServiceTemplate);
+            setNewServiceAssignedEmployeeIds([]); // Reiniciar el estado
         } catch (e: any) {
             setError(e.message);
         }
@@ -69,7 +77,11 @@ export const ServicesEditor: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-primary">Gestión de Servicios</h3>
-                <Button onClick={() => setIsAdding(!isAdding)} variant={isAdding ? 'secondary' : 'primary'}>
+                <Button onClick={() => {
+                    setIsAdding(!isAdding);
+                    setNewService(newServiceTemplate); // Resetear el formulario al cancelar
+                    setNewServiceAssignedEmployeeIds([]); // Resetear los empleados asignados
+                }} variant={isAdding ? 'secondary' : 'primary'}>
                     {isAdding ? 'Cancelar' : 'Añadir Servicio'}
                 </Button>
             </div>
@@ -90,6 +102,37 @@ export const ServicesEditor: React.FC = () => {
                         <input type="checkbox" checked={newService.requiresDeposit} onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} className="rounded accent-primary"/>
                         <span>Requiere depósito</span>
                     </label>
+
+                    {/* Sección de asignación de empleados para nuevo servicio */}
+                    <div className="border border-default p-4 rounded-md bg-background">
+                        <h5 className="font-semibold text-primary mb-2">Asignar Empleados</h5>
+                        {business.employees.length === 0 ? (
+                            <p className="text-secondary">No hay empleados registrados. Por favor, añade empleados primero.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {business.employees.map(employee => (
+                                    <div key={employee.id} className="flex items-center p-2 border border-default rounded-md bg-surface">
+                                        <input
+                                            type="checkbox"
+                                            id={`new-service-employee-${employee.id}`}
+                                            checked={newServiceAssignedEmployeeIds.includes(employee.id)}
+                                            onChange={() => {
+                                                setNewServiceAssignedEmployeeIds(prevIds => {
+                                                    if (prevIds.includes(employee.id)) {
+                                                        return prevIds.filter(id => id !== employee.id);
+                                                    } else {
+                                                        return [...prevIds, employee.id];
+                                                    }
+                                                });
+                                            }}
+                                            className="rounded accent-primary mr-2"
+                                        />
+                                        <label htmlFor={`new-service-employee-${employee.id}`} className="text-primary cursor-pointer">{employee.name}</label>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <Button onClick={handleAddService} className="w-full">Guardar Servicio</Button>
                 </div>
             )}

@@ -389,7 +389,7 @@ describe('API Integration Tests - Business Logic', () => {
     });
 
     describe('Advanced findAvailableEmployeeForSlot Scenarios', () => {
-        it('should assign the correct employee when their schedules do not overlap', () => {
+        it('should assign the correct employee when their schedules do not overlap', async () => {
             // Escenario del bug reportado:
             // Carlos (e1) trabaja de 09:00-18:00. Carla (e2) de 19:00-21:00.
             // El turno es a las 19:00. Debe ser asignado a Carla.
@@ -418,7 +418,7 @@ describe('API Integration Tests - Business Logic', () => {
 
             // Primero, verificamos que getAvailableSlots ofrece el turno de las 19:00 (gracias a Carla)
             const availableSlots = getAvailableSlots(testDate, [service], businessWithNonOverlappingHours, 'any');
-            expect(availableSlots).resolves.toContain('19:00');
+            await expect(availableSlots).resolves.toContain('19:00');
 
             // Ahora, el test clave: a quién se le asigna el turno de las 19:00.
             const assignedEmployee = findAvailableEmployeeForSlot(testDate, '19:00', totalDuration, [service], businessWithNonOverlappingHours);
