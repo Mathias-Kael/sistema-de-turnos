@@ -12,6 +12,7 @@ export interface Employee {
   name: string;
   avatarUrl: string;
   hours: Hours; // Horario individual del empleado
+  whatsapp?: string; // Número de WhatsApp (opcional, formato internacional sugerido)
 }
 
 export interface Service {
