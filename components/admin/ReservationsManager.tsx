@@ -5,11 +5,7 @@ import { BookingDetailModal } from './BookingDetailModal';
 import { ManualBookingModal } from './ManualBookingModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 
-const statusColors: Record<BookingStatus, string> = {
-    pending: '#FFD700', // Amarillo
-    confirmed: '#32CD32', // Verde Lima
-    cancelled: '#FF4500', // Rojo Naranja
-};
+
 
 export const ReservationsManager: React.FC = () => {
     const business = useBusinessState();
@@ -107,10 +103,29 @@ export const ReservationsManager: React.FC = () => {
                                 <li
                                     key={booking.id}
                                     onClick={() => setSelectedBooking(booking)}
-                                    className={`p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover border-l-4 shadow-md`}
-                                    style={{ borderColor: statusColors[booking.status] }}
+                                                                        className={`p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover border-l-4 ${
+                                                                            booking.status === 'pending' ? 'border-yellow-400' :
+                                                                            booking.status === 'confirmed' ? 'border-green-500' :
+                                                                            booking.status === 'cancelled' ? 'border-red-500' :
+                                                                            'border-transparent'
+                                                                        } shadow-md`}
                                 >
-                                    <p className="font-bold text-primary">{booking.start} - {booking.client.name}</p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                                                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border bg-white ${
+                                                                                    booking.status === 'pending' ? 'border-yellow-400 text-yellow-700' :
+                                                                                    booking.status === 'confirmed' ? 'border-green-500 text-green-700' :
+                                                                                    booking.status === 'cancelled' ? 'border-red-500 text-red-700' :
+                                                                                    'border-transparent'
+                                                                                }`}
+                                              aria-label={`Estado: ${booking.status}`}
+                                        >
+                                            {booking.status === 'pending' && 'Pendiente'}
+                                            {booking.status === 'confirmed' && 'Confirmada'}
+                                            {booking.status === 'cancelled' && 'Cancelada'}
+                                            {booking.status === 'completed' && 'Completada'}
+                                        </span>
+                                        <p className="font-bold text-primary m-0">{booking.start} - {booking.client.name}</p>
+                                    </div>
                                     <p className="text-sm text-secondary">{booking.services.map(s => s.name).join(', ')}</p>
                                     {employee && <p className="text-xs text-secondary mt-1">Con: {employee.name}</p>}
                                 </li>
