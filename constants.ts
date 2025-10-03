@@ -25,9 +25,9 @@ export const INITIAL_BUSINESS_DATA: Business = {
         font: "'Poppins', sans-serif",
     },
     employees: [
-        { id: 'e1', name: 'Carlos Gomez', avatarUrl: 'https://i.imgur.com/8Km9t4u.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+        { id: 'e1', name: 'Carlos Gomez', avatarUrl: 'https://i.imgur.com/8Km9t4u.png', whatsapp: '+54 9 11 2222 3333', hours: { ...DEFAULT_HOURS_TEMPLATE } },
         { id: 'e2', name: 'Lucía Fernandez', avatarUrl: 'https://i.imgur.com/DeT4v2s.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
-        { id: 'e3', name: 'Miguel Angel', avatarUrl: 'https://i.imgur.com/tH1iTLA.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+        { id: 'e3', name: 'Miguel Angel', avatarUrl: 'https://i.imgur.com/tH1iTLA.png', whatsapp: '+54 9 11 7777 8888', hours: { ...DEFAULT_HOURS_TEMPLATE } },
     ],
     services: [
         { id: 's1', name: 'Lavado Básico Exterior', description: 'Lavado de carrocería y secado a mano.', duration: 25, buffer: 5, price: 20, employeeIds: ['e1', 'e3'] },

@@ -606,6 +606,35 @@ const storedLink = JSON.parse(localStorage.getItem('shareToken'));
 
 ---
 
+## 🔔 Confirmación por WhatsApp (Actualizado Oct 2025)
+
+Nueva lógica de priorización del destino del enlace de confirmación:
+1. Si la reserva tiene un empleado asignado y ese empleado posee `whatsapp` válido (>= 8 dígitos tras sanitización) → el enlace apunta a su número.
+2. Si no, se usa `business.phone` (comportamiento anterior).
+3. Mensaje personalizado: incluye el nombre del empleado cuando aplica, de lo contrario el nombre del negocio.
+4. Helpers centralizados en `utils/whatsapp.ts`:
+  - `sanitizeWhatsappNumber(value)`
+  - `buildWhatsappUrl(rawNumber, message)`
+  - `canUseEmployeeWhatsapp(raw)`
+5. UI en `ConfirmationModal.tsx` muestra etiqueta contextual: “Confirmar con el empleado” o “Confirmar por WhatsApp” + texto aclaratorio sobre destino.
+6. Campo `whatsapp` del empleado se edita en `EmployeeEditModal.tsx` (opcional, no bloquea guardado).
+
+Ejemplo (empleado):
+`Hola Carlos, quiero confirmar mi turno para Corte el lunes 10 de octubre de 2025 a las 10:00. Soy Juan.`
+
+Fallback (negocio):
+`Hola Mi Barbería, quiero confirmar mi turno para Corte el lunes 10 de octubre de 2025 a las 10:00. Mi nombre es Juan. Gracias!`
+
+Edge cases:
+- Si el número no pasa sanitización mínima → fallback a `business.phone`.
+- Números con espacios, guiones o paréntesis se limpian antes de generar `wa.me`.
+- Si en el futuro se permite multi-empleado por turno, extender lógica para lista de contactos.
+
+Testing:
+- Ver `ConfirmationModal.test.tsx` para casos de uso: con y sin whatsapp de empleado.
+
+---
+
 ## 🎓 Mejores Prácticas y Convenciones
 
 ### 1. Nomenclatura de Archivos

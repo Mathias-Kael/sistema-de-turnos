@@ -5,6 +5,8 @@ import { generateICS } from '../../utils/ics';
 import { useBusinessDispatch } from '../../context/BusinessContext';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { findAvailableEmployeeForSlot } from '../../services/api';
+import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
+import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface ConfirmationModalProps {
     date: Date;
@@ -85,14 +87,23 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
         }
     };
 
-    const whatsappMessage = useMemo(() => {
+    // Determinar empleado efectivo (ya asignado o seleccionado fijo)
+    const effectiveEmployee = employee;
+
+    const { whatsappUrl, usingEmployeeWhatsapp } = useMemo(() => {
         const serviceNames = selectedServices.map(s => s.name).join(', ');
         const dateString = date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const text = `Hola ${business.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. ¡Gracias!`;
-        return encodeURIComponent(text);
-    }, [clientName, selectedServices, date, slot, business.name]);
-    
-    const whatsappUrl = `https://wa.me/${business.phone}?text=${whatsappMessage}`;
+        const employeeWhatsappRaw = effectiveEmployee?.whatsapp?.trim();
+        const useEmp = canUseEmployeeWhatsapp(employeeWhatsappRaw);
+        const baseMessage = useEmp
+            ? `Hola ${effectiveEmployee?.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${clientName}.`
+            : `Hola ${business.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. Gracias!`;
+        const number = useEmp ? employeeWhatsappRaw! : business.phone;
+        return {
+            whatsappUrl: buildWhatsappUrl(number, baseMessage) || `https://wa.me/${business.phone}`,
+            usingEmployeeWhatsapp: useEmp
+        };
+    }, [clientName, selectedServices, date, slot, business.name, effectiveEmployee]);
 
     if (isConfirmed) {
         return (
@@ -107,10 +118,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                             href={whatsappUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full block bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
                         >
-                            Confirmar por WhatsApp
+                            <WhatsAppIcon className="w-5 h-5" />
+                            {usingEmployeeWhatsapp ? 'Confirmar con el empleado' : 'Confirmar por WhatsApp'}
                         </a>
+                        <p className="text-xs text-secondary -mt-1 mb-2">
+                            {usingEmployeeWhatsapp ? `Contacto directo con ${effectiveEmployee?.name}.` : 'Se usará el número general del negocio.'}
+                        </p>
                         <button
                             type="button"
                             onClick={() => generateICS(date, slot, selectedServices, business)}
