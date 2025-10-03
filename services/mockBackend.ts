@@ -1,4 +1,4 @@
-import { Business, Booking, Service, Employee, DayHours, Interval } from '../types';
+import { Business, Booking, Service, Employee } from '../types';
 import { validarIntervalos } from '../utils/availability';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 
@@ -11,14 +11,34 @@ function loadState(): Business {
     try {
         const storedData = localStorage.getItem(BUSINESS_STORAGE_KEY);
         if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            // Asegurarse de que los datos cargados tengan la estructura completa
-            return { ...INITIAL_BUSINESS_DATA, ...parsedData };
+            const parsed: Business = { ...INITIAL_BUSINESS_DATA, ...JSON.parse(storedData) };
+            const bizId = parsed.id;
+            let mutated = false;
+
+            parsed.employees = parsed.employees.map(e => {
+                if (!(e as any).businessId) { mutated = true; return { ...e, businessId: bizId }; }
+                return e;
+            });
+            parsed.services = parsed.services.map(s => {
+                if (!(s as any).businessId) { mutated = true; return { ...s, businessId: bizId }; }
+                return s;
+            });
+            parsed.bookings = parsed.bookings.map(b => {
+                const migratedServices = b.services.map(bs => (!(bs as any).businessId ? ({ ...bs, businessId: bizId }) : bs));
+                if (!(b as any).businessId) { mutated = true; return { ...b, businessId: bizId, services: migratedServices }; }
+                if (migratedServices.some(ms => ms !== b.services.find(o => o.id === ms.id))) mutated = true;
+                return { ...b, services: migratedServices };
+            });
+
+            if (mutated) {
+                console.warn('[MIGRATION] Se añadieron businessId faltantes a entidades.');
+                try { localStorage.setItem(BUSINESS_STORAGE_KEY, JSON.stringify(parsed)); } catch {}
+            }
+            return parsed;
         }
     } catch (error) {
         console.error("Failed to parse business data from localStorage", error);
     }
-    // Si no hay nada, se retorna el estado inicial completo
     return INITIAL_BUSINESS_DATA;
 }
 
@@ -105,8 +125,10 @@ export const mockBackend = {
 
     createBooking: async (newBookingData: Omit<Booking, 'id'>): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+        const withBizId = (newBookingData as any).businessId ? newBookingData : { ...newBookingData, businessId: state.id };
         const newBooking: Booking = {
-            ...newBookingData,
+            ...withBizId,
+            services: withBizId.services.map(s => (s as any).businessId ? s : { ...s, businessId: state.id }),
             id: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
         const updatedState = { ...state, bookings: [...state.bookings, newBooking] };
@@ -133,6 +155,7 @@ export const mockBackend = {
 
     addEmployee: async (employee: Employee): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+        if (employee.businessId !== state.id) throw new Error('businessId del empleado no coincide');
         const updatedState = { ...state, employees: [...state.employees, employee] };
         state = updatedState;
         saveState(state);
@@ -169,6 +192,7 @@ export const mockBackend = {
 
     addService: async (service: Service): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
+        if (service.businessId !== state.id) throw new Error('businessId del servicio no coincide');
         const updatedState = { ...state, services: [...state.services, service] };
         state = updatedState;
         saveState(state);

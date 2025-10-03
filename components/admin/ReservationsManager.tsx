@@ -76,13 +76,13 @@ export const ReservationsManager: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-lg font-medium text-primary">Gestión de Reservas</h3>
-                 <button onClick={() => openCreateModal(new Date())} className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark">
+                 <button onClick={() => openCreateModal(new Date())} className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark w-full sm:w-auto">
                      + Nueva Reserva
                  </button>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
                 <div className="md:col-span-1">
                      <BookingCalendar
                         selectedDate={selectedDate}

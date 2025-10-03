@@ -146,7 +146,7 @@ export const SharePanel: React.FC = () => {
             {link && derivedStatus && (
                 <div className="p-4 border border-default rounded-md bg-surface space-y-4">
                     <h4 className="font-semibold text-primary">Estado del Enlace</h4>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${StatusInfo[derivedStatus].className}`}>
                             {StatusInfo[derivedStatus].text}
                         </span>
@@ -158,13 +158,13 @@ export const SharePanel: React.FC = () => {
                     {shareableLink && (derivedStatus === 'active' || derivedStatus === 'paused') && (
                          <div>
                             <input type="text" readOnly value={shareableLink} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                            <div className="flex gap-2 mt-2">
-                                <button type="button" onClick={handleCopyLink} className="flex-1 px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary">Copiar Link</button>
-                                <button type="button" onClick={handleDownloadQR} className="flex-1 px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary">Descargar QR</button>
+                            <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                                <button type="button" onClick={handleCopyLink} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary w-full sm:flex-1">Copiar Link</button>
+                                <button type="button" onClick={handleDownloadQR} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary w-full sm:flex-1">Descargar QR</button>
                             </div>
                         </div>
                     )}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-default mt-2">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-default mt-2">
                         {(derivedStatus === 'active' || derivedStatus === 'paused') && (
                              <button type="button" onClick={handleTogglePause} className="text-sm font-medium text-primary hover:text-primary-dark">
                                 {derivedStatus === 'active' ? 'Pausar Enlace' : 'Reactivar Enlace'}

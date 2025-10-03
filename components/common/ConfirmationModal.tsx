@@ -6,7 +6,6 @@ import { useBusinessDispatch } from '../../context/BusinessContext';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { findAvailableEmployeeForSlot } from '../../services/api';
 import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
-import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface ConfirmationModalProps {
     date: Date;
@@ -64,10 +63,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             }
 
             const newBooking: Omit<Booking, 'id'> = {
+                businessId: business.id,
                 date: date.toISOString().split('T')[0],
                 start: slot,
                 end: endTime,
-                services: selectedServices,
+                services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
                 client: {
                     name: clientName,
                     email: clientEmail,
@@ -87,45 +87,42 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
         }
     };
 
-    // Determinar empleado efectivo (ya asignado o seleccionado fijo)
-    const effectiveEmployee = employee;
-
-    const { whatsappUrl, usingEmployeeWhatsapp } = useMemo(() => {
+    // Datos dinámicos para WhatsApp (se calculan en confirmed view también por si cambia assignedEmployee)
+    const whatsappConfig = useMemo(() => {
+        const finalEmp = assignedEmployee || (employeeId !== 'any' ? business.employees.find(e => e.id === employeeId) || null : null);
+        const usingEmployee = !!finalEmp && canUseEmployeeWhatsapp(finalEmp.whatsapp);
+        const targetName = usingEmployee ? finalEmp!.name : business.name;
         const serviceNames = selectedServices.map(s => s.name).join(', ');
         const dateString = date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const employeeWhatsappRaw = effectiveEmployee?.whatsapp?.trim();
-        const useEmp = canUseEmployeeWhatsapp(employeeWhatsappRaw);
-        const baseMessage = useEmp
-            ? `Hola ${effectiveEmployee?.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${clientName}.`
-            : `Hola ${business.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. Gracias!`;
-        const numberRaw = useEmp ? employeeWhatsappRaw! : (business.phone || '');
-        const url = buildWhatsappUrl(numberRaw, baseMessage); // Siempre devuelve una URL válida con texto
-        return {
-            whatsappUrl: url,
-            usingEmployeeWhatsapp: useEmp
-        };
-    }, [clientName, selectedServices, date, slot, business.name, business.phone, effectiveEmployee?.name, effectiveEmployee?.whatsapp]);
+        const msg = usingEmployee
+            ? `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${clientName}.`
+            : `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. ¡Gracias!`;
+        const url = buildWhatsappUrl(usingEmployee ? (finalEmp!.whatsapp || '') : business.phone, msg);
+        return { url, usingEmployee, finalEmp };
+    }, [assignedEmployee, employeeId, business.employees, business.name, business.phone, clientName, date, slot, selectedServices]);
 
     if (isConfirmed) {
         return (
-            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-                <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center text-primary" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-black/60 overflow-y-auto z-50" onClick={onClose}>
+                <div className="min-h-full flex items-start md:items-center justify-center p-4">
+                <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center text-primary max-h-[calc(100vh-2rem)] overflow-y-auto focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                     <h2 className="text-2xl font-bold text-[color:var(--color-state-success-text)] mb-4">¡Turno Confirmado!</h2>
                     <p className="text-primary mb-4">
                         Recibirás un recordatorio por email. Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
                     </p>
                     <div className="space-y-3">
                         <a
-                            href={whatsappUrl}
+                            href={whatsappConfig.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full flex items-center justify-center gap-2 bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
+                            className="w-full block bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
                         >
-                            <WhatsAppIcon className="w-5 h-5" />
-                            {usingEmployeeWhatsapp ? 'Confirmar con el empleado' : 'Confirmar por WhatsApp'}
+                            {whatsappConfig.usingEmployee ? 'Confirmar con el empleado' : 'Confirmar por WhatsApp'}
                         </a>
-                        <p className="text-xs text-secondary -mt-1 mb-2">
-                            {usingEmployeeWhatsapp ? `Contacto directo con ${effectiveEmployee?.name}.` : 'Se usará el número general del negocio.'}
+                        <p className="text-xs text-secondary">
+                          {whatsappConfig.usingEmployee
+                            ? `Contacto directo con ${whatsappConfig.finalEmp?.name}`
+                            : 'Usando el número general del negocio'}
                         </p>
                         <button
                             type="button"
@@ -139,13 +136,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                         </button>
                     </div>
                 </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <form onSubmit={handleConfirm} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-primary" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 overflow-y-auto z-50" onClick={onClose}>
+            <div className="min-h-full flex items-start md:items-center justify-center p-4">
+            <form onSubmit={handleConfirm} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-primary max-h-[calc(100vh-2rem)] overflow-y-auto focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                 <h2 className="text-2xl font-bold text-primary mb-4">Confirma tu turno</h2>
                 
                 <div className="bg-background p-4 rounded-lg mb-6">
@@ -196,6 +195,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                     </button>
                 </div>
             </form>
+            </div>
         </div>
     );
 };

@@ -27,8 +27,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-primary" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 overflow-y-auto z-50" onClick={onClose}>
+            <div className="min-h-full flex items-start md:items-center justify-center p-4">
+            <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-primary max-h-[calc(100vh-2rem)] overflow-y-auto focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                 <h2 className="text-2xl font-bold text-primary mb-4">Detalle de la Reserva</h2>
 
                 <div className="mb-6 space-y-2 text-primary">
@@ -92,6 +93,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                         </div>
                     )}
                 </form>
+            </div>
             </div>
         </div>
     );

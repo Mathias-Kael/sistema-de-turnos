@@ -115,7 +115,7 @@ export const HoursEditor: React.FC = () => {
                     {draftHours[dayKey].enabled && (
                         <div className="space-y-3">
                             {draftHours[dayKey].intervals.map((interval, index) => (
-                                <div key={index} className="flex items-center gap-2">
+                                <div key={index} className="flex flex-col xs:flex-row xs:items-center gap-2">
                                     <input
                                         type="time"
                                         value={interval.open}

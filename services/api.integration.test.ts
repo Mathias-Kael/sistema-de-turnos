@@ -80,11 +80,12 @@ describe('API Integration Tests - Business Logic', () => {
             // Crear una nueva reserva para este test, ya que initialTestBusinessState.bookings está vacío
             const newConflictingBooking: Booking = {
                 id: 'res_1',
+                businessId: initialTestBusinessState.id,
                 client: { name: 'Juan Perez', email: 'juan.perez@example.com', phone: '1122334455' },
                 date: testDateString,
                 start: '10:00',
                 end: '11:00',
-                services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+                services: [{ id: 's1', businessId: initialTestBusinessState.id, name: 'Lavado Básico Exterior', price: 20 }],
                 employeeId: 'e1',
                 status: 'confirmed',
             };
@@ -147,11 +148,12 @@ describe('API Integration Tests - Business Logic', () => {
 
             const newBooking: Booking = {
                 id: 'future_booking_1',
+                businessId: initialTestBusinessState.id,
                 client: { name: 'Cliente Futuro', email: 'future@test.com', phone: '123456789' },
                 date: testDateString,
                 start: '17:00',
                 end: '18:00',
-                services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+                services: [{ id: 's1', businessId: initialTestBusinessState.id, name: 'Lavado Básico Exterior', price: 20 }],
                 employeeId: 'e1',
                 status: 'confirmed',
             };
@@ -183,11 +185,12 @@ describe('API Integration Tests - Business Logic', () => {
 
             const newBooking: Booking = {
                 id: 'future_booking_2',
+                businessId: initialTestBusinessState.id,
                 client: { name: 'Cliente para Borrado', email: 'delete@test.com', phone: '987654321' },
                 date: testDateString,
                 start: '11:00',
                 end: '12:00',
-                services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+                services: [{ id: 's1', businessId: initialTestBusinessState.id, name: 'Lavado Básico Exterior', price: 20 }],
                 employeeId: 'e1', // Carlos
                 status: 'confirmed',
             };
@@ -213,11 +216,12 @@ describe('API Integration Tests - Business Logic', () => {
 
             const newBooking: Booking = {
                 id: 'future_booking_3',
+                businessId: initialTestBusinessState.id,
                 client: { name: 'Cliente para Borrado de Servicio', email: 'delete_service@test.com', phone: '111222333' },
                 date: testDateString,
                 start: '14:00',
                 end: '15:00',
-                services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+                services: [{ id: 's1', businessId: initialTestBusinessState.id, name: 'Lavado Básico Exterior', price: 20 }],
                 employeeId: 'e1',
                 status: 'confirmed',
             };
@@ -290,12 +294,13 @@ describe('API Integration Tests - Business Logic', () => {
             const businessWithBooking = clone(initialTestBusinessState);
             businessWithBooking.bookings.push({
                 id: 'booking-e1',
+                businessId: initialTestBusinessState.id,
                 date: testDate.toISOString().split('T')[0],
                 start: '10:00',
                 end: '10:30',
                 employeeId: 'e1',
                 client: { name: 'Test Client', email: '', phone: '' },
-                services: [service],
+                services: [{ id: service.id, businessId: initialTestBusinessState.id, name: service.name, price: service.price }],
                 status: 'confirmed'
             });
 
@@ -311,22 +316,24 @@ describe('API Integration Tests - Business Logic', () => {
             const businessWithBookings = clone(initialTestBusinessState);
             businessWithBookings.bookings.push({
                 id: 'booking-e1',
+                businessId: initialTestBusinessState.id,
                 date: testDate.toISOString().split('T')[0],
                 start: '09:45',
                 end: '10:15', // Ocupa el slot de 10:00
                 employeeId: 'e1',
                 client: { name: 'Client 1', email: '', phone: '' },
-                services: [service],
+                services: [{ id: service.id, businessId: initialTestBusinessState.id, name: service.name, price: service.price }],
                 status: 'confirmed'
             });
             businessWithBookings.bookings.push({
                 id: 'booking-e2',
+                businessId: initialTestBusinessState.id,
                 date: testDate.toISOString().split('T')[0],
                 start: '10:00',
                 end: '10:30',
                 employeeId: 'e2',
                 client: { name: 'Client 2', email: '', phone: '' },
-                services: [service],
+                services: [{ id: service.id, businessId: initialTestBusinessState.id, name: service.name, price: service.price }],
                 status: 'confirmed'
             });
 
@@ -344,12 +351,13 @@ describe('API Integration Tests - Business Logic', () => {
 
             businessWithBooking.bookings.push({
                 id: 'booking-e1',
+                businessId: initialTestBusinessState.id,
                 date: testDate.toISOString().split('T')[0],
                 start: '10:00',
                 end: '10:30',
                 employeeId: 'e1',
                 client: { name: 'Test Client', email: '', phone: '' },
-                services: [serviceOnlyForE1],
+                services: [{ id: serviceOnlyForE1.id, businessId: initialTestBusinessState.id, name: serviceOnlyForE1.name, price: serviceOnlyForE1.price }],
                 status: 'confirmed'
             });
 

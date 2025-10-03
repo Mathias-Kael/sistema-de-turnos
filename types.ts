@@ -9,6 +9,7 @@ export interface Branding {
 
 export interface Employee {
   id: string;
+  businessId: string;
   name: string;
   avatarUrl: string;
   hours: Hours; // Horario individual del empleado
@@ -17,6 +18,7 @@ export interface Employee {
 
 export interface Service {
   id: string;
+  businessId: string;
   name: string;
   description: string;
   duration: number; // in minutes
@@ -67,21 +69,25 @@ export interface Client {
 }
 
 export interface BookingService {
-    id: string;
-    name: string;
-    price: number;
+  id: string;
+  businessId: string; // mantener trazabilidad multi-tenant
+  name: string;
+  price: number;
 }
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 
 export interface Booking {
-    id: string;
-    client: Client;
-    date: string; // "YYYY-MM-DD"
-    start: string; // "HH:mm"
-    end: string; // "HH:mm"
-    services: BookingService[];
-    employeeId: string;
-    status: BookingStatus;
-    notes?: string;
+  id: string;
+  businessId: string;
+  client: Client;
+  date: string; // "YYYY-MM-DD"
+  start: string; // "HH:mm"
+  end: string; // "HH:mm"
+  services: BookingService[];
+  employeeId: string;
+  status: BookingStatus;
+  notes?: string;
 }
+
+// ---- Image Handling (Feature futura) ----

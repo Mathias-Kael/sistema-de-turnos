@@ -77,11 +77,12 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
         const end = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
         
         const newBooking: Omit<Booking, 'id'> = {
+            businessId: business.id,
             client: { name: clientName, email: clientEmail || undefined, phone: clientPhone },
             date: dateStr,
             start: slot,
             end,
-            services: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price })),
+            services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
             employeeId: finalEmployeeId,
             status: 'confirmed',
             notes: 'Reserva manual',
@@ -90,8 +91,9 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <form onSubmit={handleSubmit} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto text-primary" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 overflow-y-auto z-50" onClick={onClose}>
+            <div className="min-h-full flex items-start md:items-center justify-center p-4">
+            <form onSubmit={handleSubmit} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto text-primary focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                 <h2 className="text-2xl font-bold text-primary mb-4">Nueva Reserva Manual</h2>
                 <p className="mb-4 text-primary">Fecha: <strong>{selectedDate.toLocaleDateString('es-AR')}</strong></p>
 
@@ -159,6 +161,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                     <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary" disabled={!slot}>Guardar Reserva</button>
                 </div>
             </form>
+            </div>
         </div>
     );
 };

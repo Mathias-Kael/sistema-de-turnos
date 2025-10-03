@@ -31,6 +31,7 @@ export const EmployeesEditor: React.FC = () => {
         }
         const employeeToAdd: Employee = {
             id: `e${Date.now()}`,
+            businessId: business.id,
             hours: INITIAL_BUSINESS_DATA.hours,
             ...newEmployee
         };
@@ -56,9 +57,9 @@ export const EmployeesEditor: React.FC = () => {
 
     return (
         <div className="space-y-6">
-             <div className="flex justify-between items-center">
+             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-lg font-medium">Gestión de Empleados</h3>
-                <Button onClick={() => setIsAdding(!isAdding)} variant={isAdding ? 'secondary' : 'primary'}>
+                <Button onClick={() => setIsAdding(!isAdding)} variant={isAdding ? 'secondary' : 'primary'} className="w-full sm:w-auto">
                     {isAdding ? 'Cancelar' : 'Añadir Empleado'}
                 </Button>
             </div>

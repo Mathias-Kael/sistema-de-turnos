@@ -10,6 +10,7 @@ const d = (daysOffset: number): string => {
 export const MOCK_BOOKINGS: Booking[] = [
     {
         id: 'res_1',
+        businessId: 'demo-business',
         client: {
             name: 'Juan Perez',
             email: 'juan.perez@example.com',
@@ -18,13 +19,14 @@ export const MOCK_BOOKINGS: Booking[] = [
         date: d(0),
         start: '10:00',
         end: '11:00',
-        services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+        services: [{ id: 's1', businessId: 'demo-business', name: 'Lavado Básico Exterior', price: 20 }],
         employeeId: 'e1',
         status: 'confirmed',
         notes: 'Cliente frecuente.',
     },
     {
         id: 'res_2',
+        businessId: 'demo-business',
         client: {
             name: 'Maria Garcia',
             email: 'maria.g@example.com',
@@ -33,13 +35,14 @@ export const MOCK_BOOKINGS: Booking[] = [
         date: d(0),
         start: '14:30',
         end: '15:30',
-        services: [{ id: 's2', name: 'Limpieza Interior Completa', price: 40 }],
+        services: [{ id: 's2', businessId: 'demo-business', name: 'Limpieza Interior Completa', price: 40 }],
         employeeId: 'e2',
         status: 'pending',
         notes: 'Requiere confirmación de depósito.',
     },
     {
         id: 'res_3',
+        businessId: 'demo-business',
         client: {
             name: 'Pedro Rodriguez',
             email: 'pedro.r@example.com',
@@ -48,12 +51,13 @@ export const MOCK_BOOKINGS: Booking[] = [
         date: d(1),
         start: '09:00',
         end: '10:30',
-        services: [{ id: 's3', name: 'Lavado Premium (Completo)', price: 55 }],
+        services: [{ id: 's3', businessId: 'demo-business', name: 'Lavado Premium (Completo)', price: 55 }],
         employeeId: 'e1',
         status: 'confirmed',
     },
      {
         id: 'res_4',
+        businessId: 'demo-business',
         client: {
             name: 'Ana Lopez',
             email: 'ana.l@example.com',
@@ -62,7 +66,7 @@ export const MOCK_BOOKINGS: Booking[] = [
         date: d(-1),
         start: '16:00',
         end: '17:00',
-        services: [{ id: 's1', name: 'Lavado Básico Exterior', price: 20 }],
+        services: [{ id: 's1', businessId: 'demo-business', name: 'Lavado Básico Exterior', price: 20 }],
         employeeId: 'e3',
         status: 'confirmed', // Completed booking
     },

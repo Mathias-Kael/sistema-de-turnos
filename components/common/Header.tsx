@@ -1,12 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
-import { MobileMenu } from './MobileMenu';
 
 export const Header: React.FC = () => {
     const { name, description, logoUrl } = useBusinessState();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     return (
         <>
@@ -29,17 +25,12 @@ export const Header: React.FC = () => {
                 </nav>
 
                 <div className="md:hidden">
-                    <button onClick={toggleMenu} aria-label="Abrir menú">
-                        <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
-                    </button>
+                    {/* Placeholder for mobile menu button if needed in the future */}
                 </div>
             </header>
             <div className="text-center py-6">
                 <p className="mt-2 text-lg text-secondary max-w-2xl mx-auto">{description}</p>
             </div>
-            <MobileMenu isOpen={isMenuOpen} onClose={toggleMenu} />
         </>
     );
 };
