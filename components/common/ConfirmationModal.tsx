@@ -98,12 +98,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
         const baseMessage = useEmp
             ? `Hola ${effectiveEmployee?.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${clientName}.`
             : `Hola ${business.name}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${clientName}. Gracias!`;
-        const number = useEmp ? employeeWhatsappRaw! : business.phone;
+        const numberRaw = useEmp ? employeeWhatsappRaw! : (business.phone || '');
+        const url = buildWhatsappUrl(numberRaw, baseMessage); // Siempre devuelve una URL válida con texto
         return {
-            whatsappUrl: buildWhatsappUrl(number, baseMessage) || `https://wa.me/${business.phone}`,
+            whatsappUrl: url,
             usingEmployeeWhatsapp: useEmp
         };
-    }, [clientName, selectedServices, date, slot, business.name, effectiveEmployee]);
+    }, [clientName, selectedServices, date, slot, business.name, business.phone, effectiveEmployee?.name, effectiveEmployee?.whatsapp]);
 
     if (isConfirmed) {
         return (

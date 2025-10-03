@@ -6,11 +6,14 @@ export const sanitizeWhatsappNumber = (value: string): string => (value || '').r
 
 /**
  * Construye una URL de wa.me válida con mensaje codificado.
- * Retorna string vacío si el número no contiene suficientes dígitos.
+ * Si el número no es utilizable (muy corto o vacío) retorna el formato genérico con sólo el texto.
+ * Esto evita abrir WhatsApp sin mensaje (regresión detectada al devolver string vacío).
  */
 export const buildWhatsappUrl = (rawNumber: string, message: string): string => {
   const cleaned = sanitizeWhatsappNumber(rawNumber);
-  if (!cleaned || cleaned.length < 6) return '';
+  if (!cleaned || cleaned.length < 6) {
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  }
   return `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`;
 };
 

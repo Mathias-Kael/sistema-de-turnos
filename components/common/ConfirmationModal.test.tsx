@@ -94,4 +94,36 @@ describe('ConfirmationModal WhatsApp destino', () => {
     });
     expect(screen.getByText(/número general del negocio/i)).toBeInTheDocument();
   });
+
+  it('usa wa.me/?text= cuando no hay teléfono de negocio ni de empleado', async () => {
+    const baseHours = buildBusiness([]).hours;
+    // Empleado sin whatsapp y negocio sin phone
+    const businessSinTelefono = buildBusiness([
+      { id: 'e1', name: 'Ana', avatarUrl: '', hours: baseHours }
+    ], '');
+
+    render(
+      <ConfirmationModal
+        date={new Date('2025-10-10T12:00:00')}
+        slot="10:00"
+        selectedServices={[{ ...mockService, employeeIds: ['e1'] }]}
+        employeeId="e1"
+        business={businessSinTelefono}
+        onClose={() => {}}
+      />
+    );
+
+    await userEvent.type(screen.getByLabelText(/Nombre Completo/i), 'Pepe');
+    await userEvent.type(screen.getByLabelText(/Teléfono \(WhatsApp\)/i), '+54 9 11 9999 0000');
+    await userEvent.click(screen.getByRole('button', { name: /Confirmar Reserva/i }));
+
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: /Confirmar por WhatsApp/i });
+      expect(link).toHaveAttribute('href');
+      const href = link.getAttribute('href') || '';
+      expect(href.startsWith('https://wa.me/?text=')).toBe(true);
+      // Debe contener texto codificado con "Hola" al menos
+      expect(decodeURIComponent(href)).toMatch(/Hola/);
+    });
+  });
 });
