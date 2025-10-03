@@ -50,7 +50,9 @@ export interface Business {
   id: string;
   name: string;
   description: string;
-  logoUrl: string;
+  logoUrl: string; // Mantener por compatibilidad
+  profileImageUrl?: string; // Nueva: imagen local del perfil/logo
+  coverImageUrl?: string; // Nueva: imagen de portada
   phone: string;
   branding: Branding;
   employees: Employee[];
@@ -84,4 +86,47 @@ export interface Booking {
     employeeId: string;
     status: BookingStatus;
     notes?: string;
+}
+
+// ===== IMAGE SYSTEM TYPES =====
+
+export type ImageType = 'cover' | 'profile' | 'avatar';
+
+export interface ImageConstraints {
+  maxSizeBytes: number;
+  maxWidth: number;
+  maxHeight: number;
+  aspectRatio?: number; // width/height ratio (optional)
+  quality: number; // 0.0 - 1.0 compression quality
+}
+
+export interface ImageUploadResult {
+  success: boolean;
+  imageUrl?: string; // Base64 data URL if successful
+  error?: string;
+  originalSize?: number;
+  finalSize?: number;
+  wasCompressed?: boolean;
+}
+
+export interface ImageValidationResult {
+  isValid: boolean;
+  errors: string[];
+  file?: File;
+}
+
+// Interfaz abstracta para storage (localStorage en MVP, backend en futuro)
+export interface ImageStorageService {
+  uploadImage(file: File, type: ImageType): Promise<ImageUploadResult>;
+  deleteImage(identifier: string): Promise<void>;
+  getImageUrl(identifier: string): string;
+}
+
+export interface ProcessedImage {
+  dataUrl: string; // Base64 data URL
+  originalSize: number;
+  finalSize: number;
+  width: number;
+  height: number;
+  wasCompressed: boolean;
 }

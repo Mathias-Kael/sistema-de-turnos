@@ -17,6 +17,8 @@ export const INITIAL_BUSINESS_DATA: Business = {
     name: 'Autolavado "El Impecable"',
     description: 'Tu auto, nuestra pasión. Expertos en detailing y cuidado automotriz.',
     logoUrl: 'https://i.imgur.com/gKaImM8.png', // A generic, placeholder logo
+    profileImageUrl: undefined, // Imagen local del perfil/logo
+    coverImageUrl: undefined, // Imagen de portada
     phone: '5491112345678',
     branding: {
         primaryColor: '#1a202c',    // Dark gray/black
@@ -78,3 +80,44 @@ export const BRANDING_PRESETS: { name: string; colors: Branding }[] = [
         },
     },
 ];
+
+// ===== IMAGE SYSTEM CONSTANTS =====
+
+import { ImageConstraints, ImageType } from './types';
+
+// Configuración de restricciones por tipo de imagen
+export const IMAGE_CONSTRAINTS: Record<ImageType, ImageConstraints> = {
+    cover: {
+        maxSizeBytes: 2 * 1024 * 1024, // 2MB
+        maxWidth: 1200,
+        maxHeight: 400,
+        aspectRatio: 3, // 3:1 ratio (1200/400)
+        quality: 0.8,
+    },
+    profile: {
+        maxSizeBytes: 1 * 1024 * 1024, // 1MB
+        maxWidth: 400,
+        maxHeight: 400,
+        aspectRatio: 1, // 1:1 ratio (square)
+        quality: 0.8,
+    },
+    avatar: {
+        maxSizeBytes: 1 * 1024 * 1024, // 1MB
+        maxWidth: 400,
+        maxHeight: 400,
+        aspectRatio: 1, // 1:1 ratio (square)
+        quality: 0.8,
+    },
+};
+
+// Formatos de imagen soportados
+export const SUPPORTED_IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+// Mensajes de error estándar
+export const IMAGE_ERROR_MESSAGES = {
+    INVALID_FORMAT: 'Formato no soportado. Usa JPG, PNG o WebP.',
+    FILE_TOO_LARGE: 'El archivo es demasiado grande.',
+    UPLOAD_FAILED: 'Error al cargar la imagen.',
+    PROCESSING_FAILED: 'Error al procesar la imagen.',
+    STORAGE_FULL: 'No hay espacio suficiente en el almacenamiento.',
+} as const;
