@@ -16,7 +16,6 @@ export const INITIAL_BUSINESS_DATA: Business = {
     id: 'biz_1',
     name: 'Autolavado "El Impecable"',
     description: 'Tu auto, nuestra pasión. Expertos en detailing y cuidado automotriz.',
-    logoUrl: 'https://i.imgur.com/gKaImM8.png', // A generic, placeholder logo
     profileImageUrl: undefined, // Imagen local del perfil/logo
     coverImageUrl: undefined, // Imagen de portada
     phone: '5491112345678',

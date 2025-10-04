@@ -42,53 +42,6 @@ export const BrandingEditor: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-medium">Información del Negocio</h3>
-                <div className="mt-4 space-y-4">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-secondary">Nombre del Negocio</label>
-                        <input
-                            type="text"
-                            id="name"
-                            defaultValue={business.name}
-                            onChange={(e) => handleUpdate('name', e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-secondary">Descripción</label>
-                        <textarea
-                            id="description"
-                            rows={3}
-                            defaultValue={business.description}
-                            onChange={(e) => handleUpdate('description', e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="logoUrl" className="block text-sm font-medium text-secondary">URL del Logo</label>
-                        <input
-                            type="text"
-                            id="logoUrl"
-                            defaultValue={business.logoUrl}
-                            onChange={(e) => handleUpdate('logoUrl', e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
-                        />
-                    </div>
-                     <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-secondary">Teléfono (WhatsApp)</label>
-                        <input
-                            type="text"
-                            id="phone"
-                            placeholder="5491112345678"
-                            defaultValue={business.phone || ''}
-                            onChange={(e) => handleUpdate('phone', e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary"
-                        />
-                    </div>
-                </div>
-            </div>
-            
-            <div>
                 <h3 className="text-lg font-medium">Branding y Estilo</h3>
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-secondary">Presets</label>

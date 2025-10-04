@@ -35,8 +35,13 @@ class LocalStorageImageService implements ImageStorageService {
    * @returns Promise con ImageUploadResult
    * @throws Error si falla validación o storage
    */
-  async uploadImage(file: File, type: ImageType): Promise<ImageUploadResult> {
+  async uploadImage(file: File, type: ImageType, oldImageId?: string): Promise<ImageUploadResult> {
     try {
+      // 0. Eliminar imagen anterior si se proporciona
+      if (oldImageId) {
+        await this.deleteImage(oldImageId);
+        console.log(`🗑️ Imagen anterior eliminada: ${oldImageId}`);
+      }
       // 1. Obtener constraints según el tipo
       const constraints = IMAGE_CONSTRAINTS[type];
       
@@ -74,15 +79,18 @@ class LocalStorageImageService implements ImageStorageService {
       // 7. Retornar resultado exitoso
       return {
         success: true,
-        imageUrl: imageId, // Retornamos el ID que se guardará en Business.coverImageUrl
-        originalSize: processedImage.originalSize,
+        imageId,
+        imageUrl: processedImage.dataUrl,
         finalSize: processedImage.finalSize,
+        dimensions: { width: processedImage.width, height: processedImage.height },
         wasCompressed: processedImage.wasCompressed,
       };
       
     } catch (error) {
       return {
         success: false,
+        imageId: '',
+        imageUrl: '',
         error: error instanceof Error ? error.message : 'Error desconocido al procesar imagen',
       };
     }

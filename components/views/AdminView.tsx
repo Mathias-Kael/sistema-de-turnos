@@ -5,98 +5,210 @@ import { HoursEditor } from '../admin/HoursEditor';
 import { EmployeesEditor } from '../admin/EmployeesEditor';
 import { SharePanel } from '../admin/SharePanel';
 import { ReservationsManager } from '../admin/ReservationsManager';
-import { useBusinessState } from '../../context/BusinessContext';
+import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { ClientView } from './ClientView';
-import { MobileMenu } from '../common/MobileMenu';
+import { HeroSection } from '../common/HeroSection';
+import { EditInfoModal } from '../admin/EditInfoModal';
+import { imageStorage } from '../../services/imageStorage';
 
-type Tab = 'info' | 'services' | 'employees' | 'hours' | 'share' | 'reservations' | 'preview';
+type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'preview' | 'branding';
 
 export const AdminView: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<Tab>('info');
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { name, logoUrl } = useBusinessState();
+    const [activeTab, setActiveTab] = useState<Tab>('services');
+    // Tabs centralizados
+    const tabs: { id: Tab; label: string }[] = [
+        { id: 'services', label: 'Servicios' },
+        { id: 'equipo', label: 'Equipo' },
+        { id: 'hours', label: 'Horarios' },
+        { id: 'reservations', label: 'Reservas' },
+        { id: 'branding', label: 'Branding' },
+        { id: 'share', label: 'Compartir' },
+        { id: 'preview', label: 'Vista Previa' },
+    ];
+    const business = useBusinessState();
+    const dispatch = useBusinessDispatch();
+
+    // Estados para modals de edición
+    const [editingField, setEditingField] = useState<null | 'name' | 'description' | 'phone'>(null);
+    const [editingCover, setEditingCover] = useState(false);
+    const [editingProfile, setEditingProfile] = useState(false);
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'info': return <BrandingEditor />;
-            case 'services': return <ServicesEditor />;
-            case 'employees': return <EmployeesEditor />;
-            case 'hours': return <HoursEditor />;
-            case 'share': return <SharePanel />;
-            case 'reservations': return <ReservationsManager />;
-            case 'preview': return <div className="border-default rounded-lg p-2 bg-background"><ClientView /></div>;
-            default: return null;
+            case 'branding':
+                return <BrandingEditor />; // ahora sólo colores/fuentes
+            case 'services':
+                return <ServicesEditor />;
+            case 'equipo':
+                return <EmployeesEditor />;
+            case 'hours':
+                return <HoursEditor />;
+            case 'share':
+                return <SharePanel />;
+            case 'reservations':
+                return <ReservationsManager />;
+            case 'preview':
+                return <div className="border-default rounded-lg p-2 bg-background"><ClientView /></div>;
+            default:
+                return null;
         }
     };
 
-    const TabButton: React.FC<{ tab: Tab; label: string }> = ({ tab, label }) => (
-        <button
-            onClick={() => {
-                setActiveTab(tab);
-                setIsMenuOpen(false); // Cierra el menú al seleccionar una opción
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
-                activeTab === tab ? 'bg-primary text-brand-text' : 'hover:bg-surface-hover'
-            }`}
-        >
-            {label}
-        </button>
+    const DesktopTabs: React.FC = () => (
+        <div className="hidden md:flex gap-2 border-b border-default px-6 mt-2 mb-6">
+            {tabs.map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 text-sm font-medium transition border-b-2 ${
+                        activeTab === tab.id
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-secondary hover:text-primary'
+                    }`}
+                >
+                    {tab.label}
+                </button>
+            ))}
+        </div>
     );
+
+    const MobileSelect: React.FC = () => (
+        <div className="md:hidden px-4 mt-2 mb-6">
+            <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value as Tab)}
+                className="w-full p-2 border border-default rounded-lg bg-surface text-primary"
+            >
+                {tabs.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+            </select>
+        </div>
+    );
+
+    const handleSaveField = async (field: 'name' | 'description' | 'phone', value: string) => {
+        if (field === 'phone') {
+            await dispatch({ type: 'SET_PHONE', payload: value });
+        } else {
+            await dispatch({
+                type: 'SET_BUSINESS_INFO',
+                payload: {
+                    name: field === 'name' ? value : business.name,
+                    description: field === 'description' ? value : business.description,
+                }
+            });
+        }
+    };
+
+    const handleCoverUpload = async (file: File) => {
+        const res = await imageStorage.uploadImage(file, 'cover', business.coverImageUrl);
+        await dispatch({ type: 'SET_COVER_IMAGE', payload: res.imageId });
+        setEditingCover(false);
+    };
+
+    const handleProfileUpload = async (file: File) => {
+        const res = await imageStorage.uploadImage(file, 'profile', business.profileImageUrl);
+        await dispatch({ type: 'SET_PROFILE_IMAGE', payload: res.imageId });
+        setEditingProfile(false);
+    };
 
     return (
         <div className="min-h-screen bg-background text-primary">
-            <header className="bg-surface shadow-sm border-b border-default sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        {logoUrl && <img src={logoUrl} alt="logo" className="h-10 w-10 rounded-full object-cover" />}
-                        <h1 className="text-xl font-bold">{name}</h1>
-                    </div>
-                    <div className="lg:hidden">
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Abrir menú">
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </header>
-            
-            <MobileMenu
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-            >
-                <nav className="flex flex-col space-y-2 px-4 py-6">
-                    <TabButton tab="info" label="Info y Estilo" />
-                    <TabButton tab="services" label="Servicios" />
-                    <TabButton tab="employees" label="Empleados" />
-                    <TabButton tab="hours" label="Horarios" />
-                    <TabButton tab="reservations" label="Reservas" />
-                    <TabButton tab="share" label="Compartir" />
-                    <TabButton tab="preview" label="Vista Previa" />
-                </nav>
-            </MobileMenu>
+            {/* Hero (sin header tradicional) */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+                <HeroSection
+                    business={business}
+                    editable
+                    onEditCover={() => setEditingCover(true)}
+                    onEditProfile={() => setEditingProfile(true)}
+                    onEditInfo={(f) => setEditingField(f)}
+                />
+            </div>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-                    <aside className="lg:block lg:col-span-3 xl:col-span-2">
-                        <nav className="flex flex-col space-y-2">
-                           <TabButton tab="info" label="Info y Estilo" />
-                           <TabButton tab="services" label="Servicios" />
-                           <TabButton tab="employees" label="Empleados" />
-                           <TabButton tab="hours" label="Horarios" />
-                           <TabButton tab="reservations" label="Reservas" />
-                           <TabButton tab="share" label="Compartir" />
-                           <TabButton tab="preview" label="Vista Previa" />
-                        </nav>
-                    </aside>
+            {/* Menú móvil */}
+            {/* Navegación responsive */}
+            <MobileSelect />
+            <DesktopTabs />
 
-                    <div className="lg:col-span-9 xl:col-span-10 mt-6 lg:mt-0">
-                        <div className="bg-surface p-6 rounded-lg shadow">
-                            {renderContent()}
-                        </div>
-                    </div>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+                <div className="bg-surface p-6 rounded-lg shadow border border-default">
+                    {renderContent()}
                 </div>
             </main>
+
+            {/* Modals de edición de texto */}
+            {editingField && (
+                <EditInfoModal
+                    field={editingField}
+                    currentValue={business[editingField] || ''}
+                    onSave={(val) => handleSaveField(editingField, val)}
+                    onClose={() => setEditingField(null)}
+                />
+            )}
+
+            {/* Modals simples para subir cover/profile (reutiliza input oculto) */}
+            {editingCover && (
+                <ImageUploadInlineModal
+                    title="Editar Portada"
+                    type="cover"
+                    currentImageId={business.coverImageUrl}
+                    onClose={() => setEditingCover(false)}
+                    onUpload={handleCoverUpload}
+                />
+            )}
+            {editingProfile && (
+                <ImageUploadInlineModal
+                    title="Editar Perfil"
+                    type="profile"
+                    currentImageId={business.profileImageUrl}
+                    onClose={() => setEditingProfile(false)}
+                    onUpload={handleProfileUpload}
+                />
+            )}
+        </div>
+    );
+};
+
+// Modal interno para uploads rápidos (sin drag & drop avanzado) para foco en flujo hero
+const ImageUploadInlineModal: React.FC<{
+    title: string;
+    type: 'cover' | 'profile';
+    currentImageId?: string;
+    onClose: () => void;
+    onUpload: (file: File) => Promise<void>;
+}> = ({ title, type, onClose, onUpload }) => {
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setIsLoading(true);
+            await onUpload(file);
+        } catch (err: any) {
+            setError(err.message || 'Error al subir la imagen');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">
+                <h3 className="text-lg font-bold mb-4">{title}</h3>
+                <input
+                    type="file"
+                    accept={type === 'cover' ? 'image/*' : 'image/*'}
+                    onChange={handleChange}
+                    className="w-full mb-4"
+                />
+                {isLoading && <p className="text-sm text-secondary mb-2">Procesando...</p>}
+                {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover">Cerrar</button>
+                </div>
+            </div>
         </div>
     );
 };

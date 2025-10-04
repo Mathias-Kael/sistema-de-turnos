@@ -50,7 +50,6 @@ export interface Business {
   id: string;
   name: string;
   description: string;
-  logoUrl: string; // Mantener por compatibilidad
   profileImageUrl?: string; // Nueva: imagen local del perfil/logo
   coverImageUrl?: string; // Nueva: imagen de portada
   phone: string;
@@ -102,11 +101,12 @@ export interface ImageConstraints {
 
 export interface ImageUploadResult {
   success: boolean;
-  imageUrl?: string; // Base64 data URL if successful
-  error?: string;
-  originalSize?: number;
-  finalSize?: number;
-  wasCompressed?: boolean;
+  imageId: string;        // ID único (clave en storage) para guardar en Business/Employee
+  imageUrl: string;       // Data URL Base64 para previsualización inmediata
+  finalSize?: number;     // Tamaño final optimizado en bytes
+  dimensions?: { width: number; height: number }; // Dimensiones finales
+  wasCompressed?: boolean; // Indicador si se aplicó compresión significativa
+  error?: string;          // Mensaje de error cuando success = false
 }
 
 export interface ImageValidationResult {
@@ -117,7 +117,11 @@ export interface ImageValidationResult {
 
 // Interfaz abstracta para storage (localStorage en MVP, backend en futuro)
 export interface ImageStorageService {
-  uploadImage(file: File, type: ImageType): Promise<ImageUploadResult>;
+  uploadImage(
+    file: File,
+    type: ImageType,
+    oldImageId?: string // Imagen previa a eliminar (limpieza automática)
+  ): Promise<ImageUploadResult>;
   deleteImage(identifier: string): Promise<void>;
   getImageUrl(identifier: string): string;
 }

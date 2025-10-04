@@ -1,5 +1,6 @@
 import React from 'react';
 import { Employee } from '../../types';
+import { imageStorage } from '../../services/imageStorage';
 
 interface EmployeeSelectorProps {
     employees: Employee[];
@@ -39,24 +40,33 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                 </div>
 
                 {/* Opciones por empleado */}
-                {employees.map(employee => (
-                     <div
-                        key={employee.id}
-                        onClick={() => onSelectEmployee(employee.id)}
-                        className={`p-4 border rounded-lg cursor-pointer text-center transition-all duration-200 ${
-                            selectedEmployeeId === employee.id
-                                ? 'border-2 border-primary shadow-md bg-surface'
-                                : 'bg-surface hover:shadow-sm border-default'
-                        }`}
-                    >
-                        <img
-                            src={employee.avatarUrl || `https://ui-avatars.com/api/?name=${employee.name.replace(' ', '+')}&background=random`}
-                            alt={employee.name}
-                            className="w-16 h-16 rounded-full mx-auto mb-2"
-                        />
-                         <div className="font-bold text-primary">{employee.name}</div>
-                    </div>
-                ))}
+                {employees.map(employee => {
+                    const avatarUrl = employee.avatarUrl ? imageStorage.getImageUrl(employee.avatarUrl) : undefined;
+                    return (
+                        <div
+                            key={employee.id}
+                            onClick={() => onSelectEmployee(employee.id)}
+                            className={`p-4 border rounded-lg cursor-pointer text-center transition-all duration-200 ${
+                                selectedEmployeeId === employee.id
+                                    ? 'border-2 border-primary shadow-md bg-surface'
+                                    : 'bg-surface hover:shadow-sm border-default'
+                            }`}
+                        >
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt={employee.name}
+                                    className="w-16 h-16 rounded-full mx-auto mb-2 object-cover"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-background flex items-center justify-center text-secondary text-2xl">
+                                    👤
+                                </div>
+                            )}
+                            <div className="font-bold text-primary">{employee.name}</div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Employee } from '../../types';
 import { Button } from '../ui/Button';
+import { imageStorage } from '../../services/imageStorage';
 
 interface EmployeeItemProps {
     employee: Employee;
@@ -10,16 +11,23 @@ interface EmployeeItemProps {
 }
 
 export const EmployeeItem: React.FC<EmployeeItemProps> = ({ employee, onEdit, onDeleteEmployee, onEditHours }) => {
+    const avatarUrl = employee.avatarUrl ? imageStorage.getImageUrl(employee.avatarUrl) : undefined;
     return (
         <div className="p-4 border border-default rounded-md flex items-center gap-4 bg-surface">
-            <img
-                src={employee.avatarUrl || `https://ui-avatars.com/api/?name=${employee.name.replace(' ', '+')}&background=random`}
-                alt={employee.name}
-                className="w-16 h-16 rounded-full object-cover"
-            />
-            <div className="flex-grow">
-                <p className="text-md font-semibold text-primary">{employee.name}</p>
-                <p className="text-sm text-secondary">{employee.avatarUrl || 'Sin URL de Avatar'}</p>
+            {avatarUrl ? (
+                <img
+                    src={avatarUrl}
+                    alt={employee.name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-default"
+                />
+            ) : (
+                <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center text-secondary border-2 border-default text-xl">
+                    👤
+                </div>
+            )}
+            <div className="flex-grow min-w-0">
+                <p className="text-md font-semibold text-primary truncate">{employee.name}</p>
+                <p className="text-xs text-secondary truncate">{avatarUrl ? 'Avatar personalizado' : 'Sin avatar'}</p>
             </div>
             <div className="flex flex-col gap-2 ml-4">
                 <Button onClick={() => onEdit(employee)} variant="secondary" size="sm">
