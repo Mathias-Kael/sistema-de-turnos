@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Service } from '../../types';
+import { Service, Business } from '../../types';
 import { getAvailableSlots } from '../../services/api';
 import { useBusinessState } from '../../context/BusinessContext';
 
@@ -8,10 +8,12 @@ interface TimeSlotPickerProps {
     selectedServices: Service[];
     selectedEmployeeId: string | 'any' | null;
     onSlotSelect: (slot: string) => void;
+    businessOverride?: Business; // Permite usar sin contexto
 }
 
-export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedServices, selectedEmployeeId, onSlotSelect }) => {
-    const business = useBusinessState();
+export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ date, selectedServices, selectedEmployeeId, onSlotSelect, businessOverride }) => {
+    const contextBusiness = useBusinessState();
+    const business = businessOverride ?? contextBusiness;
     const [slots, setSlots] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

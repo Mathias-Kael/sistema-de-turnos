@@ -3,14 +3,10 @@ import { BusinessProvider } from './context/BusinessContext';
 import { StyleInjector } from './components/common/StyleInjector';
 import { ClientView } from './components/views/ClientView';
 import { AdminView } from './components/views/AdminView';
+import { mockBackend } from './services/mockBackend';
+import { ShareLink } from './types';
 
-// Interfaz para el objeto de enlace compartido, que ahora tiene más propiedades.
-interface ShareLink {
-    token: string;
-    status: 'active' | 'paused' | 'revoked';
-    createdAt: number;
-    expiresAt: number | null;
-}
+// ShareLink se importa ahora desde types.ts
 
 /**
  * Componente que valida el token y el estado del enlace de acceso del cliente.
@@ -19,28 +15,45 @@ const TokenValidationView: React.FC<{ token: string }> = ({ token }) => {
   const [validationStatus, setValidationStatus] = useState<'validating' | 'valid' | 'paused' | 'invalid'>('validating');
 
   useEffect(() => {
-    const storedTokenData = localStorage.getItem('shareToken');
-    if (storedTokenData) {
-      const link: ShareLink = JSON.parse(storedTokenData);
-      
-      if (token === link.token) {
-        const isExpired = link.expiresAt !== null && new Date().getTime() > link.expiresAt;
-        
-        if (isExpired || link.status === 'revoked') {
+    let cancelled = false;
+    (async () => {
+      try {
+        const biz = await mockBackend.getBusinessByToken(token);
+        if (cancelled) return;
+        if (!biz) {
           setValidationStatus('invalid');
-        } else if (link.status === 'paused') {
-          setValidationStatus('paused');
-        } else if (link.status === 'active') {
-          setValidationStatus('valid');
-        } else {
-          setValidationStatus('invalid');
+          return;
         }
-      } else {
-        setValidationStatus('invalid'); // El token no coincide
+        // Recuperar metadatos para determinar estado (paused vs active)
+        const storedTokenData = localStorage.getItem('shareToken');
+        if (storedTokenData && storedTokenData !== 'null') {
+          try {
+            const link: ShareLink = JSON.parse(storedTokenData);
+            if (link.token !== token) {
+              setValidationStatus('invalid');
+              return;
+            }
+            const isExpired = link.expiresAt !== null && Date.now() > link.expiresAt;
+            if (isExpired || link.status === 'revoked') {
+              setValidationStatus('invalid');
+            } else if (link.status === 'paused') {
+              setValidationStatus('paused');
+            } else if (link.status === 'active') {
+              setValidationStatus('valid');
+            } else {
+              setValidationStatus('invalid');
+            }
+          } catch {
+            setValidationStatus('valid'); // Token backend válido pero metadatos corruptos -> permitir
+          }
+        } else {
+          setValidationStatus('valid'); // Backend lo aceptó aunque no tengamos metadatos (edge case)
+        }
+      } catch {
+        if (!cancelled) setValidationStatus('invalid');
       }
-    } else {
-      setValidationStatus('invalid'); // No hay ningún token guardado
-    }
+    })();
+    return () => { cancelled = true; };
   }, [token]);
 
   if (validationStatus === 'validating') {

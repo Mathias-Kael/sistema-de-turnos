@@ -138,3 +138,11 @@ export interface ProcessedImage {
   height: number;
   wasCompressed: boolean;
 }
+
+// ===== SHARE LINK / PUBLIC TOKEN ACCESS =====
+export interface ShareLink {
+  token: string;
+  status: 'active' | 'paused' | 'revoked';
+  createdAt: number;
+  expiresAt: number | null;
+}

@@ -58,6 +58,35 @@ export const mockBackend = {
         return state;
     },
 
+    /**
+     * Obtiene el negocio asociado a un token público compartido.
+     * La lógica actual almacena los datos del enlace compartido en localStorage
+     * bajo la key 'shareToken' (no dentro de businessData). Validamos:
+     *  - Coincidencia exacta de token
+     *  - No expirado (si expiresAt !== null)
+     *  - Status no sea 'revoked'
+     * Si el enlace está 'paused' igualmente devolvemos el negocio (la UI decidirá qué mostrar).
+     */
+    getBusinessByToken: async (token: string): Promise<Business | null> => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        try {
+            const raw = localStorage.getItem('shareToken');
+            if (!raw || raw === 'null') return null;
+            const link = JSON.parse(raw);
+            if (!link || typeof link !== 'object') return null;
+            if (link.token !== token) return null;
+            const now = Date.now();
+            const isExpired = link.expiresAt !== null && now > link.expiresAt;
+            if (isExpired) return null;
+            if (link.status === 'revoked') return null;
+            // status 'active' o 'paused' -> devolvemos el negocio actual
+            return state;
+        } catch (e) {
+            console.error('[mockBackend.getBusinessByToken] Error parseando shareToken', e);
+            return null;
+        }
+    },
+
     updateBusinessData: async (newData: Business): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
 

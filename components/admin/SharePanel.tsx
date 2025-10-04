@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
+import { ShareLink } from '../../types';
 
 type ExpirationOption = 'permanent' | '7d' | '30d' | '1y';
 type LinkStatus = 'active' | 'paused' | 'revoked';
 type DerivedStatus = LinkStatus | 'expired';
 
-interface ShareLink {
-    token: string;
-    status: LinkStatus;
-    createdAt: number;
-    expiresAt: number | null;
-}
+// ShareLink ahora viene de types.ts
 
 const ExpirationLabel: Record<ExpirationOption, string> = {
     permanent: 'Permanente (sin caducidad)',
