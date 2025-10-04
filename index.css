@@ -29,3 +29,14 @@
     --color-brand: #63b3ed;
   }
 }
+
+/* Fallback para tabs desktop si por algún motivo Tailwind no aplica md:flex */
+@media (min-width: 768px) {
+  .admin-desktop-tabs {
+    display: flex !important;
+  }
+}
+
+/* Ocultar scroll horizontal en navegadores modernos (tabs overflow) */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

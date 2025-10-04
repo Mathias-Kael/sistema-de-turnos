@@ -9,7 +9,7 @@ import { useBusinessState, useBusinessDispatch } from '../../context/BusinessCon
 import { ClientView } from './ClientView';
 import { HeroSection } from '../common/HeroSection';
 import { EditInfoModal } from '../admin/EditInfoModal';
-import { imageStorage } from '../../services/imageStorage';
+import { ImageUploader } from '../common/ImageUploader';
 
 type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'preview' | 'branding';
 
@@ -32,6 +32,8 @@ export const AdminView: React.FC = () => {
     const [editingField, setEditingField] = useState<null | 'name' | 'description' | 'phone'>(null);
     const [editingCover, setEditingCover] = useState(false);
     const [editingProfile, setEditingProfile] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const renderContent = () => {
         switch (activeTab) {
@@ -54,27 +56,13 @@ export const AdminView: React.FC = () => {
         }
     };
 
-    const DesktopTabs: React.FC = () => (
-        <div className="hidden md:flex gap-2 border-b border-default px-6 mt-2 mb-6">
-            {tabs.map(tab => (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 text-sm font-medium transition border-b-2 ${
-                        activeTab === tab.id
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-secondary hover:text-primary'
-                    }`}
-                >
-                    {tab.label}
-                </button>
-            ))}
-        </div>
-    );
+    // Nota: Se inlinéa la barra de tabs desktop para evitar cualquier problema de renderizado con componentes internos.
 
     const MobileSelect: React.FC = () => (
-        <div className="md:hidden px-4 mt-2 mb-6">
+        <div className="md:hidden px-6 mb-4">
+            <label htmlFor="admin-tab-select" className="sr-only">Seleccionar sección</label>
             <select
+                id="admin-tab-select"
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value as Tab)}
                 className="w-full p-2 border border-default rounded-lg bg-surface text-primary"
@@ -100,24 +88,37 @@ export const AdminView: React.FC = () => {
         }
     };
 
-    const handleCoverUpload = async (file: File) => {
-        const res = await imageStorage.uploadImage(file, 'cover', business.coverImageUrl);
-        if (!res.success || !res.imageId) {
-            console.error('Error al subir portada:', res.error);
+    const handleCoverImageChange = async (imageId: string) => {
+        // imageId vacío significa error o borrado
+        if (!imageId) {
+            setError('Error al subir la imagen de portada');
             return;
         }
-        await dispatch({ type: 'SET_COVER_IMAGE', payload: res.imageId });
-        setEditingCover(false);
+        try {
+            setError('');
+            await dispatch({ type: 'SET_COVER_IMAGE', payload: imageId });
+            setSuccess('Portada actualizada');
+            setTimeout(() => setSuccess(''), 3000);
+            setEditingCover(false);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Error inesperado al guardar la portada');
+        }
     };
 
-    const handleProfileUpload = async (file: File) => {
-        const res = await imageStorage.uploadImage(file, 'profile', business.profileImageUrl);
-        if (!res.success || !res.imageId) {
-            console.error('Error al subir imagen de perfil:', res.error);
+    const handleProfileImageChange = async (imageId: string) => {
+        if (!imageId) {
+            setError('Error al subir la imagen de perfil');
             return;
         }
-        await dispatch({ type: 'SET_PROFILE_IMAGE', payload: res.imageId });
-        setEditingProfile(false);
+        try {
+            setError('');
+            await dispatch({ type: 'SET_PROFILE_IMAGE', payload: imageId });
+            setSuccess('Perfil actualizado');
+            setTimeout(() => setSuccess(''), 3000);
+            setEditingProfile(false);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Error inesperado al guardar la imagen de perfil');
+        }
     };
 
     return (
@@ -136,11 +137,46 @@ export const AdminView: React.FC = () => {
             {/* Menú móvil */}
             {/* Navegación responsive */}
             <MobileSelect />
-            <DesktopTabs />
+            {/* Barra de tabs desktop modernizada */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+                <div
+                    className="hidden md:flex admin-desktop-tabs overflow-x-auto hide-scrollbar gap-1 -mb-px border-b border-default"
+                    role="tablist"
+                    aria-label="Navegación administración"
+                >
+                    {tabs.map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                role="tab"
+                                aria-selected={isActive}
+                                aria-controls={`panel-${tab.id}`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`relative px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus-visible:ring focus-visible:ring-primary/40 ${
+                                    isActive
+                                        ? 'text-primary bg-surface'
+                                        : 'text-secondary hover:text-primary hover:bg-surface'
+                                }`}
+                            >
+                                <span>{tab.label}</span>
+                                {isActive && (
+                                    <span className="absolute left-0 bottom-0 h-0.5 w-full bg-primary rounded-full" />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-                <div className="bg-surface p-6 rounded-lg shadow border border-default">
-                    {renderContent()}
+                <div
+                    id={`panel-${activeTab}`}
+                    role="tabpanel"
+                    aria-labelledby={`tab-${activeTab}`}
+                    className="bg-surface p-6 rounded-lg shadow border border-default"
+                >
+                        {renderContent()}
                 </div>
             </main>
 
@@ -156,67 +192,68 @@ export const AdminView: React.FC = () => {
 
             {/* Modals simples para subir cover/profile (reutiliza input oculto) */}
             {editingCover && (
-                <ImageUploadInlineModal
-                    title="Editar Portada"
-                    type="cover"
-                    currentImageId={business.coverImageUrl}
-                    onClose={() => setEditingCover(false)}
-                    onUpload={handleCoverUpload}
-                />
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-primary">Editar Portada</h3>
+                            <button
+                                onClick={() => { setEditingCover(false); setError(''); }}
+                                className="text-secondary hover:text-primary"
+                                aria-label="Cerrar"
+                            >✕</button>
+                        </div>
+                        <ImageUploader
+                            currentImageUrl={business.coverImageUrl}
+                            type="cover"
+                            label="Nueva portada"
+                            onImageChange={handleCoverImageChange}
+                            onError={(err) => setError(err)}
+                        />
+                        {error && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>
+                        )}
+                    </div>
+                </div>
             )}
             {editingProfile && (
-                <ImageUploadInlineModal
-                    title="Editar Perfil"
-                    type="profile"
-                    currentImageId={business.profileImageUrl}
-                    onClose={() => setEditingProfile(false)}
-                    onUpload={handleProfileUpload}
-                />
-            )}
-        </div>
-    );
-};
-
-// Modal interno para uploads rápidos (sin drag & drop avanzado) para foco en flujo hero
-const ImageUploadInlineModal: React.FC<{
-    title: string;
-    type: 'cover' | 'profile';
-    currentImageId?: string;
-    onClose: () => void;
-    onUpload: (file: File) => Promise<void>;
-}> = ({ title, type, onClose, onUpload }) => {
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            setIsLoading(true);
-            await onUpload(file);
-        } catch (err: any) {
-            setError(err.message || 'Error al subir la imagen');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">
-                <h3 className="text-lg font-bold mb-4">{title}</h3>
-                <input
-                    type="file"
-                    accept={type === 'cover' ? 'image/*' : 'image/*'}
-                    onChange={handleChange}
-                    className="w-full mb-4"
-                />
-                {isLoading && <p className="text-sm text-secondary mb-2">Procesando...</p>}
-                {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onClose} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover">Cerrar</button>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-primary">Editar Perfil</h3>
+                            <button
+                                onClick={() => { setEditingProfile(false); setError(''); }}
+                                className="text-secondary hover:text-primary"
+                                aria-label="Cerrar"
+                            >✕</button>
+                        </div>
+                        <ImageUploader
+                            currentImageUrl={business.profileImageUrl}
+                            type="profile"
+                            label="Nueva imagen de perfil"
+                            onImageChange={handleProfileImageChange}
+                            onError={(err) => setError(err)}
+                        />
+                        {error && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {(success || error) && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-full max-w-sm px-4">
+                    {success && (
+                        <div className="px-4 py-2 rounded-md bg-green-100 text-green-800 text-sm shadow border border-green-300">
+                            {success}
+                        </div>
+                    )}
+                    {error && !editingCover && !editingProfile && (
+                        <div className="px-4 py-2 rounded-md bg-red-100 text-red-700 text-sm shadow border border-red-300">
+                            {error}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
