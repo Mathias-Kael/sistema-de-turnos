@@ -89,33 +89,40 @@ export const AdminView: React.FC = () => {
     };
 
     const handleCoverImageChange = async (imageId: string) => {
-        // imageId vacío significa error o borrado
-        if (!imageId) {
-            setError('Error al subir la imagen de portada');
-            return;
-        }
         try {
             setError('');
-            await dispatch({ type: 'SET_COVER_IMAGE', payload: imageId });
-            setSuccess('Portada actualizada');
+            if (imageId === '') {
+                // Eliminación de portada
+                await dispatch({ type: 'SET_COVER_IMAGE', payload: '' });
+                setSuccess('Portada eliminada');
+                setEditingCover(false);
+            } else {
+                // Actualización de portada
+                await dispatch({ type: 'SET_COVER_IMAGE', payload: imageId });
+                setSuccess('Portada actualizada');
+                setEditingCover(false);
+            }
             setTimeout(() => setSuccess(''), 3000);
-            setEditingCover(false);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error inesperado al guardar la portada');
         }
     };
 
     const handleProfileImageChange = async (imageId: string) => {
-        if (!imageId) {
-            setError('Error al subir la imagen de perfil');
-            return;
-        }
         try {
             setError('');
-            await dispatch({ type: 'SET_PROFILE_IMAGE', payload: imageId });
-            setSuccess('Perfil actualizado');
+            if (imageId === '') {
+                // Eliminación de imagen de perfil
+                await dispatch({ type: 'SET_PROFILE_IMAGE', payload: '' });
+                setSuccess('Imagen de perfil eliminada');
+                setEditingProfile(false);
+            } else {
+                // Actualización de imagen de perfil
+                await dispatch({ type: 'SET_PROFILE_IMAGE', payload: imageId });
+                setSuccess('Perfil actualizado');
+                setEditingProfile(false);
+            }
             setTimeout(() => setSuccess(''), 3000);
-            setEditingProfile(false);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error inesperado al guardar la imagen de perfil');
         }
