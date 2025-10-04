@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
 import { MobileMenu } from './MobileMenu';
+import { imageStorage } from '../../services/imageStorage';
 
 export const Header: React.FC = () => {
-    const { name, description, logoUrl } = useBusinessState();
+    const { name, description, profileImageUrl } = useBusinessState();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Migración visual: usar profileImageUrl como logo en header si existe
+    const logoUrl = profileImageUrl ? imageStorage.getImageUrl(profileImageUrl) : undefined;
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 

@@ -37,18 +37,13 @@ class LocalStorageImageService implements ImageStorageService {
    */
   async uploadImage(file: File, type: ImageType, oldImageId?: string): Promise<ImageUploadResult> {
     try {
-      // 0. Eliminar imagen anterior si se proporciona
-      if (oldImageId) {
-        await this.deleteImage(oldImageId);
-        console.log(`🗑️ Imagen anterior eliminada: ${oldImageId}`);
-      }
       // 1. Obtener constraints según el tipo
       const constraints = IMAGE_CONSTRAINTS[type];
-      
-      // 2. Procesar imagen con optimización
+
+      // 2. Procesar imagen primero (puede fallar). Si falla NO borramos la anterior.
       const processedImage = await ImageProcessor.processImage(file, constraints);
-      
-      // 3. Verificar que el tamaño final no exceda el límite (validación extra)
+
+      // 3. Validación adicional tamaño final
       if (processedImage.finalSize > constraints.maxSizeBytes) {
         throw new Error(
           `La imagen optimizada (${Math.round(processedImage.finalSize / 1024)}KB) ` +
@@ -56,11 +51,11 @@ class LocalStorageImageService implements ImageStorageService {
           `Intenta con una imagen más pequeña.`
         );
       }
-      
-      // 4. Generar ID único
+
+      // 4. Generar nuevo ID (no sobreescribimos hasta validar guardado)
       const imageId = this.generateImageId(type);
       
-      // 5. Intentar guardar en localStorage
+      // 5. Guardar nueva imagen (puede lanzar QuotaExceededError)
       try {
         localStorage.setItem(imageId, processedImage.dataUrl);
       } catch (e) {
@@ -72,11 +67,16 @@ class LocalStorageImageService implements ImageStorageService {
         }
         throw e;
       }
-      
-      // 6. Verificar espacio disponible y hacer warning si es necesario
+      // 6. Sólo ahora que la nueva imagen está guardada eliminamos la anterior (cleanup)
+      if (oldImageId) {
+        await this.deleteImage(oldImageId);
+        console.log(`🗑️ Imagen anterior eliminada: ${oldImageId}`);
+      }
+
+      // 7. Verificar espacio disponible y hacer warning si es necesario
       this.checkStorageSpace();
       
-      // 7. Retornar resultado exitoso
+      // 8. Retornar resultado exitoso
       return {
         success: true,
         imageId,

@@ -102,12 +102,20 @@ export const AdminView: React.FC = () => {
 
     const handleCoverUpload = async (file: File) => {
         const res = await imageStorage.uploadImage(file, 'cover', business.coverImageUrl);
+        if (!res.success || !res.imageId) {
+            console.error('Error al subir portada:', res.error);
+            return;
+        }
         await dispatch({ type: 'SET_COVER_IMAGE', payload: res.imageId });
         setEditingCover(false);
     };
 
     const handleProfileUpload = async (file: File) => {
         const res = await imageStorage.uploadImage(file, 'profile', business.profileImageUrl);
+        if (!res.success || !res.imageId) {
+            console.error('Error al subir imagen de perfil:', res.error);
+            return;
+        }
         await dispatch({ type: 'SET_PROFILE_IMAGE', payload: res.imageId });
         setEditingProfile(false);
     };
