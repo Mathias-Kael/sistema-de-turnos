@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
+import { imageStorage } from '../../services/imageStorage';
 
 export const Header: React.FC = () => {
-    const { name, description, logoUrl } = useBusinessState();
+    const { name, description, profileImageUrl } = useBusinessState();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const logoUrl = profileImageUrl ? imageStorage.getImageUrl(profileImageUrl) : undefined;
+    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     return (
         <>
@@ -25,7 +29,7 @@ export const Header: React.FC = () => {
                 </nav>
 
                 <div className="md:hidden">
-                    {/* Placeholder for mobile menu button if needed in the future */}
+                    <button onClick={toggleMenu} className="p-2 rounded hover:bg-surface" aria-label="Toggle menu">☰</button>
                 </div>
             </header>
             <div className="text-center py-6">

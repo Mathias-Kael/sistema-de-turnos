@@ -5,6 +5,7 @@ import EmployeeHoursEditor from './EmployeeHoursEditor';
 import { EmployeeItem } from './EmployeeItem';
 import { EmployeeEditModal } from './EmployeeEditModal';
 import { INITIAL_BUSINESS_DATA } from '../../constants';
+import { ImageUploader } from '../common/ImageUploader';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Button } from '../ui/Button';
 
@@ -69,8 +70,16 @@ export const EmployeesEditor: React.FC = () => {
             {isAdding && (
                  <div className="p-4 border border-default rounded-md bg-surface space-y-4">
                     <h4 className="font-semibold text-primary">Nuevo Empleado</h4>
-                    <input type="text" placeholder="Nombre Completo" value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                    <input type="text" placeholder="URL del Avatar" value={newEmployee.avatarUrl} onChange={(e) => setNewEmployee({...newEmployee, avatarUrl: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
+                                        <input type="text" placeholder="Nombre Completo" value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
+                                        <div>
+                                                <ImageUploader
+                                                    currentImageUrl={newEmployee.avatarUrl}
+                                                    type="avatar"
+                                                    label="Avatar del Empleado"
+                                                    onImageChange={(imageId) => setNewEmployee({...newEmployee, avatarUrl: imageId })}
+                                                    onError={(err) => console.error('Error avatar empleado:', err)}
+                                                />
+                                        </div>
                     <Button onClick={handleAddEmployee} className="w-full">Guardar Empleado</Button>
                 </div>
             )}

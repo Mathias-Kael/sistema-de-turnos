@@ -3,50 +3,51 @@ import { ImageProcessor } from '../utils/imageProcessing';
 import { IMAGE_CONSTRAINTS } from '../constants';
 
 /**
- * Servicio de almacenamiento de imágenes basado en localStorage.
- * Mantiene una interfaz que permitirá migrar a un backend real sin cambios en consumidores.
+ * Servicio de almacenamiento de imágenes (localStorage) preparado para migrar a backend.
+ * - Genera IDs únicos img_{tipo}_{timestamp}_{rand}
+ * - Procesa (resize/compress) antes de guardar
+ * - Sólo elimina la imagen anterior tras éxito del guardado nuevo
  */
 class LocalStorageImageService implements ImageStorageService {
   private readonly STORAGE_KEY_PREFIX = 'img_';
-  private readonly STORAGE_LIMIT_WARNING = 1 * 1024 * 1024; // 1MB restante => warning
+  private readonly STORAGE_LIMIT_WARNING = 1 * 1024 * 1024; // 1MB restante -> warning
 
-  async uploadImage(file: File, type: ImageType): Promise<ImageUploadResult> {
+  async uploadImage(file: File, type: ImageType, oldImageId?: string): Promise<ImageUploadResult> {
     try {
-      // 1. Constraints según tipo
       const constraints = IMAGE_CONSTRAINTS[type];
-      // 2. Procesar imagen (resize + compress)
-      const processedImage = await ImageProcessor.processImage(file, constraints);
-      // 3. Validación extra
-      if (processedImage.finalSize > constraints.maxSizeBytes) {
+      const processed = await ImageProcessor.processImage(file, constraints);
+      if (processed.finalSize > constraints.maxSizeBytes) {
         throw new Error(
-          `La imagen optimizada (${Math.round(processedImage.finalSize / 1024)}KB) aún excede el límite de ${Math.round(constraints.maxSizeBytes / 1024)}KB. Intenta con una imagen más pequeña.`
+          `La imagen optimizada (${Math.round(processed.finalSize / 1024)}KB) excede el límite de ${Math.round(constraints.maxSizeBytes / 1024)}KB.`
         );
       }
-      // 4. Generar ID
       const imageId = this.generateImageId(type);
-      // 5. Guardar
       try {
-        localStorage.setItem(imageId, processedImage.dataUrl);
+        localStorage.setItem(imageId, processed.dataUrl);
       } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-          throw new Error('No hay espacio suficiente en el navegador. Libera espacio o usa una imagen más pequeña.');
+          throw new Error('No hay espacio suficiente en el navegador. Elimina imágenes viejas o usa una más pequeña.');
         }
         throw e;
       }
-      // 6. Check espacio restante
+      if (oldImageId) {
+        await this.deleteImage(oldImageId);
+      }
       this.checkStorageSpace();
-      // 7. Retornar resultado
       return {
         success: true,
-        imageUrl: imageId,
-        originalSize: processedImage.originalSize,
-        finalSize: processedImage.finalSize,
-        wasCompressed: processedImage.wasCompressed,
+        imageId,
+        imageUrl: processed.dataUrl,
+        finalSize: processed.finalSize,
+        dimensions: { width: processed.width, height: processed.height },
+        wasCompressed: processed.wasCompressed,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido al procesar imagen',
+        imageId: '',
+        imageUrl: '',
+        error: error instanceof Error ? error.message : 'Error desconocido al procesar imagen'
       };
     }
   }
@@ -61,7 +62,7 @@ class LocalStorageImageService implements ImageStorageService {
     if (identifier.startsWith(this.STORAGE_KEY_PREFIX)) {
       return localStorage.getItem(identifier) || '';
     }
-    return identifier; // URL absoluta ya existente
+    return identifier; // URL externa/legacy
   }
 
   private generateImageId(type: ImageType): string {
@@ -76,7 +77,7 @@ class LocalStorageImageService implements ImageStorageService {
       const value = localStorage.getItem(key);
       total += value?.length || 0;
     }
-    const LIMIT = 5 * 1024 * 1024; // ~5MB
+    const LIMIT = 5 * 1024 * 1024; // ~5MB heurístico
     const remaining = LIMIT - total;
     if (remaining < this.STORAGE_LIMIT_WARNING) {
       console.warn(`⚠️ Espacio bajo en localStorage: ~${Math.round(remaining/1024)}KB restantes`);
@@ -86,3 +87,4 @@ class LocalStorageImageService implements ImageStorageService {
 
 export const imageStorage: ImageStorageService = new LocalStorageImageService();
 export { IMAGE_CONSTRAINTS } from '../constants';
+export type { ImageStorageService, ImageType, ImageUploadResult } from '../types';

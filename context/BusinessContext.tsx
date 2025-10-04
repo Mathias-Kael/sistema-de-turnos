@@ -7,7 +7,7 @@ import { mockBackend } from '../services/mockBackend';
 type Action =
     | { type: 'HYDRATE_STATE'; payload: Business }
     | { type: 'UPDATE_BUSINESS'; payload: Business }
-    | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string; logoUrl: string } }
+    | { type: 'SET_BUSINESS_INFO'; payload: { name: string; description: string } }
     | { type: 'SET_PHONE'; payload: string }
     | { type: 'SET_BRANDING'; payload: Branding }
     | { type: 'ADD_SERVICE'; payload: Service }
@@ -20,7 +20,9 @@ type Action =
     | { type: 'UPDATE_EMPLOYEE_HOURS'; payload: { employeeId: string; hours: Hours } }
     | { type: 'CREATE_BOOKING'; payload: Omit<Booking, 'id'> }
     | { type: 'UPDATE_BOOKING'; payload: Booking }
-    | { type: 'DELETE_BOOKING'; payload: string };
+    | { type: 'DELETE_BOOKING'; payload: string }
+    | { type: 'SET_COVER_IMAGE'; payload: string }
+    | { type: 'SET_PROFILE_IMAGE'; payload: string };
 
 // --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -115,7 +117,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteBooking });
                     break;
                 case 'SET_BUSINESS_INFO':
-                    const updatedBusinessInfo = { ...currentState, name: action.payload.name, description: action.payload.description, logoUrl: action.payload.logoUrl };
+                    const updatedBusinessInfo = { ...currentState, name: action.payload.name, description: action.payload.description };
                     const updatedBusinessFromInfo = await mockBackend.updateBusinessData(updatedBusinessInfo);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromInfo });
                     break;
@@ -133,6 +135,20 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const updatedBusinessHours = { ...currentState, hours: action.payload };
                     const updatedBusinessFromHours = await mockBackend.updateBusinessData(updatedBusinessHours);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromHours });
+                    break;
+                case 'SET_COVER_IMAGE':
+                    {
+                        const updatedWithCover = { ...currentState, coverImageUrl: action.payload };
+                        const savedWithCover = await mockBackend.updateBusinessData(updatedWithCover);
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithCover });
+                    }
+                    break;
+                case 'SET_PROFILE_IMAGE':
+                    {
+                        const updatedWithProfile = { ...currentState, profileImageUrl: action.payload };
+                        const savedWithProfile = await mockBackend.updateBusinessData(updatedWithProfile);
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithProfile });
+                    }
                     break;
                 default:
                     // Esta rama es para HYDRATE_STATE, que no necesita lógica asíncrona.

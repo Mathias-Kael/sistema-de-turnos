@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Service, Employee } from '../../types';
 import { useBusinessState } from '../../context/BusinessContext';
-import { Header } from '../common/Header';
 import { ServiceSelector } from '../common/ServiceSelector';
-import { EmployeeSelector } from '../common/EmployeeSelector'; // Nuevo componente
+import { EmployeeSelector } from '../common/EmployeeSelector';
 import { Calendar } from '../common/Calendar';
 import { TimeSlotPicker } from '../common/TimeSlotPicker';
 import { ConfirmationModal } from '../common/ConfirmationModal';
+import { HeroSection } from '../common/HeroSection';
 
 export const ClientView: React.FC = () => {
     const business = useBusinessState();
@@ -60,10 +60,12 @@ export const ClientView: React.FC = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 md:p-8">
-            <Header />
+        <div className="min-h-screen bg-background text-primary">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                <HeroSection business={business} />
+            </div>
 
-            <div className="max-w-4xl mx-auto mt-8 space-y-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
                 {/* Step 1: Service Selection */}
                 <section>
                     <ServiceSelector

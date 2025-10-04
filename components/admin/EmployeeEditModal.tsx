@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Employee } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { ImageUploader } from '../common/ImageUploader';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { WhatsAppIcon } from '../common/WhatsAppIcon';
 
@@ -63,13 +64,13 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, 
                         />
                     </div>
                     <div>
-                        <label htmlFor="employee-avatar" className="block text-sm font-medium text-secondary mb-1">URL del Avatar</label>
-                        <Input
-                            id="employee-avatar"
-                            type="text"
-                            value={editedAvatarUrl}
-                            onChange={(e) => setEditedAvatarUrl(e.target.value)}
-                            placeholder="URL del avatar"
+                        <label className="block text-sm font-medium text-secondary mb-2">Avatar</label>
+                        <ImageUploader
+                          currentImageUrl={editedAvatarUrl}
+                          type="avatar"
+                          label="Avatar del Empleado"
+                          onImageChange={(id) => setEditedAvatarUrl(id)}
+                          onError={(err) => setError(err)}
                         />
                     </div>
                     <div>
