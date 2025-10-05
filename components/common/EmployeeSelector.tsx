@@ -56,10 +56,10 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                                 <img
                                     src={avatarUrl}
                                     alt={employee.name}
-                                    className="w-16 h-16 rounded-full mx-auto mb-2 object-cover"
+                                    className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 object-cover"
                                 />
                             ) : (
-                                <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-background flex items-center justify-center text-secondary text-2xl">
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 bg-background flex items-center justify-center text-secondary text-3xl">
                                     👤
                                 </div>
                             )}

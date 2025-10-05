@@ -90,10 +90,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <img
               src={profileUrl}
               alt={business.name}
-              className="w-20 h-20 md:w-32 md:h-32 rounded-full border-4 border-background shadow-lg object-cover"
+              className="w-24 h-24 md:w-40 md:h-40 rounded-full border-4 border-background shadow-lg object-cover"
             />
           ) : (
-            <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-4 border-background shadow-lg bg-surface flex items-center justify-center text-secondary text-xs">
+            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border-4 border-background shadow-lg bg-surface flex items-center justify-center text-secondary text-xs">
               Sin foto
             </div>
           )}
