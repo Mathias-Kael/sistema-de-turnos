@@ -4,6 +4,7 @@ import { Service } from '../../types';
 import ServiceAssignmentEditor from './ServiceAssignmentEditor';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Button } from '../ui/Button';
+import { DurationInput } from '../ui/DurationInput';
 import { Employee } from '../../types'; // Importar Employee
 
 const newServiceTemplate: Omit<Service, 'id'> = {
@@ -94,10 +95,32 @@ export const ServicesEditor: React.FC = () => {
                     <h4 className="font-semibold text-primary">Nuevo Servicio</h4>
                     <input type="text" placeholder="Nombre del Servicio" value={newService.name} onChange={(e) => setNewService({...newService, name: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
                     <textarea placeholder="Descripción" value={newService.description} onChange={(e) => setNewService({...newService, description: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" rows={2}></textarea>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                        <input type="number" placeholder="Duración (min)" value={newService.duration} onChange={(e) => setNewService({...newService, duration: Number(e.target.value)})} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                        <input type="number" placeholder="Buffer (min)" value={newService.buffer} onChange={(e) => setNewService({...newService, buffer: Number(e.target.value)})} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                        <input type="number" placeholder="Precio ($)" value={newService.price} onChange={(e) => setNewService({...newService, price: Number(e.target.value)})} className="w-full p-2 border border-default rounded bg-background text-primary" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-secondary mb-1">Duración</label>
+                            <DurationInput
+                                value={newService.duration}
+                                onChange={(minutes) => setNewService({...newService, duration: minutes})}
+                                hoursPlaceholder="Horas"
+                                minutesPlaceholder="Min"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-secondary mb-1">Buffer</label>
+                            <DurationInput
+                                value={newService.buffer}
+                                onChange={(minutes) => setNewService({...newService, buffer: minutes})}
+                                hoursPlaceholder="Horas"
+                                minutesPlaceholder="Min"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
+                            <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                <input type="number" placeholder="0" value={newService.price} onChange={(e) => setNewService({...newService, price: Number(e.target.value)})} className="w-full p-2 pl-7 border border-default rounded bg-background text-primary" />
+                            </div>
+                        </div>
                     </div>
                     <label className="flex items-center space-x-2 text-secondary">
                         <input type="checkbox" checked={newService.requiresDeposit} onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} className="rounded accent-primary"/>
@@ -146,10 +169,32 @@ export const ServicesEditor: React.FC = () => {
                             <button onClick={() => handleDeleteService(service.id)} className="text-state-danger-text hover:text-state-danger-strong ml-4 p-1 rounded-full hover:bg-state-danger-bg transition-colors" aria-label="Eliminar servicio">&#x1F5D1;</button>
                         </div>
                         <textarea defaultValue={service.description} onBlur={(e) => handleServiceChange(service.id, 'description', e.target.value)} className="w-full text-sm text-secondary border border-default rounded-md p-2 focus:ring-primary focus:border-primary bg-surface" rows={2}></textarea>
-                        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                             <input type="number" defaultValue={service.duration} onBlur={(e) => handleServiceChange(service.id, 'duration', e.target.value)} className="w-full p-2 border border-default rounded bg-surface text-primary" title="Duración (minutos)" />
-                             <input type="number" defaultValue={service.buffer} onBlur={(e) => handleServiceChange(service.id, 'buffer', e.target.value)} className="w-full p-2 border border-default rounded bg-surface text-primary" title="Buffer (minutos)" />
-                             <input type="number" defaultValue={service.price} onBlur={(e) => handleServiceChange(service.id, 'price', e.target.value)} className="w-full p-2 border border-default rounded bg-surface text-primary" title="Precio ($)" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-secondary mb-1">Duración</label>
+                                <DurationInput
+                                    value={service.duration}
+                                    onChange={(minutes) => handleServiceChange(service.id, 'duration', minutes)}
+                                    hoursPlaceholder="Horas"
+                                    minutesPlaceholder="Min"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-secondary mb-1">Buffer</label>
+                                <DurationInput
+                                    value={service.buffer}
+                                    onChange={(minutes) => handleServiceChange(service.id, 'buffer', minutes)}
+                                    hoursPlaceholder="Horas"
+                                    minutesPlaceholder="Min"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
+                                <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                    <input type="number" defaultValue={service.price} onBlur={(e) => handleServiceChange(service.id, 'price', e.target.value)} className="w-full p-2 pl-7 border border-default rounded bg-surface text-primary" title="Precio" />
+                                </div>
+                            </div>
                         </div>
                          <label className="flex items-center space-x-2 text-sm cursor-pointer text-secondary">
                             <input type="checkbox" defaultChecked={!!service.requiresDeposit} onChange={(e) => handleServiceChange(service.id, 'requiresDeposit', e.target.checked)} className="rounded accent-primary"/>
