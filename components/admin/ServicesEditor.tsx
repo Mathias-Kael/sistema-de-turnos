@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Service } from '../../types';
 import ServiceAssignmentEditor from './ServiceAssignmentEditor';
-import { ErrorMessage } from '../ui/ErrorMessage';
+import { ErrorMessage } from '../ui/ErrorMessage'; 
 import { Button } from '../ui/Button';
 import { DurationInput } from '../ui/DurationInput';
 import { Employee } from '../../types'; // Importar Employee
@@ -117,8 +117,8 @@ export const ServicesEditor: React.FC = () => {
                         <div>
                             <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
                             <div className="relative">
-                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
-                                <input type="number" placeholder="0" value={newService.price} onChange={(e) => setNewService({...newService, price: Number(e.target.value)})} className="w-full p-2 pl-7 border border-default rounded bg-background text-primary" />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                <input type="number" placeholder="0" value={newService.price} onChange={(e) => setNewService({...newService, price: Number(e.target.value)})} className="w-full p-2 pl-8 border border-default rounded bg-background text-primary" />
                             </div>
                         </div>
                     </div>
@@ -191,8 +191,8 @@ export const ServicesEditor: React.FC = () => {
                             <div>
                                 <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
                                 <div className="relative">
-                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
-                                    <input type="number" defaultValue={service.price} onBlur={(e) => handleServiceChange(service.id, 'price', e.target.value)} className="w-full p-2 pl-7 border border-default rounded bg-surface text-primary" title="Precio" />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                    <input type="number" defaultValue={service.price} onBlur={(e) => handleServiceChange(service.id, 'price', e.target.value)} className="w-full p-2 pl-8 border border-default rounded bg-surface text-primary" title="Precio" />
                                 </div>
                             </div>
                         </div>

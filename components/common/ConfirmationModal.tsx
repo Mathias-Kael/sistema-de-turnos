@@ -107,8 +107,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 <div className="min-h-full flex items-start md:items-center justify-center p-4">
                 <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center text-primary max-h-[calc(100vh-2rem)] overflow-y-auto focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                     <h2 className="text-2xl font-bold text-[color:var(--color-state-success-text)] mb-4">¡Turno Confirmado!</h2>
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                        <p className="text-sm font-semibold text-yellow-800 mb-2">⚠️ IMPORTANTE:</p>
+                        <p className="text-sm text-yellow-700">
+                            Para que tu turno quede registrado correctamente, <strong>debes confirmar por WhatsApp</strong> haciendo click en el botón de abajo.
+                        </p>
+                    </div>
                     <p className="text-primary mb-4">
-                        Recibirás un recordatorio por email. Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
+                        Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
                     </p>
                     <div className="space-y-3">
                         <a

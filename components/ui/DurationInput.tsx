@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 /**
  * Props para el componente DurationInput.
  * @interface DurationInputProps
- */
+ */ 
 interface DurationInputProps {
     /**
      * Duración total en minutos.
@@ -136,10 +136,10 @@ export const DurationInput: React.FC<DurationInputProps> = ({
                     onChange={(e) => handleHoursChange(Number(e.target.value) || 0)}
                     onBlur={handleBlur}
                     disabled={disabled}
-                    className="w-full p-2 pr-9 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full p-2 pr-10 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     title={`Horas (máx: ${maxHours})`}
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
                     hs
                 </span>
             </div>
@@ -152,10 +152,10 @@ export const DurationInput: React.FC<DurationInputProps> = ({
                     onChange={(e) => handleMinutesChange(Number(e.target.value) || 0)}
                     onBlur={handleBlur}
                     disabled={disabled}
-                    className="w-full p-2 pr-11 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full p-2 pr-12 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Minutos (se normalizarán automáticamente)"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
                     min
                 </span>
             </div>
