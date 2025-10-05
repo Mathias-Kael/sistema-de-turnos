@@ -21,12 +21,32 @@
 :root {
   --color-primary: #1a202c;
   --color-brand: #2b6cb0;
+  
+  /* Estados - Light mode */
+  --color-state-success-bg: #10b981;      /* Verde */
+  --color-state-success-text: #065f46;    /* Verde oscuro */
+  --color-state-warning-bg: #f59e0b;      /* Amarillo/Naranja */
+  --color-state-warning-text: #92400e;    /* Marrón */
+  --color-state-danger-bg: #ef4444;       /* Rojo */
+  --color-state-danger-text: #991b1b;     /* Rojo oscuro */
+  --color-state-neutral-bg: #6b7280;      /* Gris */
+  --color-state-neutral-text: #1f2937;    /* Gris oscuro */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --color-primary: #f7fafc;
     --color-brand: #63b3ed;
+    
+    /* Estados - Dark mode */
+    --color-state-success-bg: #10b981;      /* Verde - mismo */
+    --color-state-success-text: #6ee7b7;    /* Verde claro */
+    --color-state-warning-bg: #f59e0b;      /* Amarillo - mismo */
+    --color-state-warning-text: #fbbf24;    /* Amarillo claro */
+    --color-state-danger-bg: #ef4444;       /* Rojo - mismo */
+    --color-state-danger-text: #fca5a5;     /* Rojo claro */
+    --color-state-neutral-bg: #6b7280;      /* Gris - mismo */
+    --color-state-neutral-text: #d1d5db;    /* Gris claro */
   }
 }
 

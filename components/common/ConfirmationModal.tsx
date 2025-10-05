@@ -106,7 +106,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             <div className="fixed inset-0 bg-black/60 overflow-y-auto z-50" onClick={onClose}>
                 <div className="min-h-full flex items-start md:items-center justify-center p-4">
                 <div className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-lg w-full text-center text-primary max-h-[calc(100vh-2rem)] overflow-y-auto focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-2xl font-bold text-[color:var(--color-state-success-text)] mb-4">¡Turno Confirmado!</h2>
+                    <h2 className="text-2xl font-bold text-green-700 dark:text-green-400 mb-4">¡Turno Confirmado!</h2>
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                         <p className="text-sm font-semibold text-yellow-800 mb-2">⚠️ IMPORTANTE:</p>
                         <p className="text-sm text-yellow-700">
@@ -121,7 +121,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                             href={whatsappConfig.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full block bg-[color:var(--color-state-success-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
+                            className="w-full block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
                         >
                             {whatsappConfig.usingEmployee ? 'Confirmar con el empleado' : 'Confirmar por WhatsApp'}
                         </a>
@@ -133,7 +133,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                         <button
                             type="button"
                             onClick={() => generateICS(date, slot, selectedServices, business)}
-                            className="w-full block bg-[color:var(--color-state-neutral-bg)] text-brand-text font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-colors"
+                            className="w-full block bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
                         >
                             Añadir al Calendario
                         </button>

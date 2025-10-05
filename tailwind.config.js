@@ -24,11 +24,18 @@ export default {
       colors: {
         primary: 'var(--color-primary)',
         brand: 'var(--color-brand)',
+        
+        // Estados con variables CSS
         'state-success-bg': 'var(--color-state-success-bg)',
+        'state-success-text': 'var(--color-state-success-text)',
         'state-warning-bg': 'var(--color-state-warning-bg)',
+        'state-warning-text': 'var(--color-state-warning-text)',
         'state-danger-bg': 'var(--color-state-danger-bg)',
         'state-danger-text': 'var(--color-state-danger-text)',
-        'state-danger-strong': 'var(--color-state-danger-strong)',
+        'state-danger-strong': 'var(--color-state-danger-text)',
+        'state-neutral-bg': 'var(--color-state-neutral-bg)',
+        'state-neutral-text': 'var(--color-state-neutral-text)',
+        
         // Colores de estado fijos para bordes
         pending: '#FFD700',    // Amarillo
         confirmed: '#32CD32',  // Verde lima
