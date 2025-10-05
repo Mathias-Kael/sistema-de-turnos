@@ -110,7 +110,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                         <p className="text-sm font-semibold text-yellow-800 mb-2">⚠️ IMPORTANTE:</p>
                         <p className="text-sm text-yellow-700">
-                            Para que tu turno quede registrado correctamente, <strong>debes confirmar por WhatsApp</strong> haciendo click en el botón de abajo.
+                            Para que tu turno quede registrado correctamente, <strong>debes completar la confirmación vía WhatsApp</strong> haciendo click en el botón de abajo.
                         </p>
                     </div>
                     <p className="text-primary mb-4">

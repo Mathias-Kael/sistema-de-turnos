@@ -55,7 +55,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   return (
     <div className="relative mb-6">
   {/* Cover - Más bajo en móvil */}
-  <div className="relative w-full h-32 md:h-48 z-0">
+  <div className="relative w-full h-48 md:h-64 z-0">
         {/* Capa interna con overflow-hidden */}
         <div className="absolute inset-0 rounded-lg overflow-hidden border-2 border-default bg-surface">
           {coverUrl ? (
@@ -83,17 +83,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       </div>
 
       {/* Profile + Info */}
-  <div className="flex items-start gap-3 md:gap-4 px-4 md:px-6 -mt-10 md:-mt-16 relative z-10 pointer-events-none">
+  {/* Aumentamos agresivamente el tamaño del avatar y ajustamos el solapamiento */}
+  <div className="flex items-start gap-4 md:gap-6 px-4 md:px-6 -mt-20 md:-mt-32 relative z-10 pointer-events-none">
         {/* Profile Image */}
         <div className="relative flex-shrink-0">
           {profileUrl ? (
             <img
               src={profileUrl}
               alt={business.name}
-              className="w-24 h-24 md:w-40 md:h-40 rounded-full border-4 border-background shadow-lg object-cover"
+              /* Tamaños anteriores: w-24 (96px) / md:w-40 (160px)
+                 Requerido: >=128px móvil y >=200px desktop.
+                 Elegimos w-32 (128px) y md:w-56 (~224px) para un salto claramente visible. */
+              className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl object-cover"
             />
           ) : (
-            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border-4 border-background shadow-lg bg-surface flex items-center justify-center text-secondary text-xs">
+            <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl bg-surface flex items-center justify-center text-secondary text-sm">
               Sin foto
             </div>
           )}
@@ -111,7 +115,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         {/* Business Info */}
         {/* Business Info */}
-        <div className="flex-1 pt-12 md:pt-16 pointer-events-none">
+  {/* Ajustamos padding top para alinear texto aprox al centro vertical del nuevo avatar (mitad de 128 => 64 => pt-16; mitad de 224 => 112 => md:pt-28) */}
+  <div className="flex-1 pt-20 md:pt-32 pointer-events-none">
           {/* Nombre */}
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-3xl font-bold text-primary break-words">

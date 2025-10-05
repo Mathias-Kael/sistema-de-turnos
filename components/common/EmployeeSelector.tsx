@@ -26,17 +26,20 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
     return (
         <div>
             <h2 className="text-xl font-semibold mb-4 text-primary">¿Con quién prefieres tu turno?</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {/* Opción "Cualquiera" */}
                 <div
                     onClick={() => onSelectEmployee('any')}
-                    className={`p-4 border rounded-lg cursor-pointer text-center transition-all duration-200 ${
+                    className={`p-5 md:p-6 border rounded-2xl cursor-pointer text-center transition-all duration-200 flex flex-col items-center justify-center aspect-square ${
                         selectedEmployeeId === 'any'
-                            ? 'border-2 border-primary shadow-md bg-surface'
-                            : 'bg-surface hover:shadow-sm border-default'
+                            ? 'border-2 border-primary shadow-lg bg-surface'
+                            : 'bg-surface hover:shadow-md border-default'
                     }`}
                 >
-                     <div className="font-bold text-primary">Cualquiera disponible</div>
+                     <div className="text-lg md:text-xl font-bold text-primary leading-snug">Cualquiera<br className="hidden md:block"/> disponible</div>
+                     <div className="mt-2 text-[10px] md:text-xs text-secondary max-w-[8rem] md:max-w-[9rem] leading-tight">
+                        Te asignaremos automáticamente quien esté libre.
+                     </div>
                 </div>
 
                 {/* Opciones por empleado */}
@@ -56,14 +59,17 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                                 <img
                                     src={avatarUrl}
                                     alt={employee.name}
-                                    className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 object-cover"
+                                    /* Tamaños anteriores: w-20 (80px) / md:w-24 (96px)
+                                       Requerido: >=96px móvil y >=128px desktop.
+                                       Elegimos w-24 (96px) móvil y md:w-32 (128px) desktop para cumplir claramente. */
+                                    className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-3 object-cover shadow-md"
                                 />
                             ) : (
-                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 bg-background flex items-center justify-center text-secondary text-3xl">
+                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-3 bg-background flex items-center justify-center text-secondary text-4xl shadow-inner">
                                     👤
                                 </div>
                             )}
-                            <div className="font-bold text-primary">{employee.name}</div>
+                            <div className="font-bold text-primary text-sm md:text-base leading-tight">{employee.name}</div>
                         </div>
                     );
                 })}
