@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { Business } from '../../types';
 import { ClientBookingExperience } from './ClientBookingExperience';
+import { logger } from '../../utils/logger';
 
 type Status = 'validating' | 'valid' | 'paused' | 'invalid';
 
@@ -20,7 +21,7 @@ export const PublicClientLoader: React.FC = () => {
     }
     let cancelled = false;
     (async () => {
-      console.log('[PublicClientLoader] 🔍 Validando token', token);
+  logger.debug('[PublicClientLoader] Validando token', token);
       try {
         const { data, error } = await supabase
           .from('businesses')
@@ -29,11 +30,11 @@ export const PublicClientLoader: React.FC = () => {
           .eq('status', 'active')
           .single();
 
-        console.log('[PublicClientLoader] Resultado inicial', { data, error });
+  logger.debug('[PublicClientLoader] Resultado inicial', { data, error });
 
         if (cancelled) return;
         if (error || !data) {
-          console.log('[PublicClientLoader] ❌ Token no encontrado o error');
+          logger.debug('[PublicClientLoader] Token no encontrado o error');
           setStatus('invalid');
           return;
         }
@@ -41,36 +42,36 @@ export const PublicClientLoader: React.FC = () => {
         if (data.share_token_expires_at) {
           const expMs = new Date(data.share_token_expires_at).getTime();
           if (Date.now() > expMs) {
-            console.log('[PublicClientLoader] ❌ Token expirado');
+            logger.debug('[PublicClientLoader] Token expirado');
             setStatus('invalid');
             return;
           }
         }
 
         if (data.share_token_status === 'paused') {
-          console.log('[PublicClientLoader] ⏸ Token pausado');
+          logger.debug('[PublicClientLoader] Token pausado');
             setStatus('paused');
             return;
         }
         if (data.share_token_status !== 'active') {
-          console.log('[PublicClientLoader] ❌ Token no activo');
+          logger.debug('[PublicClientLoader] Token no activo');
           setStatus('invalid');
           return;
         }
 
-        console.log('[PublicClientLoader] ✅ Token activo, cargando business completo');
+  logger.debug('[PublicClientLoader] Token activo, cargando business completo');
         const full = await supabaseBackend.getBusinessByToken(token);
         if (!full) {
-          console.log('[PublicClientLoader] ❌ No se pudo construir business');
+          logger.debug('[PublicClientLoader] No se pudo construir business');
           setStatus('invalid');
           return;
         }
-        console.log('[PublicClientLoader] ✅ Business cargado', full.id);
+  logger.debug('[PublicClientLoader] Business cargado', full.id);
         setBusiness(full);
         setStatus('valid');
       } catch (e: any) {
         if (!cancelled) {
-          console.log('[PublicClientLoader] ❌ Error inesperado', e);
+          logger.error('[PublicClientLoader] Error inesperado', e);
           setError('Error inesperado');
           setStatus('invalid');
         }

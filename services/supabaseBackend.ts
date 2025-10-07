@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 import { Business, Booking, Service, Employee, Hours } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 
@@ -134,8 +135,8 @@ async function migrateFromLocalStorage(): Promise<string | null> {
       .select()
       .single();
 
-    if (bizError || !newBiz) {
-      console.error('Migration failed:', bizError);
+      if (bizError || !newBiz) {
+        logger.error('Migration failed:', bizError);
       return null;
     }
 
@@ -154,7 +155,7 @@ async function migrateFromLocalStorage(): Promise<string | null> {
           hours: emp.hours,
         });
 
-      if (empError) console.error('Employee migration error:', empError);
+        if (empError) logger.error('Employee migration error:', empError);
     }
 
     // 3. Migrar services
@@ -174,8 +175,8 @@ async function migrateFromLocalStorage(): Promise<string | null> {
         .select()
         .single();
 
-      if (svcError) {
-        console.error('Service migration error:', svcError);
+        if (svcError) {
+          logger.error('Service migration error:', svcError);
         continue;
       }
 
@@ -207,8 +208,8 @@ async function migrateFromLocalStorage(): Promise<string | null> {
         .select()
         .single();
 
-      if (bookError) {
-        console.error('Booking migration error:', bookError);
+        if (bookError) {
+          logger.error('Booking migration error:', bookError);
         continue;
       }
 
@@ -229,10 +230,10 @@ async function migrateFromLocalStorage(): Promise<string | null> {
     // Marcar migración como completada
     localStorage.setItem('migration_completed', 'true');
 
-    console.log('✅ Migration completed successfully');
+      logger.debug('Migration completed successfully');
     return businessId;
   } catch (error) {
-    console.error('Migration failed:', error);
+      logger.error('Migration failed:', error);
     return null;
   }
 }
@@ -264,7 +265,7 @@ export const supabaseBackend = {
   },
 
   getBusinessByToken: async (token: string): Promise<Business | null> => {
-    console.log('🔍 getBusinessByToken - token recibido:', token);
+      logger.debug('getBusinessByToken - token recibido:', token);
     
     const { data, error } = await supabase
       .from('businesses')
@@ -274,17 +275,17 @@ export const supabaseBackend = {
       .eq('status', 'active')
       .single();
 
-    console.log('🔍 getBusinessByToken - data:', data);
-    console.log('🔍 getBusinessByToken - error:', error);
+      logger.debug('getBusinessByToken - data:', data);
+      logger.debug('getBusinessByToken - error:', error);
 
     if (error || !data) {
-      console.log('❌ getBusinessByToken - retornando null porque:', error ? 'hay error' : 'no hay data');
+        logger.debug('getBusinessByToken - retornando null porque:', error ? 'hay error' : 'no hay data');
       return null;
     }
 
     // Validar que no esté pausado o revocado
     if (data.share_token_status !== 'active') {
-      console.log('❌ getBusinessByToken - token no está activo:', data.share_token_status);
+        logger.debug('getBusinessByToken - token no está activo:', data.share_token_status);
       return null;
     }
 
@@ -292,12 +293,12 @@ export const supabaseBackend = {
     if (data.share_token_expires_at) {
       const expiryDate = new Date(data.share_token_expires_at);
       if (expiryDate.getTime() < Date.now()) {
-        console.log('❌ getBusinessByToken - token expirado');
+          logger.debug('getBusinessByToken - token expirado');
         return null;
       }
     }
 
-    console.log('✅ getBusinessByToken - construyendo business con ID:', data.id);
+      logger.debug('getBusinessByToken - construyendo business con ID:', data.id);
     return buildBusinessObject(data.id);
   },
 
@@ -572,6 +573,6 @@ export const supabaseBackend = {
 
   loadDataForTests: () => {
     // No-op para compatibilidad con tests
-    console.log('loadDataForTests: Not needed with Supabase');
+  logger.debug('loadDataForTests: Not needed with Supabase');
   },
 };
