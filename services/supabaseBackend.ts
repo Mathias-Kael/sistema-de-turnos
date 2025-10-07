@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
 import { Business, Booking, Service, Employee, Hours } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
+import { withRetryOrThrow } from '../utils/supabaseWrapper';
 
 /**
  * SUPABASE BACKEND
@@ -15,41 +16,51 @@ import { INITIAL_BUSINESS_DATA } from '../constants';
 // =====================================================
 
 async function buildBusinessObject(businessId: string): Promise<Business> {
-  // 1. Obtener business
-  const { data: bizData, error: bizError } = await supabase
-    .from('businesses')
-    .select('*')
-    .eq('id', businessId)
-    .single();
+  // 1. Obtener business (retry)
+  const bizData = await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('id', businessId)
+      .single();
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-business', userMessage: 'No se pudo cargar el negocio.' });
 
-  if (bizError || !bizData) {
-    throw new Error('Business not found');
-  }
+  if (!bizData) throw new Error('Business not found');
 
   // 2. Obtener employees
-  const { data: employeesData } = await supabase
-    .from('employees')
-    .select('*')
-    .eq('business_id', businessId);
+  const employeesData = (await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('employees')
+      .select('*')
+      .eq('business_id', businessId);
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-employees', userMessage: 'No se pudieron cargar empleados.' })) || [];
 
   // 3. Obtener services con sus employee_ids
-  const { data: servicesData } = await supabase
-    .from('services')
-    .select(`
-      *,
-      service_employees!inner(employee_id)
-    `)
-    .eq('business_id', businessId);
+  const servicesData = (await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('services')
+      .select(`
+        *,
+        service_employees!inner(employee_id)
+      `)
+      .eq('business_id', businessId);
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-services', userMessage: 'No se pudieron cargar servicios.' })) || [];
 
   // 4. Obtener bookings con sus services
-  const { data: bookingsData } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      booking_services!inner(service_id, service_name, service_price)
-    `)
-    .eq('business_id', businessId)
-    .eq('archived', false);
+  const bookingsData = (await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        booking_services!inner(service_id, service_name, service_price)
+      `)
+      .eq('business_id', businessId)
+      .eq('archived', false);
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-bookings', userMessage: 'No se pudieron cargar reservas.' })) || [];
 
   // Construir objeto Business
   const business: Business = {
@@ -265,61 +276,55 @@ export const supabaseBackend = {
   },
 
   getBusinessByToken: async (token: string): Promise<Business | null> => {
-      logger.debug('getBusinessByToken - token recibido:', token);
-    
-    const { data, error } = await supabase
-      .from('businesses')
-      .select('id, share_token_status, share_token_expires_at')
-      .eq('share_token', token)
-      .eq('share_token_status', 'active')
-      .eq('status', 'active')
-      .single();
+    logger.debug('getBusinessByToken - token recibido:', token);
+    try {
+      const data = await withRetryOrThrow(async () => {
+        const res = await supabase
+          .from('businesses')
+          .select('id, share_token_status, share_token_expires_at')
+          .eq('share_token', token)
+          .eq('share_token_status', 'active')
+          .eq('status', 'active')
+          .single();
+        return { data: res.data, error: res.error };
+      }, { operationName: 'get-business-by-token', userMessage: 'No se pudo validar el enlace.' });
 
-      logger.debug('getBusinessByToken - data:', data);
-      logger.debug('getBusinessByToken - error:', error);
-
-    if (error || !data) {
-        logger.debug('getBusinessByToken - retornando null porque:', error ? 'hay error' : 'no hay data');
-      return null;
-    }
-
-    // Validar que no esté pausado o revocado
-    if (data.share_token_status !== 'active') {
-        logger.debug('getBusinessByToken - token no está activo:', data.share_token_status);
-      return null;
-    }
-
-    // Validar que no esté expirado
-    if (data.share_token_expires_at) {
-      const expiryDate = new Date(data.share_token_expires_at);
-      if (expiryDate.getTime() < Date.now()) {
-          logger.debug('getBusinessByToken - token expirado');
-        return null;
+      if (!data) return null;
+      if (data.share_token_status !== 'active') return null;
+      if (data.share_token_expires_at) {
+        const expiryDate = new Date(data.share_token_expires_at);
+        if (expiryDate.getTime() < Date.now()) return null;
       }
+      return buildBusinessObject(data.id);
+    } catch (e) {
+      logger.debug('getBusinessByToken - error tras retries:', e);
+      return null;
     }
-
-      logger.debug('getBusinessByToken - construyendo business con ID:', data.id);
-    return buildBusinessObject(data.id);
   },
 
   updateBusinessData: async (newData: Business): Promise<Business> => {
-    const { error } = await supabase
-      .from('businesses')
-      .update({
-        name: newData.name,
-        description: newData.description,
-        phone: newData.phone,
-        profile_image_url: newData.profileImageUrl,
-        cover_image_url: newData.coverImageUrl,
-        branding: newData.branding,
-        hours: newData.hours,
-        share_token: newData.shareToken,
-        share_token_status: newData.shareTokenStatus,
-        share_token_expires_at: newData.shareTokenExpiresAt,
-      })
-      .eq('id', newData.id);
+    // Usar Edge Function admin-businesses (service_role)
+    const { data, error } = await supabase.functions.invoke('admin-businesses', {
+      body: {
+        action: 'update',
+        businessId: newData.id,
+        data: {
+          id: newData.id,
+          name: newData.name,
+          description: newData.description,
+          phone: newData.phone,
+          profile_image_url: newData.profileImageUrl,
+          cover_image_url: newData.coverImageUrl,
+          branding: newData.branding,
+          hours: newData.hours,
+          share_token: newData.shareToken,
+          share_token_status: newData.shareTokenStatus,
+          share_token_expires_at: newData.shareTokenExpiresAt,
+        },
+      },
+    });
 
-    if (error) throw new Error(error.message);
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(newData.id);
   },
@@ -411,18 +416,20 @@ export const supabaseBackend = {
   addEmployee: async (employee: Employee): Promise<Business> => {
     const businessId = localStorage.getItem('supabase_business_id');
     if (!businessId) throw new Error('No business ID found');
-
-    const { error } = await supabase
-      .from('employees')
-      .insert({
-        business_id: businessId,
-        name: employee.name,
-        avatar_url: employee.avatarUrl,
-        whatsapp: employee.whatsapp,
-        hours: employee.hours,
-      });
-
-    if (error) throw new Error(error.message);
+    const { data, error } = await supabase.functions.invoke('admin-employees', {
+      body: {
+        action: 'create',
+        businessId,
+        data: {
+          business_id: businessId,
+          name: employee.name,
+          avatar_url: employee.avatarUrl,
+          whatsapp: employee.whatsapp,
+          hours: employee.hours,
+        },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
@@ -430,18 +437,22 @@ export const supabaseBackend = {
   updateEmployee: async (updatedEmployee: Employee): Promise<Business> => {
     const businessId = localStorage.getItem('supabase_business_id');
     if (!businessId) throw new Error('No business ID found');
-
-    const { error } = await supabase
-      .from('employees')
-      .update({
-        name: updatedEmployee.name,
-        avatar_url: updatedEmployee.avatarUrl,
-        whatsapp: updatedEmployee.whatsapp,
-        hours: updatedEmployee.hours,
-      })
-      .eq('id', updatedEmployee.id);
-
-    if (error) throw new Error(error.message);
+    const { data, error } = await supabase.functions.invoke('admin-employees', {
+      body: {
+        action: 'update',
+        businessId,
+        data: {
+          id: updatedEmployee.id,
+          updates: {
+            name: updatedEmployee.name,
+            avatar_url: updatedEmployee.avatarUrl,
+            whatsapp: updatedEmployee.whatsapp,
+            hours: updatedEmployee.hours,
+          },
+        },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
@@ -464,12 +475,14 @@ export const supabaseBackend = {
     }
 
     // Eliminar employee (CASCADE eliminará service_employees)
-    const { error } = await supabase
-      .from('employees')
-      .delete()
-      .eq('id', employeeId);
-
-    if (error) throw new Error(error.message);
+    const { data, error } = await supabase.functions.invoke('admin-employees', {
+      body: {
+        action: 'delete',
+        businessId,
+        data: { id: employeeId },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
@@ -477,31 +490,23 @@ export const supabaseBackend = {
   addService: async (service: Service): Promise<Business> => {
     const businessId = localStorage.getItem('supabase_business_id');
     if (!businessId) throw new Error('No business ID found');
-
-    // Crear service
-    const { data: newService, error: svcError } = await supabase
-      .from('services')
-      .insert({
-        business_id: businessId,
-        name: service.name,
-        description: service.description,
-        duration: service.duration,
-        buffer: service.buffer,
-        price: service.price,
-        requires_deposit: service.requiresDeposit,
-      })
-      .select()
-      .single();
-
-    if (svcError || !newService) throw new Error(svcError?.message);
-
-    // Insertar relaciones service_employees
-    for (const empId of service.employeeIds) {
-      await supabase.from('service_employees').insert({
-        service_id: newService.id,
-        employee_id: empId,
-      });
-    }
+    const { data, error } = await supabase.functions.invoke('admin-services', {
+      body: {
+        action: 'create',
+        businessId,
+        data: {
+          business_id: businessId,
+          name: service.name,
+          description: service.description,
+          duration: service.duration,
+          buffer: service.buffer,
+          price: service.price,
+          requires_deposit: service.requiresDeposit,
+          employee_ids: service.employeeIds,
+        },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
@@ -509,36 +514,25 @@ export const supabaseBackend = {
   updateService: async (updatedService: Service): Promise<Business> => {
     const businessId = localStorage.getItem('supabase_business_id');
     if (!businessId) throw new Error('No business ID found');
-
-    // Actualizar service
-    const { error: svcError } = await supabase
-      .from('services')
-      .update({
-        name: updatedService.name,
-        description: updatedService.description,
-        duration: updatedService.duration,
-        buffer: updatedService.buffer,
-        price: updatedService.price,
-        requires_deposit: updatedService.requiresDeposit,
-      })
-      .eq('id', updatedService.id);
-
-    if (svcError) throw new Error(svcError.message);
-
-    // Actualizar relaciones service_employees
-    // 1. Eliminar relaciones actuales
-    await supabase
-      .from('service_employees')
-      .delete()
-      .eq('service_id', updatedService.id);
-
-    // 2. Insertar nuevas relaciones
-    for (const empId of updatedService.employeeIds) {
-      await supabase.from('service_employees').insert({
-        service_id: updatedService.id,
-        employee_id: empId,
-      });
-    }
+    const { data, error } = await supabase.functions.invoke('admin-services', {
+      body: {
+        action: 'update',
+        businessId,
+        data: {
+          id: updatedService.id,
+          updates: {
+            name: updatedService.name,
+            description: updatedService.description,
+            duration: updatedService.duration,
+            buffer: updatedService.buffer,
+            price: updatedService.price,
+            requires_deposit: updatedService.requiresDeposit,
+            employee_ids: updatedService.employeeIds,
+          },
+        },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
@@ -561,12 +555,14 @@ export const supabaseBackend = {
     }
 
     // Eliminar service (CASCADE eliminará service_employees)
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', serviceId);
-
-    if (error) throw new Error(error.message);
+    const { data, error } = await supabase.functions.invoke('admin-services', {
+      body: {
+        action: 'delete',
+        businessId,
+        data: { id: serviceId },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
 
     return buildBusinessObject(businessId);
   },
