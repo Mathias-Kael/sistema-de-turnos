@@ -1,16 +1,16 @@
 import React from 'react';
 import { render, screen, act, renderHook } from '@testing-library/react';
 import { BusinessProvider, useBusinessState, useBusinessDispatch } from './BusinessContext';
-import { mockBackend } from '../services/mockBackend';
+import { supabaseBackend } from '../services/supabaseBackend';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { Employee } from '../types';
 
 // Mock del backend para espiar sus métodos
-jest.mock('../services/mockBackend');
+jest.mock('../services/supabaseBackend');
 
-const mockGetBusinessData = mockBackend.getBusinessData as jest.Mock;
-const mockUpdateBusinessData = mockBackend.updateBusinessData as jest.Mock;
-const mockAddEmployee = mockBackend.addEmployee as jest.Mock;
+const mockGetBusinessData = supabaseBackend.getBusinessData as jest.Mock;
+const mockUpdateBusinessData = supabaseBackend.updateBusinessData as jest.Mock;
+const mockAddEmployee = supabaseBackend.addEmployee as jest.Mock;
 
 const wrapper: React.FC = ({ children }) => <BusinessProvider>{children}</BusinessProvider>;
 
@@ -19,7 +19,7 @@ describe('BusinessContext', () => {
         // Reset mocks antes de cada test
         jest.clearAllMocks();
         // Simular una carga inicial exitosa por defecto
-        mockGetBusinessData.mockResolvedValue(INITIAL_BUSINESS_DATA);
+    mockGetBusinessData.mockResolvedValue({ ...INITIAL_BUSINESS_DATA, id: '00000000-0000-4000-8000-000000000000' });
         // Mock para updateBusinessData que devuelve lo que se le pasa
         mockUpdateBusinessData.mockImplementation(data => Promise.resolve(data));
     });
@@ -30,7 +30,7 @@ describe('BusinessContext', () => {
         // Esperar a que la carga inicial se complete
         await act(async () => {});
         
-        expect(mockBackend.getBusinessData).toHaveBeenCalledTimes(1);
+    expect(supabaseBackend.getBusinessData).toHaveBeenCalledTimes(1);
         expect(result.current.name).toBe(INITIAL_BUSINESS_DATA.name);
     });
 
@@ -56,7 +56,7 @@ describe('BusinessContext', () => {
         const { result } = renderHook(() => ({
             state: useBusinessState(),
             dispatch: useBusinessDispatch(),
-        }), { wrapper });
+        }), { wrapper }); 
 
         await act(async () => {}); // Esperar a la carga inicial
 

@@ -11,7 +11,7 @@ jest.mock('../../context/BusinessContext', () => ({
 
 // Helper mínimo para construir un Business de prueba
 const buildBusiness = (employees: Employee[], phone = '5491112345678'): Business => ({
-  id: 'b1',
+  id: 'b1', 
   name: 'Salon Test',
   description: 'Desc',
   logoUrl: '',

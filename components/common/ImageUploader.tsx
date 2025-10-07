@@ -67,8 +67,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+    // DRAG & DROP DESHABILITADO TEMPORALMENTE POR SEGURIDAD
+    console.warn('Drag & drop deshabilitado. Usa el botón de selección.');
+    return;
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {

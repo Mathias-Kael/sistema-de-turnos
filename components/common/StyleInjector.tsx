@@ -1,5 +1,6 @@
 import React from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
+import { Branding } from '../../types';
 import { adjustColorForDarkMode } from '../../utils/colors';
 
 /**
@@ -8,8 +9,15 @@ import { adjustColorForDarkMode } from '../../utils/colors';
  * based on the business branding configuration from the context.
  * It does not render any visible elements.
  */
-export const StyleInjector: React.FC = () => {
-    const { branding } = useBusinessState();
+interface StyleInjectorProps { brandingOverride?: Branding }
+
+export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }) => {
+    let branding;
+    if (brandingOverride) {
+        branding = brandingOverride;
+    } else {
+        branding = useBusinessState().branding;
+    }
 
     // Import all fonts used in presets to ensure they are available.
     const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap";

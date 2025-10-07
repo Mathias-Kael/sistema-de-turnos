@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { Business, Service, Branding, Hours, Employee, Booking } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
-import { mockBackend } from '../services/mockBackend';
+import { supabaseBackend as mockBackend } from '../services/supabaseBackend';
 
 // --- Tipos de Acción ---
 type Action =
@@ -22,7 +22,8 @@ type Action =
     | { type: 'UPDATE_BOOKING'; payload: Booking }
     | { type: 'DELETE_BOOKING'; payload: string }
     | { type: 'SET_COVER_IMAGE'; payload: string }
-    | { type: 'SET_PROFILE_IMAGE'; payload: string };
+    | { type: 'SET_PROFILE_IMAGE'; payload: string }
+    | { type: 'UPDATE_SHARE_TOKEN'; payload: { shareToken: string; shareTokenStatus: string; shareTokenExpiresAt: string | null } };
 
 // --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -148,6 +149,18 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const updatedWithProfile = { ...currentState, profileImageUrl: action.payload };
                         const savedWithProfile = await mockBackend.updateBusinessData(updatedWithProfile);
                         dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithProfile });
+                    }
+                    break;
+                case 'UPDATE_SHARE_TOKEN':
+                    {
+                        const updatedWithToken = { 
+                            ...currentState, 
+                            shareToken: action.payload.shareToken,
+                            shareTokenStatus: action.payload.shareTokenStatus,
+                            shareTokenExpiresAt: action.payload.shareTokenExpiresAt
+                        };
+                        const savedWithToken = await mockBackend.updateBusinessData(updatedWithToken);
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithToken });
                     }
                     break;
                 default:

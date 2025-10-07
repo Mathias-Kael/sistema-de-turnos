@@ -35,7 +35,7 @@ export const AdminView: React.FC = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'branding':
-                return <BrandingEditor />; // ahora sólo colores/fuentes
+                return <BrandingEditor />;
             case 'services':
                 return <ServicesEditor />;
             case 'equipo':
@@ -81,45 +81,32 @@ export const AdminView: React.FC = () => {
                 }
             });
         }
+        setEditingField(null);
+        setSuccess(`${field === 'name' ? 'Nombre' : field === 'description' ? 'Descripción' : 'Teléfono'} actualizado`);
+        setTimeout(() => setSuccess(''), 3000);
     };
 
     const handleCoverImageChange = async (imageId: string) => {
         try {
             setError('');
-            if (imageId === '') {
-                // Eliminación de portada
-                await dispatch({ type: 'SET_COVER_IMAGE', payload: '' });
-                setSuccess('Portada eliminada');
-                setEditingCover(false);
-            } else {
-                // Actualización de portada
-                await dispatch({ type: 'SET_COVER_IMAGE', payload: imageId });
-                setSuccess('Portada actualizada');
-                setEditingCover(false);
-            }
+            await dispatch({ type: 'SET_COVER_IMAGE', payload: imageId });
+            setEditingCover(false);
+            setSuccess('Portada actualizada');
             setTimeout(() => setSuccess(''), 3000);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error inesperado al guardar la portada');
+        } catch (e: any) {
+            setError(e.message || 'Error al actualizar portada');
         }
     };
 
     const handleProfileImageChange = async (imageId: string) => {
         try {
             setError('');
-            if (imageId === '') {
-                // Eliminación de imagen de perfil
-                await dispatch({ type: 'SET_PROFILE_IMAGE', payload: '' });
-                setSuccess('Imagen de perfil eliminada');
-                setEditingProfile(false);
-            } else {
-                // Actualización de imagen de perfil
-                await dispatch({ type: 'SET_PROFILE_IMAGE', payload: imageId });
-                setSuccess('Perfil actualizado');
-                setEditingProfile(false);
-            }
+            await dispatch({ type: 'SET_PROFILE_IMAGE', payload: imageId });
+            setEditingProfile(false);
+            setSuccess('Perfil actualizado');
             setTimeout(() => setSuccess(''), 3000);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error inesperado al guardar la imagen de perfil');
+        } catch (e: any) {
+            setError(e.message || 'Error al actualizar perfil');
         }
     };
 
@@ -176,7 +163,6 @@ export const AdminView: React.FC = () => {
                 </div>
             </main>
 
-            {/* Modals de edición de texto */}
             {editingField && (
                 <EditInfoModal
                     field={editingField}
@@ -186,7 +172,6 @@ export const AdminView: React.FC = () => {
                 />
             )}
 
-            {/* Modals simples para subir cover/profile (reutiliza input oculto) */}
             {editingCover && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">
@@ -211,6 +196,7 @@ export const AdminView: React.FC = () => {
                     </div>
                 </div>
             )}
+            
             {editingProfile && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4 border border-default">

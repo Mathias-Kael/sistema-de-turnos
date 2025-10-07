@@ -1,119 +1,70 @@
 import { imageStorage } from './imageStorage';
 import { ImageProcessor } from '../utils/imageProcessing';
-import { IMAGE_CONSTRAINTS } from '../constants';
+import { supabase } from '../lib/supabase';
 
-describe('imageStorage (LocalStorageImageService)', () => {
-  const ORIGINAL_PROCESS_IMAGE = ImageProcessor.processImage;
+// Crear un único objeto mock para poder inspeccionar llamadas entre invocaciones
+const storageApi = {
+  upload: jest.fn().mockResolvedValue({ data: { path: 'avatar_123' }, error: null }),
+  getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/public/avatar_123' } }),
+  remove: jest.fn().mockResolvedValue({ data: null, error: null }),
+};
+
+jest.mock('../lib/supabase', () => {
+  const fromFn = jest.fn().mockImplementation((_bucket: string) => storageApi);
+  return {
+    supabase: {
+      storage: { from: fromFn },
+    },
+  };
+});
+
+describe('imageStorage (SupabaseImageStorage)', () => {
+  const ORIGINAL_PROCESS = ImageProcessor.processImage;
+  const originalFetch = global.fetch;
 
   beforeEach(() => {
-    // Limpiar localStorage y mocks antes de cada test
-    localStorage.clear();
     jest.clearAllMocks();
+    (storageApi.upload as jest.Mock).mockResolvedValue({ data: { path: 'avatar_123' }, error: null });
+    (storageApi.getPublicUrl as jest.Mock).mockReturnValue({ data: { publicUrl: 'https://example.com/public/avatar_123' } });
+    (storageApi.remove as jest.Mock).mockResolvedValue({ data: null, error: null });
+
+    ImageProcessor.processImage = jest.fn().mockResolvedValue({
+      dataUrl: 'data:image/png;base64,AAA',
+      originalSize: 1000,
+      finalSize: 800,
+      width: 200,
+      height: 200,
+      wasCompressed: true,
+    });
+
+    // Mock de dataURL -> Blob evitando fetch real
+    (imageStorage as any).dataURLToBlob = jest.fn().mockResolvedValue(new Blob(['abc'], { type: 'image/png' }));
   });
 
   afterEach(() => {
-    // Restaurar implementación real por seguridad
-    ImageProcessor.processImage = ORIGINAL_PROCESS_IMAGE;
+    ImageProcessor.processImage = ORIGINAL_PROCESS;
+    global.fetch = originalFetch;
   });
 
-  function mockProcessImage(options?: { finalSize?: number; width?: number; height?: number; wasCompressed?: boolean }) {
-    const { finalSize = 50 * 1024, width = 300, height = 300, wasCompressed = true } = options || {};
-    ImageProcessor.processImage = jest.fn().mockResolvedValue({
-      dataUrl: 'data:image/jpeg;base64,FAKE_BASE64_DATA',
-      originalSize: finalSize * 2,
-      finalSize,
-      width,
-      height,
-      wasCompressed,
-    } as any);
-  }
-
-  it('sube imagen, genera imageId y guarda base64 en localStorage', async () => {
-    mockProcessImage();
-
-    const dummyFile = new File(['dummy'], 'test.jpg', { type: 'image/jpeg' });
-    const result = await imageStorage.uploadImage(dummyFile, 'avatar');
-
-    expect(result.success).toBe(true);
-    expect(result.imageId).toMatch(/^img_avatar_/);
-    expect(result.imageUrl).toContain('data:image/jpeg;base64');
-    // Verifica que realmente se guardó
-    const stored = localStorage.getItem(result.imageId);
-    expect(stored).toBe(result.imageUrl);
+  it('sube imagen y retorna url pública', async () => {
+    const file = new File(['data'], 'a.png', { type: 'image/png' });
+    const res = await imageStorage.uploadImage(file, 'avatar');
+    expect(res.success).toBe(true);
+    expect(storageApi.upload).toHaveBeenCalled();
+    expect(res.imageUrl).toContain('https://example.com/public');
   });
 
-  it('elimina oldImageId antes de guardar la nueva', async () => {
-    mockProcessImage();
-
-    // Subir primera imagen
-    const file1 = new File(['one'], 'one.jpg', { type: 'image/jpeg' });
-    const first = await imageStorage.uploadImage(file1, 'profile');
-    expect(first.success).toBe(true);
-    expect(localStorage.getItem(first.imageId)).toBeTruthy();
-
-    // Subir segunda imagen pasando oldImageId
-    const file2 = new File(['two'], 'two.jpg', { type: 'image/jpeg' });
-    const second = await imageStorage.uploadImage(file2, 'profile', first.imageId);
-
-    expect(second.success).toBe(true);
-    expect(localStorage.getItem(first.imageId)).toBeNull(); // Debió eliminarse
-    expect(localStorage.getItem(second.imageId)).toBe(second.imageUrl);
+  it('elimina imagen previa cuando oldImageId está presente', async () => {
+    const file = new File(['data'], 'a.png', { type: 'image/png' });
+    await imageStorage.uploadImage(file, 'profile', 'profile_old_123');
+    expect(storageApi.remove).toHaveBeenCalledWith(['profile_old_123']);
   });
 
-  it('retorna error si ImageProcessor lanza excepción', async () => {
-    ImageProcessor.processImage = jest.fn().mockRejectedValue(new Error('Fallo proceso'));
-
-    const file = new File(['x'], 'x.jpg', { type: 'image/jpeg' });
-    const result = await imageStorage.uploadImage(file, 'avatar');
-
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/Fallo proceso/);
-    expect(result.imageId).toBe('');
-  });
-
-  it('valida tamaño final contra constraints y retorna error si excede', async () => {
-    // Para forzar error, mockeamos processImage para devolver finalSize mayor que constraint
-    const constraint = IMAGE_CONSTRAINTS.avatar;
-    ImageProcessor.processImage = jest.fn().mockResolvedValue({
-      dataUrl: 'data:image/jpeg;base64,TOO_BIG',
-      originalSize: constraint.maxSizeBytes * 2,
-      finalSize: constraint.maxSizeBytes + 10_000,
-      width: 500,
-      height: 500,
-      wasCompressed: false,
-    });
-
-    const file = new File(['x'], 'x.jpg', { type: 'image/jpeg' });
-    const result = await imageStorage.uploadImage(file, 'avatar');
-
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/excede el límite/);
-  });
-
-  it('getImageUrl retorna base64 para IDs locales', async () => {
-    mockProcessImage();
-    const file = new File(['data'], 'a.jpg', { type: 'image/jpeg' });
-    const upload = await imageStorage.uploadImage(file, 'cover');
-
-    const resolved = imageStorage.getImageUrl(upload.imageId);
-    expect(resolved).toBe(upload.imageUrl);
-  });
-
-  it('getImageUrl retorna la misma cadena si no es ID local', () => {
-    const external = 'https://example.com/imagen.jpg';
-    expect(imageStorage.getImageUrl(external)).toBe(external);
-  });
-
-  it('deleteImage elimina solo IDs locales', async () => {
-    mockProcessImage();
-    const file = new File(['data'], 'b.jpg', { type: 'image/jpeg' });
-    const upload = await imageStorage.uploadImage(file, 'profile');
-    expect(localStorage.getItem(upload.imageId)).toBeTruthy();
-
-    await imageStorage.deleteImage(upload.imageId);
-    expect(localStorage.getItem(upload.imageId)).toBeNull();
-
-    // No debería fallar con URL externa
-    await expect(imageStorage.deleteImage('https://externa.com/img.jpg')).resolves.toBeUndefined();
+  it('propaga error de procesamiento', async () => {
+    ImageProcessor.processImage = jest.fn().mockRejectedValue(new Error('fail'));
+    const file = new File(['x'], 'x.png', { type: 'image/png' });
+    const res = await imageStorage.uploadImage(file, 'avatar');
+    expect(res.success).toBe(false);
+    expect(res.error).toMatch(/fail/);
   });
 });

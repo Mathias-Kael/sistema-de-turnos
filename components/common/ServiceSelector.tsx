@@ -1,13 +1,11 @@
 import React from 'react';
-import { useBusinessState } from '../../context/BusinessContext';
 import { Service } from '../../types';
 import { formatDuration } from '../../utils/format';
 
 interface ServiceSelectorProps {
     selectedServices: Service[];
     onServiceChange: (service: Service) => void;
-    // Opcional: permitir pasar servicios directamente (para ClientView sin contexto)
-    servicesOverride?: Service[];
+    services: Service[]; // ahora obligatorio, se elimina dependencia de contexto
 }
 
 const LockIcon = () => (
@@ -17,9 +15,7 @@ const LockIcon = () => (
 );
 
 
-export const ServiceSelector: React.FC<ServiceSelectorProps> = ({ selectedServices, onServiceChange, servicesOverride }) => {
-    const context = useBusinessState();
-    const services = servicesOverride ?? context.services;
+export const ServiceSelector: React.FC<ServiceSelectorProps> = ({ selectedServices, onServiceChange, services }) => {
 
     const selectedIds = new Set(selectedServices.map(s => s.id));
 

@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
-import { ShareLink } from '../../types';
+import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 
 type ExpirationOption = 'permanent' | '7d' | '30d' | '1y';
 type LinkStatus = 'active' | 'paused' | 'revoked';
 type DerivedStatus = LinkStatus | 'expired';
-
-// ShareLink ahora viene de types.ts
 
 const ExpirationLabel: Record<ExpirationOption, string> = {
     permanent: 'Permanente (sin caducidad)',
@@ -23,184 +21,289 @@ const StatusInfo: Record<DerivedStatus, { text: string; className: string }> = {
 };
 
 export const SharePanel: React.FC = () => {
-    const [link, setLink] = useState<ShareLink | null>(() => {
-        const storedLinkData = localStorage.getItem('shareToken');
-        if (storedLinkData) {
-            try {
-                if (storedLinkData === 'null') return null;
-                return JSON.parse(storedLinkData);
-            } catch (e) {
-                console.error("Error parsing shareToken from localStorage", e);
-                return null;
-            }
-        }
-        return null;
-    });
-
-    const [expirationOption, setExpirationOption] = useState<ExpirationOption>('permanent');
+    const business = useBusinessState();
+    const dispatch = useBusinessDispatch();
     
-    useEffect(() => {
-        if (link) {
-            localStorage.setItem('shareToken', JSON.stringify(link));
-        } else {
-            localStorage.removeItem('shareToken');
-        }
-    }, [link]);
+    const [expirationOption, setExpirationOption] = useState<ExpirationOption>('permanent');
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+    const [success, setSuccess] = useState<string>('');
+    const [error, setError] = useState<string>('');
+
+    // Derivar estado del token desde el business
+    const hasToken = !!business.shareToken;
+    const tokenStatus = business.shareTokenStatus || 'active';
+    const tokenExpiry = business.shareTokenExpiresAt;
+
+    console.log('🔍 SharePanel - business:', business);
+    console.log('🔍 SharePanel - shareToken:', business.shareToken);
+    console.log('🔍 SharePanel - hasToken:', hasToken);
+    console.log('🔍 SharePanel - tokenStatus:', tokenStatus);
+    console.log('🔍 SharePanel - tokenExpiry:', tokenExpiry);
 
     const derivedStatus: DerivedStatus | null = useMemo(() => {
-        if (!link) return null;
-        if (link.status === 'revoked') return 'revoked';
-        const isExpired = link.expiresAt !== null && new Date().getTime() > link.expiresAt;
+        if (!hasToken) return null;
+        if (tokenStatus === 'revoked') return 'revoked';
+        const isExpired = tokenExpiry !== null && tokenExpiry !== undefined && new Date(tokenExpiry).getTime() < Date.now();
         if (isExpired) return 'expired';
-        return link.status;
-    }, [link]);
+        return tokenStatus as LinkStatus;
+    }, [hasToken, tokenStatus, tokenExpiry]);
 
-    const shareableLink = link && link.token ? `${window.location.origin}/?token=${link.token}` : null;
+    console.log('🔍 SharePanel - derivedStatus:', derivedStatus);
 
-    const handleGenerateLink = () => {
-        setLink(prevLink => {
-            const derivedPrevStatus = !prevLink ? null :
-                (prevLink.expiresAt && Date.now() > prevLink.expiresAt ? 'expired' : prevLink.status);
+    const shareableLink = hasToken ? `${window.location.origin}/?token=${business.shareToken}` : null;
 
-            const generate = () => {
-                const newToken = Math.random().toString(36).substring(2, 15);
-                let expiresAt: number | null = null;
-                const now = Date.now();
-                switch (expirationOption) {
-                    case '7d': expiresAt = now + 7 * 24 * 60 * 60 * 1000; break;
-                    case '30d': expiresAt = now + 30 * 24 * 60 * 60 * 1000; break;
-                    case '1y': expiresAt = now + 365 * 24 * 60 * 60 * 1000; break;
-                }
-                return { token: newToken, status: 'active' as LinkStatus, createdAt: now, expiresAt };
-            };
+    // Generar QR cuando hay link
+    useEffect(() => {
+        if (shareableLink && derivedStatus === 'active') {
+            QRCode.toDataURL(shareableLink, { width: 300 })
+                .then(setQrCodeUrl)
+                .catch(err => console.error('Error generando QR:', err));
+        } else {
+            setQrCodeUrl('');
+        }
+    }, [shareableLink, derivedStatus]);
 
-            if (prevLink && derivedPrevStatus !== 'revoked' && derivedPrevStatus !== 'expired') {
-                if (window.confirm('¿Seguro que quieres regenerar el enlace? El enlace anterior será invalidado permanentemente.')) {
-                    return generate();
-                }
-                return prevLink; // User cancelled
-            }
-            return generate(); // No previous link or it was revoked/expired, just generate.
-        });
-    };
-    
-    const handleTogglePause = () => {
-        setLink(prevLink => {
-            if (!prevLink) return prevLink;
-
-            const isCurrentlyActive = prevLink.status === 'active';
-            const confirmMessage = isCurrentlyActive
-                ? '¿Seguro que quieres pausar el enlace?'
-                : '¿Seguro que quieres reactivar el enlace?';
-
-            if (window.confirm(confirmMessage)) {
-                const newStatus = isCurrentlyActive ? 'paused' : 'active';
-                return { ...prevLink, status: newStatus };
-            }
+    const handleGenerateLink = async () => {
+        try {
+            setError('');
             
-            return prevLink; // User cancelled
-        });
-    };
-    
-    const handleRevoke = () => {
-        setLink(prevLink => {
-            if (!prevLink) return prevLink;
-            if (window.confirm('¿Seguro que quieres revocar este enlace? Esta acción es irreversible y los clientes no podrán usarlo más.')) {
-                return { ...prevLink, status: 'revoked' };
+            // Si ya existe un token activo/pausado, confirmar regeneración
+            if (hasToken && derivedStatus !== 'revoked' && derivedStatus !== 'expired') {
+                if (!window.confirm('¿Seguro que quieres regenerar el enlace? El enlace anterior será invalidado permanentemente.')) {
+                    return;
+                }
             }
-            return prevLink; // User cancelled
-        });
+
+            // Generar nuevo token
+            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            
+            // Calcular expiración
+            let expiresAt: string | null = null;
+            const now = new Date();
+            switch (expirationOption) {
+                case '7d': 
+                    expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                    break;
+                case '30d': 
+                    expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                    break;
+                case '1y': 
+                    expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
+                    break;
+            }
+
+            // Actualizar en Supabase
+            await dispatch({
+                type: 'UPDATE_SHARE_TOKEN',
+                payload: {
+                    shareToken: newToken,
+                    shareTokenStatus: 'active',
+                    shareTokenExpiresAt: expiresAt,
+                }
+            });
+
+            setSuccess('Enlace generado exitosamente');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err: any) {
+            setError(err.message || 'Error al generar enlace');
+        }
+    };
+
+    const handleTogglePause = async () => {
+        try {
+            setError('');
+            const newStatus = tokenStatus === 'active' ? 'paused' : 'active';
+            
+            await dispatch({
+                type: 'UPDATE_SHARE_TOKEN',
+                payload: {
+                    shareToken: business.shareToken!,
+                    shareTokenStatus: newStatus,
+                    shareTokenExpiresAt: business.shareTokenExpiresAt,
+                }
+            });
+
+            setSuccess(`Enlace ${newStatus === 'active' ? 'reactivado' : 'pausado'}`);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err: any) {
+            setError(err.message || 'Error al pausar/reactivar enlace');
+        }
+    };
+
+    const handleRevoke = async () => {
+        if (!window.confirm('¿Revocar permanentemente este enlace? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            setError('');
+            
+            await dispatch({
+                type: 'UPDATE_SHARE_TOKEN',
+                payload: {
+                    shareToken: business.shareToken!,
+                    shareTokenStatus: 'revoked',
+                    shareTokenExpiresAt: business.shareTokenExpiresAt,
+                }
+            });
+
+            setSuccess('Enlace revocado permanentemente');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err: any) {
+            setError(err.message || 'Error al revocar enlace');
+        }
     };
 
     const handleCopyLink = () => {
         if (shareableLink) {
-            navigator.clipboard.writeText(shareableLink).then(() => alert('¡Enlace copiado!'));
+            navigator.clipboard.writeText(shareableLink);
+            setSuccess('Enlace copiado al portapapeles');
+            setTimeout(() => setSuccess(''), 3000);
         }
     };
 
     const handleDownloadQR = () => {
-        if (shareableLink) {
-            QRCode.toDataURL(shareableLink, { width: 300, margin: 2 })
-                .then(url => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'codigo-qr-reserva.png';
-                    a.click();
-                });
+        if (qrCodeUrl) {
+            const link = document.createElement('a');
+            link.href = qrCodeUrl;
+            link.download = 'qr-reservas.png';
+            link.click();
+            setSuccess('Código QR descargado');
+            setTimeout(() => setSuccess(''), 3000);
         }
     };
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-medium text-primary">Compartir con clientes</h3>
-                <p className="mt-1 text-sm text-secondary">
-                    Gestiona el enlace único para que tus clientes puedan ver tu disponibilidad y reservar turnos.
+                <h3 className="text-xl font-bold text-primary mb-2">Compartir Sistema de Reservas</h3>
+                <p className="text-secondary text-sm">
+                    Genera un enlace para que tus clientes puedan hacer reservas online.
                 </p>
             </div>
 
-            {link && derivedStatus && (
-                <div className="p-4 border border-default rounded-md bg-surface space-y-4">
-                    <h4 className="font-semibold text-primary">Estado del Enlace</h4>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${StatusInfo[derivedStatus].className}`}>
-                            {StatusInfo[derivedStatus].text}
-                        </span>
-                        <div className="text-right text-xs text-secondary">
-                            <p>Creado: {new Date(link.createdAt).toLocaleDateString()}</p>
-                            <p>Expira: {link.expiresAt ? new Date(link.expiresAt).toLocaleDateString() : 'Nunca'}</p>
-                        </div>
-                    </div>
-                    {shareableLink && (derivedStatus === 'active' || derivedStatus === 'paused') && (
-                         <div>
-                            <input type="text" readOnly value={shareableLink} className="w-full p-2 border border-default rounded bg-background text-primary" />
-                            <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                                <button type="button" onClick={handleCopyLink} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary w-full sm:flex-1">Copiar Link</button>
-                                <button type="button" onClick={handleDownloadQR} className="px-4 py-2 border border-default rounded-md hover:bg-surface-hover text-primary w-full sm:flex-1">Descargar QR</button>
-                            </div>
-                        </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-default mt-2">
-                        {(derivedStatus === 'active' || derivedStatus === 'paused') && (
-                             <button type="button" onClick={handleTogglePause} className="text-sm font-medium text-primary hover:text-primary-dark">
-                                {derivedStatus === 'active' ? 'Pausar Enlace' : 'Reactivar Enlace'}
-                            </button>
-                        )}
-                        {derivedStatus !== 'revoked' && derivedStatus !== 'expired' && (
-                            <button
-                                type="button"
-                                onClick={handleRevoke}
-                                className="text-sm font-medium text-[color:var(--color-state-danger-text)] hover:text-[color:var(--color-state-danger-strong)]"
-                            >
-                                Revocar Ahora
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-            
-            <div className="p-4 border border-default rounded-md bg-surface space-y-3">
-                <h4 className="font-semibold text-primary">{link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Nuevo Enlace'}</h4>
-                 <p className="text-xs text-secondary">
-                    {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Esto creará un nuevo enlace e invalidará el actual.' : 'Define la duración del enlace que compartirás.'}
-                </p>
-                <div>
-                    <label htmlFor="expiration" className="block text-sm font-medium text-secondary">Duración</label>
+            {/* Configuración de expiración */}
+            {(!hasToken || derivedStatus === 'revoked' || derivedStatus === 'expired') && (
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-primary">
+                        Duración del enlace
+                    </label>
                     <select
-                        id="expiration"
                         value={expirationOption}
                         onChange={(e) => setExpirationOption(e.target.value as ExpirationOption)}
-                        className="mt-1 block w-full px-3 py-2 border border-default bg-surface rounded-md text-primary"
+                        className="w-full p-2 border border-default rounded-lg bg-surface text-primary"
                     >
                         {Object.entries(ExpirationLabel).map(([key, label]) => (
-                             <option key={key} value={key}>{label}</option>
+                            <option key={key} value={key}>{label}</option>
                         ))}
                     </select>
+                    <button
+                        onClick={handleGenerateLink}
+                        className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90 transition"
+                    >
+                        {hasToken ? 'Regenerar Enlace' : 'Generar Enlace'}
+                    </button>
                 </div>
-                 <button type="button" onClick={handleGenerateLink} className="w-full px-4 py-2 bg-primary text-brand-text font-bold rounded-lg hover:bg-primary-dark">
-                     {link && derivedStatus !== 'revoked' && derivedStatus !== 'expired' ? 'Regenerar Enlace' : 'Generar Enlace'}
-                 </button>
-            </div>
+            )}
+
+            {/* Estado y enlace activo */}
+            {hasToken && derivedStatus && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-primary">Estado:</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${StatusInfo[derivedStatus].className}`}>
+                            {StatusInfo[derivedStatus].text}
+                        </span>
+                    </div>
+
+                    {tokenExpiry && (
+                        <p className="text-sm text-secondary">
+                            Expira: {new Date(tokenExpiry).toLocaleDateString('es-AR', { 
+                                day: 'numeric', 
+                                month: 'long', 
+                                year: 'numeric' 
+                            })}
+                        </p>
+                    )}
+
+                    {shareableLink && derivedStatus === 'active' && (
+                        <>
+                            <div className="p-4 bg-surface border border-default rounded-lg">
+                                <p className="text-sm font-medium text-primary mb-2">Tu enlace compartible:</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={shareableLink}
+                                        readOnly
+                                        className="flex-1 p-2 border border-default rounded bg-background text-primary text-sm"
+                                    />
+                                    <button
+                                        onClick={handleCopyLink}
+                                        className="px-4 py-2 bg-primary text-white rounded hover:opacity-90 transition"
+                                    >
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            {qrCodeUrl && (
+                                <div className="flex flex-col items-center gap-3">
+                                    <img src={qrCodeUrl} alt="Código QR" className="w-64 h-64 border border-default rounded-lg" />
+                                    <button
+                                        onClick={handleDownloadQR}
+                                        className="px-4 py-2 bg-primary text-white rounded hover:opacity-90 transition"
+                                    >
+                                        Descargar QR
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* Controles */}
+                    {derivedStatus !== 'revoked' && derivedStatus !== 'expired' && (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleTogglePause}
+                                className="flex-1 px-4 py-2 border border-default rounded-lg hover:bg-surface transition"
+                            >
+                                {tokenStatus === 'active' ? 'Pausar Enlace' : 'Reactivar Enlace'}
+                            </button>
+                            <button
+                                onClick={handleRevoke}
+                                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                            >
+                                Revocar Enlace
+                            </button>
+                        </div>
+                    )}
+
+                    {(derivedStatus === 'revoked' || derivedStatus === 'expired') && (
+                        <button
+                            onClick={handleGenerateLink}
+                            className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90 transition"
+                        >
+                            Generar Nuevo Enlace
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Mensajes de éxito/error */}
+            {(success || error) && (
+                <div className="space-y-2">
+                    {success && (
+                        <div className="p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+                            {success}
+                        </div>
+                    )}
+                    {error && (
+                        <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                            {error}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
