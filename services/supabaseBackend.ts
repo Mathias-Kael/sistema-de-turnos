@@ -270,6 +270,7 @@ export const supabaseBackend = {
       .from('businesses')
       .select('id, share_token_status, share_token_expires_at')
       .eq('share_token', token)
+      .eq('share_token_status', 'active')
       .eq('status', 'active')
       .single();
 

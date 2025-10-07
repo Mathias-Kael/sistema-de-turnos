@@ -60,6 +60,10 @@ export interface Business {
   services: Service[];
   hours: Hours;
   bookings: Booking[]; // Añadido para gestionar reservas en el contexto
+  // Public share link fields (multi-tenant public access)
+  shareToken?: string;
+  shareTokenStatus?: 'active' | 'paused' | 'revoked';
+  shareTokenExpiresAt?: string | null;
 }
 
 // Types related to bookings/reservations
