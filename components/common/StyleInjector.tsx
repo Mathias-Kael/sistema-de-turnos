@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
 import { Branding } from '../../types';
 import { adjustColorForDarkMode } from '../../utils/colors';
@@ -21,6 +21,26 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
 
     // Import all fonts used in presets to ensure they are available.
     const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap";
+
+    // Utilidad local para mezclar colores hex simple (srgb) sin dependencias
+    const blend = (hexA: string, hexB: string, percentA: number): string => {
+        const norm = (h: string) => {
+            let x = h.replace('#','').trim();
+            if (x.length === 3) x = x.split('').map(c => c + c).join('');
+            return x;
+        };
+        const a = norm(hexA);
+        const b = norm(hexB);
+        const pa = Math.min(100, Math.max(0, percentA)) / 100;
+        const pb = 1 - pa;
+        const ch = (i: number) => Math.round(parseInt(a.substr(i,2),16)*pa + parseInt(b.substr(i,2),16)*pb);
+        const toHex = (n: number) => n.toString(16).padStart(2,'0');
+        return `#${toHex(ch(0))}${toHex(ch(2))}${toHex(ch(4))}`;
+    };
+
+    // Fallbacks equivalentes a las expresiones color-mix utilizadas abajo
+    const primaryDarkFallback = blend(branding.primaryColor, '#000000', 0.8); // 80% brand + 20% black
+    const primaryLightFallback = blend(branding.primaryColor, '#ffffff', 0.15); // 15% brand + 85% white
 
     const dynamicStyles = `
         :root {
@@ -48,8 +68,12 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
             --color-brand-secondary: ${branding.secondaryColor};
             --color-brand-text: ${branding.textColor};
             --font-family-brand: ${branding.font};
+            /* Modern variables usando color-mix */
             --color-brand-primary-dark: color-mix(in srgb, var(--color-brand-primary) 80%, black);
             --color-brand-primary-light: color-mix(in srgb, var(--color-brand-primary) 15%, white);
+            /* Fallbacks precomputados (legacy) */
+            --color-brand-primary-dark-legacy: ${primaryDarkFallback};
+            --color-brand-primary-light-legacy: ${primaryLightFallback};
         }
 
         @media (prefers-color-scheme: dark) {
@@ -131,11 +155,28 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
         .text-secondary { color: var(--color-text-secondary); }
         .border-default { border-color: var(--color-border); }
         .hover\\:bg-surface-hover:hover { background-color: var(--color-surface-hover); }
-        .bg-primary-dark { background-color: var(--color-brand-primary-dark); }
-        .hover\\:bg-primary-dark:hover { background-color: var(--color-brand-primary-dark); color: var(--color-brand-text); } /* Added hover for primary-dark */
-        .hover\\:text-primary-dark:hover { color: var(--color-brand-primary-dark); } /* Added hover for text-primary-dark */
-        .bg-primary-light { background-color: var(--color-brand-primary-light); }
+        /* Clases con fallback: si el navegador no soporta color-mix() sustituimos la variable moderna con la legacy vía script, pero aquí aseguramos fallback explícito */
+        .bg-primary-dark { background-color: var(--color-brand-primary-dark, var(--color-brand-primary-dark-legacy)); }
+        .hover\:bg-primary-dark:hover { background-color: var(--color-brand-primary-dark, var(--color-brand-primary-dark-legacy)); color: var(--color-brand-text); }
+        .hover\:text-primary-dark:hover { color: var(--color-brand-primary-dark, var(--color-brand-primary-dark-legacy)); }
+        .bg-primary-light { background-color: var(--color-brand-primary-light, var(--color-brand-primary-light-legacy)); }
     `;
+
+    // En runtime detectamos soporte a color-mix; si no existe, aplicamos fallback directo a las variables modernas.
+    useEffect(() => {
+        try {
+            const supports = (window as any).CSS && (window as any).CSS.supports && (CSS.supports('background', 'color-mix(in srgb, white 50%, black)'));
+            if (!supports) {
+                const root = document.documentElement.style;
+                root.setProperty('--color-brand-primary-dark', primaryDarkFallback);
+                root.setProperty('--color-brand-primary-light', primaryLightFallback);
+            }
+        } catch {
+            const root = document.documentElement.style;
+            root.setProperty('--color-brand-primary-dark', primaryDarkFallback);
+            root.setProperty('--color-brand-primary-light', primaryLightFallback);
+        }
+    }, [primaryDarkFallback, primaryLightFallback]);
 
     return (
         <>

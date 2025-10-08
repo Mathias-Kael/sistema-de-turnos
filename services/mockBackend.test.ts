@@ -1,0 +1,139 @@
+import { Business, Booking, Service, Employee } from '../types';
+import { INITIAL_BUSINESS_DATA } from '../constants';
+import { validarIntervalos } from '../utils/availability';
+
+// In-memory state (no red real). Permite sobreescritura desde localStorage si existe 'businessData'.
+let state: Business = (() => {
+  try {
+    const raw = localStorage.getItem('businessData');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...INITIAL_BUSINESS_DATA, ...parsed } as Business;
+    }
+  } catch {}
+  return INITIAL_BUSINESS_DATA;
+})();
+
+// Persistir cambios para permitir que navegaciones posteriores mantengan estado durante un mismo test.
+const persist = () => {
+  try { localStorage.setItem('businessData', JSON.stringify(state)); } catch {}
+};
+
+function ensureBusinessIds() {
+  const bizId = state.id;
+  state.employees = state.employees.map(e => ({ ...e, businessId: bizId }));
+  state.services = state.services.map(s => ({ ...s, businessId: bizId }));
+  state.bookings = state.bookings.map(b => ({ ...b, businessId: bizId, services: b.services.map(s => ({ ...s, businessId: bizId })) }));
+}
+ensureBusinessIds();
+
+// Helper validaciones centrales
+function validateHours(newData: Business) {
+  for (const [day, dayHours] of Object.entries(newData.hours)) {
+    if (dayHours.enabled) {
+      for (const interval of dayHours.intervals) {
+        if (!interval.open || !interval.close || interval.open >= interval.close) {
+          throw new Error(`El horario de inicio debe ser anterior al de fin para el día ${day}.`);
+        }
+      }
+      if (!validarIntervalos(dayHours.intervals)) {
+        throw new Error(`Los intervalos de horario para el día ${day} se solapan.`);
+      }
+    }
+  }
+}
+
+export const mockBackendTest = {
+  getBusinessData: async (): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    return state;
+  },
+  getBusinessByToken: async (token: string): Promise<Business | null> => {
+    await new Promise(r => setTimeout(r, 5));
+    try {
+      const raw = localStorage.getItem('shareToken');
+      if (!raw) return null;
+      const link = JSON.parse(raw);
+      if (link.token !== token) return null;
+      if (link.expiresAt && Date.now() > link.expiresAt) return null;
+      if (link.status === 'revoked') return null;
+      return state;
+    } catch {
+      return null;
+    }
+  },
+  updateBusinessData: async (newData: Business): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    validateHours(newData);
+    state = { ...state, ...newData };
+    ensureBusinessIds();
+    persist();
+    return state;
+  },
+  getBookingsForDate: async (dateString: string): Promise<Booking[]> => {
+    await new Promise(r => setTimeout(r, 5));
+    return state.bookings.filter(b => b.date === dateString);
+  },
+  createBooking: async (data: Omit<Booking, 'id'>): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    const booking: Booking = { ...data, id: `bk_${Date.now()}_${Math.random().toString(36).slice(2,8)}` };
+    state = { ...state, bookings: [...state.bookings, booking] };
+    persist();
+    return state;
+  },
+  updateBooking: async (updated: Booking): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, bookings: state.bookings.map(b => b.id === updated.id ? updated : b) };
+    persist();
+    return state;
+  },
+  deleteBooking: async (bookingId: string): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, bookings: state.bookings.filter(b => b.id !== bookingId) };
+    persist();
+    return state;
+  },
+  addEmployee: async (employee: Employee): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, employees: [...state.employees, employee] };
+    persist();
+    return state;
+  },
+  updateEmployee: async (employee: Employee): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, employees: state.employees.map(e => e.id === employee.id ? employee : e) };
+    persist();
+    return state;
+  },
+  deleteEmployee: async (employeeId: string): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, employees: state.employees.filter(e => e.id !== employeeId), services: state.services.map(s => ({ ...s, employeeIds: s.employeeIds.filter(id => id !== employeeId) })) };
+    persist();
+    return state;
+  },
+  addService: async (service: Service): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, services: [...state.services, service] };
+    persist();
+    return state;
+  },
+  updateService: async (service: Service): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, services: state.services.map(s => s.id === service.id ? service : s) };
+    persist();
+    return state;
+  },
+  deleteService: async (serviceId: string): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = { ...state, services: state.services.filter(s => s.id !== serviceId) };
+    persist();
+    return state;
+  }
+};
+
+// Utilidad para tests que necesiten resetear completamente el estado in-memory
+export function __resetMockBackendTest(newState?: Business) {
+  state = newState ? { ...newState } : INITIAL_BUSINESS_DATA;
+  ensureBusinessIds();
+  persist();
+}

@@ -1,7 +1,8 @@
 import React, { createContext, useReducer, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { Business, Service, Branding, Hours, Employee, Booking } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
-import { supabaseBackend as mockBackend } from '../services/supabaseBackend';
+import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
+import { mockBackendTest } from '../services/mockBackend.test';
 
 // --- Tipos de Acción ---
 type Action =
@@ -52,102 +53,107 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [state]);
 
     useEffect(() => {
-        const init = async () => {
+        const params = new URLSearchParams(window.location.search);
+        const devMock = params.get('devMock') === '1';
+        const backend = devMock ? mockBackendTest : prodBackend;
+        (async () => {
             try {
-                const initialData = await mockBackend.getBusinessData();
+                const initialData = await backend.getBusinessData();
                 dispatch({ type: 'HYDRATE_STATE', payload: initialData });
             } catch (error) {
-                console.error("Failed to load initial business data", error);
+                console.error('Failed to load initial business data', error);
             } finally {
                 setIsLoaded(true);
             }
-        };
-        init();
+        })();
     }, []);
 
     const asyncDispatch = async (action: Action) => {
         try {
             const currentState = stateRef.current;
+            const params = new URLSearchParams(window.location.search);
+            const devMock = params.get('devMock') === '1';
+            const backend = devMock ? mockBackendTest : prodBackend;
 
             switch (action.type) {
                 case 'UPDATE_BUSINESS':
-                    const updatedBusiness = await mockBackend.updateBusinessData(action.payload);
+                    const updatedBusiness = await backend.updateBusinessData(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
                     break;
                 case 'ADD_SERVICE':
-                    const updatedBusinessAfterAddService = await mockBackend.addService(action.payload);
+                    const updatedBusinessAfterAddService = await backend.addService(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterAddService });
                     break;
                 case 'UPDATE_SERVICE':
-                    const updatedBusinessAfterUpdateService = await mockBackend.updateService(action.payload);
+                    const updatedBusinessAfterUpdateService = await backend.updateService(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateService });
                     break;
                 case 'DELETE_SERVICE':
-                    const updatedBusinessAfterDeleteService = await mockBackend.deleteService(action.payload);
+                    const updatedBusinessAfterDeleteService = await backend.deleteService(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteService });
                     break;
                 case 'ADD_EMPLOYEE':
-                    const updatedBusinessAfterAddEmployee = await mockBackend.addEmployee(action.payload);
+                    const updatedBusinessAfterAddEmployee = await backend.addEmployee(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterAddEmployee });
                     break;
                 case 'UPDATE_EMPLOYEE':
-                    const updatedBusinessAfterUpdateEmployee = await mockBackend.updateEmployee(action.payload);
+                    const updatedBusinessAfterUpdateEmployee = await backend.updateEmployee(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateEmployee });
                     break;
                 case 'DELETE_EMPLOYEE':
-                    const updatedBusinessAfterDeleteEmployee = await mockBackend.deleteEmployee(action.payload);
+                    const updatedBusinessAfterDeleteEmployee = await backend.deleteEmployee(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteEmployee });
                     break;
                 case 'UPDATE_EMPLOYEE_HOURS':
                     const employeeToUpdateHours = currentState.employees.find(e => e.id === action.payload.employeeId);
                     if (employeeToUpdateHours) {
-                        const updatedBusinessAfterEmployeeHours = await mockBackend.updateEmployee({ ...employeeToUpdateHours, hours: action.payload.hours });
+                        const updatedBusinessAfterEmployeeHours = await backend.updateEmployee({ ...employeeToUpdateHours, hours: action.payload.hours });
                         dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterEmployeeHours });
                     }
                     break;
                 case 'CREATE_BOOKING':
-                    const updatedBusinessAfterCreateBooking = await mockBackend.createBooking(action.payload);
+                    const updatedBusinessAfterCreateBooking = await backend.createBooking(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreateBooking });
                     break;
                 case 'UPDATE_BOOKING':
-                    const updatedBusinessAfterUpdateBooking = await mockBackend.updateBooking(action.payload);
+                    const updatedBusinessAfterUpdateBooking = await backend.updateBooking(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateBooking });
                     break;
                 case 'DELETE_BOOKING':
-                    const updatedBusinessAfterDeleteBooking = await mockBackend.deleteBooking(action.payload);
+                    const updatedBusinessAfterDeleteBooking = await backend.deleteBooking(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteBooking });
                     break;
                 case 'SET_BUSINESS_INFO':
                     const updatedBusinessInfo = { ...currentState, name: action.payload.name, description: action.payload.description };
-                    const updatedBusinessFromInfo = await mockBackend.updateBusinessData(updatedBusinessInfo);
+                    const updatedBusinessFromInfo = await backend.updateBusinessData(updatedBusinessInfo);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromInfo });
                     break;
                 case 'SET_PHONE':
                     const updatedBusinessPhone = { ...currentState, phone: action.payload };
-                    const updatedBusinessFromPhone = await mockBackend.updateBusinessData(updatedBusinessPhone);
+                    const updatedBusinessFromPhone = await backend.updateBusinessData(updatedBusinessPhone);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromPhone });
                     break;
                 case 'SET_BRANDING':
                     const updatedBusinessBranding = { ...currentState, branding: action.payload };
-                    const updatedBusinessFromBranding = await mockBackend.updateBusinessData(updatedBusinessBranding);
+                    const updatedBusinessFromBranding = await backend.updateBusinessData(updatedBusinessBranding);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromBranding });
                     break;
                 case 'SET_HOURS':
                     const updatedBusinessHours = { ...currentState, hours: action.payload };
-                    const updatedBusinessFromHours = await mockBackend.updateBusinessData(updatedBusinessHours);
+                    const updatedBusinessFromHours = await backend.updateBusinessData(updatedBusinessHours);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessFromHours });
                     break;
                 case 'SET_COVER_IMAGE':
                     {
                         const updatedWithCover = { ...currentState, coverImageUrl: action.payload };
-                        const savedWithCover = await mockBackend.updateBusinessData(updatedWithCover);
+                        const savedWithCover = await backend.updateBusinessData(updatedWithCover);
                         dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithCover });
                     }
                     break;
                 case 'SET_PROFILE_IMAGE':
                     {
                         const updatedWithProfile = { ...currentState, profileImageUrl: action.payload };
-                        const savedWithProfile = await mockBackend.updateBusinessData(updatedWithProfile);
+                        const savedWithProfile = await backend.updateBusinessData(updatedWithProfile);
                         dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithProfile });
                     }
                     break;
@@ -159,7 +165,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             shareTokenStatus: action.payload.shareTokenStatus,
                             shareTokenExpiresAt: action.payload.shareTokenExpiresAt
                         };
-                        const savedWithToken = await mockBackend.updateBusinessData(updatedWithToken);
+                        const savedWithToken = await backend.updateBusinessData(updatedWithToken);
                         dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithToken });
                     }
                     break;

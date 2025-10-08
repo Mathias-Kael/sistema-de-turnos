@@ -825,3 +825,17 @@ Al agregar código nuevo:
 **Versión del documento**: 1.0  
 **Última actualización**: Octubre 2025  
 **Mantenido por**: Equipo del proyecto
+
+---
+
+## MockBackend Maintenance
+
+Cuando se modifique `services/supabaseBackend.ts`, revisar `services/mockBackend.test.ts`:
+
+- Si se agregan nuevas funciones públicas en la interfaz del backend → implementar la equivalencia en memoria.
+- Si cambia el schema (nuevos campos en `Business`, `Service`, `Employee`, `Booking`) → actualizar el estado inicial y la lógica de clonación/persistencia del mock.
+- Si se añaden validaciones nuevas en producción → replicar versión mínima (o comentar explícitamente por qué se omite) para que los tests E2E reflejen la lógica real.
+- Mantener misma firma de métodos para que el switch en `BusinessContext` (flag `devMock=1`) se mantenga transparente.
+- Ejecutar `npm run e2e` tras cualquier cambio para garantizar paridad.
+
+El mock no realiza llamadas de red y persiste el estado en `localStorage` entre navegaciones dentro del mismo test Playwright para simular continuidad de sesión.

@@ -6,6 +6,7 @@ import { useBusinessDispatch } from '../../context/BusinessContext';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { findAvailableEmployeeForSlot } from '../../services/api';
 import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
+import { validateBookingInput } from '../../utils/validation';
 
 interface ConfirmationModalProps {
     date: Date;
@@ -43,6 +44,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
         setError(null);
 
         try {
+            // Validación centralizada
+            const v = validateBookingInput({ name: clientName, phone: clientPhone, email: clientEmail });
+            if (!v.ok || !v.normalized) {
+                setError(Object.values(v.errors)[0] || 'Datos inválidos.');
+                setIsSaving(false);
+                return;
+            }
+            const { name: normName, phone: normPhone, email: normEmail } = v.normalized;
             const startTimeInMinutes = timeToMinutes(slot);
             const endTimeInMinutes = startTimeInMinutes + totalDuration;
             const endTime = minutesToTime(endTimeInMinutes);
@@ -69,9 +78,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 end: endTime,
                 services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
                 client: {
-                    name: clientName,
-                    email: clientEmail,
-                    phone: clientPhone,
+                    name: normName,
+                    email: normEmail,
+                    phone: normPhone,
                 },
                 employeeId: finalEmployeeId,
                 status: 'confirmed',
