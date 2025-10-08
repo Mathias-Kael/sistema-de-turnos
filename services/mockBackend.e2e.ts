@@ -87,6 +87,19 @@ export const mockBackendTest = {
     persist();
     return state;
   },
+  updateBookingStatus: async (bookingId: string, status: any, _businessId: string, notes?: string): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    state = {
+      ...state,
+      bookings: state.bookings.map(b =>
+        b.id === bookingId
+          ? { ...b, status: status as any, notes: typeof notes === 'string' ? notes : b.notes }
+          : b
+      ),
+    };
+    persist();
+    return state;
+  },
   deleteBooking: async (bookingId: string): Promise<Business> => {
     await new Promise(r => setTimeout(r, 5));
     state = { ...state, bookings: state.bookings.filter(b => b.id !== bookingId) };

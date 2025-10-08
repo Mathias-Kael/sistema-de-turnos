@@ -4,7 +4,8 @@ module.exports = {
   setupFilesAfterEnv: ['@testing-library/jest-dom','<rootDir>/setupTests.ts'],
   moduleNameMapper: { '\\.(css|scss|sass)$': 'identity-obj-proxy' },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[tj]sx?$',
-  testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/services/mockBackend.test.ts'],
+  // Ignoramos la carpeta e2e porque Playwright se ejecuta fuera de Jest
+  testPathIgnorePatterns: ['<rootDir>/e2e/'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   transform: {
     '^.+\\.(t|j)sx?$': ['ts-jest', { useESM: true, tsconfig: true }]

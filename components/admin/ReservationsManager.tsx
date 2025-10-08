@@ -36,9 +36,9 @@ export const ReservationsManager: React.FC = () => {
     }, [business.bookings]);
 
     const handleUpdateBooking = async (updatedBooking: Booking) => {
+        // Mantener compatibilidad para casos donde el modal recurra a onUpdate completo
         try {
             await dispatch({ type: 'UPDATE_BOOKING', payload: updatedBooking });
-            setSelectedBooking(null);
         } catch (e: any) {
             setError(e.message);
         }

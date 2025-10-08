@@ -21,6 +21,7 @@ type Action =
     | { type: 'UPDATE_EMPLOYEE_HOURS'; payload: { employeeId: string; hours: Hours } }
     | { type: 'CREATE_BOOKING'; payload: Omit<Booking, 'id'> }
     | { type: 'UPDATE_BOOKING'; payload: Booking }
+    | { type: 'UPDATE_BOOKING_STATUS'; payload: { bookingId: string; status: string; notes?: string } }
     | { type: 'DELETE_BOOKING'; payload: string }
     | { type: 'SET_COVER_IMAGE'; payload: string }
     | { type: 'SET_PROFILE_IMAGE'; payload: string }
@@ -118,6 +119,18 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 case 'UPDATE_BOOKING':
                     const updatedBusinessAfterUpdateBooking = await backend.updateBooking(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateBooking });
+                    break;
+                case 'UPDATE_BOOKING_STATUS':
+                    {
+                        const businessId = currentState.id;
+                        const updatedBusinessAfterStatus = await backend.updateBookingStatus(
+                            action.payload.bookingId,
+                            action.payload.status,
+                            businessId,
+                            action.payload.notes
+                        );
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterStatus });
+                    }
                     break;
                 case 'DELETE_BOOKING':
                     const updatedBusinessAfterDeleteBooking = await backend.deleteBooking(action.payload);

@@ -830,7 +830,7 @@ Al agregar código nuevo:
 
 ## MockBackend Maintenance
 
-Cuando se modifique `services/supabaseBackend.ts`, revisar `services/mockBackend.test.ts`:
+Cuando se modifique `services/supabaseBackend.ts`, revisar `services/mockBackend.e2e.ts`:
 
 - Si se agregan nuevas funciones públicas en la interfaz del backend → implementar la equivalencia en memoria.
 - Si cambia el schema (nuevos campos en `Business`, `Service`, `Employee`, `Booking`) → actualizar el estado inicial y la lógica de clonación/persistencia del mock.

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Booking, Employee } from '../../types';
+import { useBusinessDispatch } from '../../context/BusinessContext';
 
 interface BookingDetailModalProps {
     booking: Booking;
@@ -11,6 +12,8 @@ interface BookingDetailModalProps {
 
 export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, employee, onClose, onUpdate, onDelete }) => {
     const [editedBooking, setEditedBooking] = useState<Booking>(booking);
+    const dispatch = useBusinessDispatch();
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setEditedBooking(booking);
@@ -21,9 +24,37 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
         setEditedBooking(prev => ({ ...prev, [name]: value as any }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onUpdate(editedBooking);
+        setSaving(true);
+        try {
+            // Si sólo cambió status o notes, usar acción especializada
+            const onlyStatusOrNotesChanged =
+                booking.employeeId === editedBooking.employeeId &&
+                booking.start === editedBooking.start &&
+                booking.end === editedBooking.end &&
+                booking.date === editedBooking.date &&
+                JSON.stringify(booking.services) === JSON.stringify(editedBooking.services) &&
+                booking.client.name === editedBooking.client.name &&
+                booking.client.email === editedBooking.client.email &&
+                booking.client.phone === editedBooking.client.phone &&
+                (booking.status !== editedBooking.status || booking.notes !== editedBooking.notes);
+
+            if (onlyStatusOrNotesChanged) {
+                await dispatch({
+                    type: 'UPDATE_BOOKING_STATUS',
+                    payload: { bookingId: booking.id, status: editedBooking.status, notes: editedBooking.notes },
+                });
+            } else {
+                onUpdate(editedBooking);
+            }
+            onClose();
+        } catch (err) {
+            // fallback a método completo si falla
+            try { onUpdate(editedBooking); onClose(); } catch {}
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -73,8 +104,8 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                         <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                             Cerrar
                         </button>
-                        <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity">
-                            Guardar Cambios
+                        <button type="submit" disabled={saving} className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity disabled:opacity-50">
+                            {saving ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
                     {editedBooking.status === 'cancelled' && (

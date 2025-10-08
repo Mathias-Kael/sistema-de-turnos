@@ -398,18 +398,40 @@ export const supabaseBackend = {
     return buildBusinessObject(businessId);
   },
 
+  /**
+   * Actualiza solo el status (y opcionalmente notes) de una reserva usando Edge Function (privilegios service_role)
+   */
+  updateBookingStatus: async (bookingId: string, status: string, businessId: string, notes?: string): Promise<Business> => {
+    if (!businessId) throw new Error('No business ID found');
+    const { data, error } = await supabase.functions.invoke('admin-bookings', {
+      body: {
+        action: 'update',
+        businessId,
+        data: {
+          id: bookingId,
+          updates: {
+            status,
+            ...(typeof notes === 'string' ? { notes } : {}),
+          },
+        },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
+    return buildBusinessObject(businessId);
+  },
+
   deleteBooking: async (bookingId: string): Promise<Business> => {
     const businessId = localStorage.getItem('supabase_business_id');
     if (!businessId) throw new Error('No business ID found');
-
-    // Soft delete: marcar como archived
-    const { error } = await supabase
-      .from('bookings')
-      .update({ archived: true })
-      .eq('id', bookingId);
-
-    if (error) throw new Error(error.message);
-
+    // Elimina físicamente usando Edge Function (borra booking_services por cascada)
+    const { data, error } = await supabase.functions.invoke('admin-bookings', {
+      body: {
+        action: 'delete',
+        businessId,
+        data: { id: bookingId },
+      },
+    });
+    if (error || data?.error) throw new Error(error?.message || data?.error);
     return buildBusinessObject(businessId);
   },
 
