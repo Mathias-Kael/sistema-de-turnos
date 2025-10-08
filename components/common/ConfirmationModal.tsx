@@ -3,6 +3,7 @@ import { Service, Business, Booking, Employee } from '../../types';
 import { formatDuration } from '../../utils/format';
 import { generateICS } from '../../utils/ics';
 import { useBusinessDispatch } from '../../context/BusinessContext';
+import { supabase } from '../../lib/supabase';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { findAvailableEmployeeForSlot } from '../../services/api';
 import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
@@ -18,7 +19,8 @@ interface ConfirmationModalProps {
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot, selectedServices, employeeId, business, onClose }) => {
-    const dispatch = useBusinessDispatch();
+    let dispatch: any = null;
+    try { dispatch = useBusinessDispatch(); } catch { /* en modo público sin provider */ }
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
@@ -71,22 +73,37 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 }
             }
 
-            const newBooking: Omit<Booking, 'id'> = {
-                businessId: business.id,
-                date: date.toISOString().split('T')[0],
-                start: slot,
-                end: endTime,
-                services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
-                client: {
-                    name: normName,
-                    email: normEmail,
-                    phone: normPhone,
-                },
-                employeeId: finalEmployeeId,
-                status: 'confirmed',
-            };
+            const dateStr = date.toISOString().split('T')[0];
+            const token = new URLSearchParams(window.location.search).get('token');
 
-            await dispatch({ type: 'CREATE_BOOKING', payload: newBooking });
+            if (dispatch) {
+                const newBooking: Omit<Booking, 'id'> = {
+                    businessId: business.id,
+                    date: dateStr,
+                    start: slot,
+                    end: endTime,
+                    services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
+                    client: { name: normName, email: normEmail, phone: normPhone },
+                    employeeId: finalEmployeeId,
+                    status: 'confirmed',
+                };
+                await dispatch({ type: 'CREATE_BOOKING', payload: newBooking });
+            } else {
+                // Modo público: invocar Edge Function
+                if (!token) throw new Error('Token ausente');
+                const { data, error } = await supabase.functions.invoke('public-bookings', {
+                    body: {
+                        token,
+                        services: selectedServices.map(s => ({ id: s.id })),
+                        date: dateStr,
+                        start: slot,
+                        end: endTime,
+                        employeeId: finalEmployeeId,
+                        client: { name: normName, phone: normPhone, email: normEmail },
+                    }
+                });
+                if (error || data?.error) throw new Error(error?.message || data?.error);
+            }
             setIsConfirmed(true);
 
         } catch (err: any) {
@@ -122,9 +139,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                             Para que tu turno quede registrado correctamente, <strong>debes completar la confirmación vía WhatsApp</strong> haciendo click en el botón de abajo.
                         </p>
                     </div>
-                    <p className="text-primary mb-4">
-                        Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido agendado.
-                    </p>
+                    <p className="text-primary mb-4">Tu turno para el <strong>{date.toLocaleDateString('es-AR')} a las {slot}</strong> ha sido registrado.</p>
                     <div className="space-y-3">
                         <a
                             href={whatsappConfig.url}
