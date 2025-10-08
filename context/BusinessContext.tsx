@@ -2,7 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect, useState, useM
 import { Business, Service, Branding, Hours, Employee, Booking } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
-import { mockBackendTest } from '../services/mockBackend.test';
+import { mockBackendTest } from '../services/mockBackend.e2e';
 
 // --- Tipos de Acción ---
 type Action =

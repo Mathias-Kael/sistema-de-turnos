@@ -4,6 +4,7 @@ module.exports = {
   setupFilesAfterEnv: ['@testing-library/jest-dom','<rootDir>/setupTests.ts'],
   moduleNameMapper: { '\\.(css|scss|sass)$': 'identity-obj-proxy' },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[tj]sx?$',
+  testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/services/mockBackend.test.ts'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   transform: {
     '^.+\\.(t|j)sx?$': ['ts-jest', { useESM: true, tsconfig: true }]

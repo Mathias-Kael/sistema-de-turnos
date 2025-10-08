@@ -39,8 +39,9 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
     };
 
     // Fallbacks equivalentes a las expresiones color-mix utilizadas abajo
-    const primaryDarkFallback = blend(branding.primaryColor, '#000000', 0.8); // 80% brand + 20% black
-    const primaryLightFallback = blend(branding.primaryColor, '#ffffff', 0.15); // 15% brand + 85% white
+    // blend ahora recibe porcentaje entero (0-100) para la proporción del primer color
+    const primaryDarkFallback = blend(branding.primaryColor, '#000000', 80); // 80% brand + 20% black
+    const primaryLightFallback = blend(branding.primaryColor, '#ffffff', 15); // 15% brand + 85% white
 
     const dynamicStyles = `
         :root {
