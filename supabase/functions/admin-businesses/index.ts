@@ -39,7 +39,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
 
-    const { action: rawAction, data }: Payload = await req.json();
+  const { action: rawAction, data }: Payload = await req.json();
 
     const action = rawAction || 'update';
 
@@ -52,9 +52,10 @@ serve(async (req) => {
       throw new Error('Missing name');
     }
 
-    // Id objetivo (puede venir del payload)
-    const targetId = data.id;
-    if (!targetId) throw new Error('Missing business id for operation');
+  // Id objetivo (puede venir del payload)
+  const targetId = data.id;
+  if (!targetId) throw new Error('Missing business id for operation');
+  if (typeof data.name !== 'string' || !data.name.trim()) throw new Error('Missing name');
 
     // Obtener si existe actualmente
     const { data: existingRows, error: selectError } = await supabaseRls
@@ -85,6 +86,7 @@ serve(async (req) => {
           share_token_status: data.share_token_status ?? null,
           share_token_expires_at: data.share_token_expires_at ?? null,
           status: 'active',
+          owner_id: userData.user.id,
         });
       if (insertError) {
         return new Response(JSON.stringify({ error: insertError.message }), {

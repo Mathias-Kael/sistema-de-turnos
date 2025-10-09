@@ -3,6 +3,8 @@ import { logger } from '../utils/logger';
 import { Business, Booking, Service, Employee, Hours } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { withRetryOrThrow } from '../utils/supabaseWrapper';
+// Cache por sesión de usuario
+const businessCacheByUser = new Map<string, { businessId: string }>();
 
 /**
  * SUPABASE BACKEND
@@ -124,7 +126,7 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
 // MIGRACIÓN INICIAL desde localStorage
 // =====================================================
 
-async function migrateFromLocalStorage(): Promise<string | null> {
+async function migrateFromLocalStorage(ownerId: string): Promise<string | null> {
   const localData = localStorage.getItem('businessData');
   if (!localData) return null;
 
@@ -142,6 +144,7 @@ async function migrateFromLocalStorage(): Promise<string | null> {
         cover_image_url: business.coverImageUrl,
         branding: business.branding,
         hours: business.hours,
+        owner_id: ownerId,
       })
       .select()
       .single();
@@ -235,11 +238,10 @@ async function migrateFromLocalStorage(): Promise<string | null> {
       }
     }
 
-    // Guardar businessId en localStorage para futuras sesiones
-    localStorage.setItem('supabase_business_id', businessId);
-    
-    // Marcar migración como completada
-    localStorage.setItem('migration_completed', 'true');
+  // Limpieza de legacy para no repetir
+  try { localStorage.removeItem('businessData'); } catch {}
+  try { localStorage.removeItem('supabase_business_id'); } catch {}
+  try { localStorage.removeItem('migration_completed'); } catch {}
 
       logger.debug('Migration completed successfully');
     return businessId;
@@ -255,24 +257,56 @@ async function migrateFromLocalStorage(): Promise<string | null> {
 
 export const supabaseBackend = {
   getBusinessData: async (): Promise<Business> => {
-    // Verificar si ya tenemos businessId
-    let businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
 
-    // Si no existe, intentar migrar desde localStorage
-    if (!businessId) {
-      const migrationCompleted = localStorage.getItem('migration_completed');
-      
-      if (!migrationCompleted) {
-        businessId = await migrateFromLocalStorage();
-      }
-
-      // Si aún no hay businessId, usar datos iniciales
-      if (!businessId) {
-        return INITIAL_BUSINESS_DATA;
-      }
+    // Cache por sesión
+    const cached = businessCacheByUser.get(userId);
+    if (cached?.businessId) {
+      return buildBusinessObject(cached.businessId);
     }
 
-    return buildBusinessObject(businessId);
+    // Buscar negocio por owner
+    const { data: biz, error: bizErr } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (biz?.id) {
+      businessCacheByUser.set(userId, { businessId: biz.id });
+      return buildBusinessObject(biz.id);
+    }
+
+    // Migración legacy si hay datos en localStorage
+    const migrated = await migrateFromLocalStorage(userId);
+    if (migrated) {
+      businessCacheByUser.set(userId, { businessId: migrated });
+      return buildBusinessObject(migrated);
+    }
+
+    // Crear negocio básico si no existe
+    const { data: newBiz, error: createErr } = await supabase
+      .from('businesses')
+      .insert({
+        name: INITIAL_BUSINESS_DATA.name || 'Mi Negocio',
+        description: INITIAL_BUSINESS_DATA.description || '',
+        phone: INITIAL_BUSINESS_DATA.phone || null,
+        profile_image_url: INITIAL_BUSINESS_DATA.profileImageUrl || null,
+        cover_image_url: INITIAL_BUSINESS_DATA.coverImageUrl || null,
+        branding: INITIAL_BUSINESS_DATA.branding || null,
+        hours: INITIAL_BUSINESS_DATA.hours,
+        owner_id: userId,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+
+    if (createErr || !newBiz) throw new Error(createErr?.message || 'No se pudo crear negocio');
+    businessCacheByUser.set(userId, { businessId: newBiz.id });
+    return buildBusinessObject(newBiz.id);
   },
 
   getBusinessByToken: async (token: string): Promise<Business | null> => {
@@ -303,13 +337,23 @@ export const supabaseBackend = {
   },
 
   updateBusinessData: async (newData: Business): Promise<Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    let businessId = cached?.businessId;
+    if (!businessId) {
+      const { data: biz } = await supabase.from('businesses').select('id').eq('owner_id', userId).maybeSingle();
+      businessId = biz?.id;
+    }
+    if (!businessId) throw new Error('No business found for user');
     // Determinar acción: si no existe aún en Supabase, usar 'upsert'
     let action: 'update' | 'upsert' = 'update';
     try {
       const probe = await supabase
         .from('businesses')
         .select('id')
-        .eq('id', newData.id)
+  .eq('id', businessId)
         .maybeSingle();
       if (!probe.data) action = 'upsert';
     } catch {
@@ -320,7 +364,7 @@ export const supabaseBackend = {
       body: {
         action,
         data: {
-          id: newData.id,
+          id: businessId,
           name: newData.name,
           description: newData.description,
           phone: newData.phone,
@@ -337,16 +381,15 @@ export const supabaseBackend = {
 
     if (error || data?.error) throw new Error(error?.message || data?.error);
 
-    // Guardar businessId si se creó
-    if (action === 'upsert' && !localStorage.getItem('supabase_business_id')) {
-      localStorage.setItem('supabase_business_id', newData.id);
-    }
-
-    return buildBusinessObject(newData.id);
+    return buildBusinessObject(businessId);
   },
 
   getBookingsForDate: async (dateString: string): Promise<Booking[]> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) return [];
 
     const business = await buildBusinessObject(businessId);
@@ -354,7 +397,11 @@ export const supabaseBackend = {
   },
 
   createBooking: async (newBookingData: Omit<Booking, 'id'>): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
     // Crear booking
@@ -391,7 +438,11 @@ export const supabaseBackend = {
   },
 
   updateBooking: async (updatedBooking: Booking): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
     const { error } = await supabase
@@ -417,7 +468,12 @@ export const supabaseBackend = {
   /**
    * Actualiza solo el status (y opcionalmente notes) de una reserva usando Edge Function (privilegios service_role)
    */
-  updateBookingStatus: async (bookingId: string, status: string, businessId: string, notes?: string): Promise<Business> => {
+  updateBookingStatus: async (bookingId: string, status: string, _businessId: string, notes?: string): Promise<Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     const { data, error } = await supabase.functions.invoke('admin-bookings', {
       body: {
@@ -436,7 +492,11 @@ export const supabaseBackend = {
   },
 
   deleteBooking: async (bookingId: string): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     // Elimina físicamente usando Edge Function (borra booking_services por cascada)
     const { data, error } = await supabase.functions.invoke('admin-bookings', {
@@ -450,7 +510,11 @@ export const supabaseBackend = {
   },
 
   addEmployee: async (employee: Employee): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
@@ -470,7 +534,11 @@ export const supabaseBackend = {
   },
 
   updateEmployee: async (updatedEmployee: Employee): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
@@ -492,7 +560,11 @@ export const supabaseBackend = {
   },
 
   deleteEmployee: async (employeeId: string): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
     // Validar que no tenga reservas futuras
@@ -521,7 +593,11 @@ export const supabaseBackend = {
   },
 
   addService: async (service: Service): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
@@ -544,7 +620,11 @@ export const supabaseBackend = {
   },
 
   updateService: async (updatedService: Service): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
@@ -569,7 +649,11 @@ export const supabaseBackend = {
   },
 
   deleteService: async (serviceId: string): Promise<Business> => {
-    const businessId = localStorage.getItem('supabase_business_id');
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
     // Validar que no tenga reservas futuras

@@ -122,11 +122,10 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     break;
                 case 'UPDATE_BOOKING_STATUS':
                     {
-                        const businessId = currentState.id;
                         const updatedBusinessAfterStatus = await backend.updateBookingStatus(
                             action.payload.bookingId,
                             action.payload.status,
-                            businessId,
+                            currentState.id,
                             action.payload.notes
                         );
                         dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterStatus });
