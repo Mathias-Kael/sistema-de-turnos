@@ -1,5 +1,8 @@
+// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// @ts-ignore
+declare const Deno: any;
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +12,6 @@ const corsHeaders: Record<string, string> = {
 interface Payload {
   action: 'create' | 'update' | 'delete';
   data: any;
-  businessId: string;
 }
 
 serve(async (req) => {
@@ -23,33 +25,38 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { action, data, businessId }: Payload = await req.json();
+    // Validar JWT
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) throw new Error('Missing authorization header');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !userData?.user) throw new Error('Unauthorized');
 
-    if (!businessId) {
-      throw new Error('Missing businessId');
-    }
+    // Cliente con RLS
+    const supabaseRls = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
 
+    const { action, data }: Payload = await req.json();
+
+    // Para update/delete verificar existencia vía RLS (si no pertenece, RLS fallará en select)
     if (action === 'update' || action === 'delete') {
-      const { data: existing, error: existingError } = await supabaseAdmin
+      const { data: existing, error: existingError } = await supabaseRls
         .from('services')
-        .select('business_id')
+        .select('id')
         .eq('id', data.id)
         .single();
       if (existingError || !existing) {
         throw new Error('Service not found');
-      }
-      if (existing.business_id !== businessId) {
-        throw new Error('Unauthorized: Resource does not belong to business');
       }
     }
 
     let result;
     switch (action) {
       case 'create': {
-        if (data.business_id !== businessId) {
-          throw new Error('business_id mismatch');
-        }
-        const { data: inserted, error } = await supabaseAdmin
+        const { data: inserted, error } = await supabaseRls
           .from('services')
           .insert({
             business_id: data.business_id,
@@ -65,7 +72,7 @@ serve(async (req) => {
 
         if (!error && inserted && data.employee_ids?.length) {
           for (const empId of data.employee_ids) {
-            await supabaseAdmin.from('service_employees').insert({
+            await supabaseRls.from('service_employees').insert({
               service_id: inserted.id,
               employee_id: empId,
             });
@@ -75,7 +82,7 @@ serve(async (req) => {
         break;
       }
       case 'update': {
-        const { data: updated, error } = await supabaseAdmin
+        const { data: updated, error } = await supabaseRls
           .from('services')
           .update({
             name: data.updates.name,
@@ -90,14 +97,14 @@ serve(async (req) => {
           .single();
 
         if (!error) {
-          await supabaseAdmin
+          await supabaseRls
             .from('service_employees')
             .delete()
             .eq('service_id', data.id);
 
           if (data.updates.employee_ids?.length) {
             for (const empId of data.updates.employee_ids) {
-              await supabaseAdmin.from('service_employees').insert({
+              await supabaseRls.from('service_employees').insert({
                 service_id: data.id,
                 employee_id: empId,
               });
@@ -108,7 +115,7 @@ serve(async (req) => {
         break;
       }
       case 'delete': {
-        const { error } = await supabaseAdmin
+        const { error } = await supabaseRls
           .from('services')
           .delete()
           .eq('id', data.id);

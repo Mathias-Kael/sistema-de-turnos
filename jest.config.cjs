@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'jsdom',
+  setupFiles: ['<rootDir>/jest.polyfills.ts'],
   setupFilesAfterEnv: ['@testing-library/jest-dom','<rootDir>/setupTests.ts'],
   moduleNameMapper: { '\\.(css|scss|sass)$': 'identity-obj-proxy' },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[tj]sx?$',
