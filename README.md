@@ -1,141 +1,235 @@
-# Sistema de Turnos Escalable
+# Sistema de Turnos SaaS
 
-Una aplicación web que permite a cualquier negocio que trabaje con reservas gestionar su agenda, tomar reservas online y personalizar su branding. Está construida para ser completamente autónoma, funcionando del lado del cliente y guardando toda la configuración en el `localStorage` del navegador.
-
----
-
-## ✨ Características Principales
-
-*   **Panel de Administración Completo (`AdminView`):**
-    *   **Info y Estilo:** Edita el nombre del negocio, logo, descripción y personaliza en vivo los colores primario, secundario, de texto y la tipografía.
-    *   **Servicios:** Crea, edita y elimina servicios, definiendo duración, precio, buffer (tiempo extra), y asignando qué empleados pueden realizarlos.
-    *   **Empleados:** Gestiona al personal, incluyendo sus nombres y avatares.
-    *   **Horarios:** Configura los horarios de trabajo para cada día de la semana, con soporte para turnos partidos (múltiples intervalos por día).
-    *   **Reservas:** Visualiza un calendario con todas las reservas, mira sus detalles, cambia su estado e incluso crea reservas manualmente para clientes.
-    *   **Compartir:** Genera un enlace único y un código QR para que los clientes accedan a la agenda. Incluye opciones para pausar, revocar o establecer una fecha de caducidad para el enlace.
-    *   **Vista Previa:** Previsualiza la vista del cliente en tiempo real sin salir del panel.
-
-*   **Vista de Cliente Intuitiva (`ClientView`):**
-    *   **Flujo de Reserva Guiado:** Un proceso simple en pasos: Selección de servicio(s) -> Empleado -> Fecha -> Hora.
-    *   **Cálculo de Disponibilidad:** El sistema calcula inteligentemente los horarios libres basándose en la duración de los servicios, los horarios de apertura y las reservas ya existentes.
-    *   **Confirmación de Reserva:** Un formulario final para que el cliente ingrese sus datos y confirme el turno, con opciones para añadir al calendario (ICS) o confirmar por WhatsApp.
+Plataforma web multi-tenant que permite a negocios gestionar reservas online con personalización completa de branding. Construida con React + TypeScript + Supabase.
 
 ---
 
-## 🆕 Nuevas Características y Mejoras
+## ✨ Características
 
-Este proyecto ha pasado por varias fases de refactorización y mejora para optimizar su arquitectura, añadir funcionalidades clave y mejorar la experiencia de usuario y la estabilidad.
+### Panel de Administración
+- **Gestión de Negocio:** Nombre, logo, descripción, horarios de apertura
+- **Branding Personalizado:** Colores primario/secundario, tipografía (live preview)
+- **Servicios:** CRUD completo con duración, precio, buffer y asignación de empleados
+- **Empleados:** Gestión de personal con horarios individuales y avatares
+- **Reservas:** Calendario interactivo con cambio de estados y creación manual
+- **Compartir:** Enlace público con QR, control de estado (activo/pausado) y expiración
 
-### Historial de Fases y Registro de Cambios
-
-#### **Fase 1: Refactorización Arquitectónica**
-*   **Objetivo:** Centralizar la gestión de datos y abstraer la persistencia de `localStorage` para preparar el proyecto para una futura migración a un backend real.
-*   **Logros Principales:**
-    *   Creación de `services/mockBackend.ts` para simular un backend, gestionando el estado de `Business` y `Booking` en memoria con persistencia en `localStorage`.
-    *   Modificación de `context/BusinessContext.tsx` para cargar y persistir datos a través de `mockBackend`, eliminando la dependencia directa de `localStorage`.
-    *   Actualización de `services/api.ts` para obtener reservas de `mockBackend`, centralizando la gestión de reservas.
-
-#### **Fase 2: Módulo de Agenda Individual por Empleado**
-*   **Objetivo:** Implementar la capacidad de definir horarios de trabajo y asignación de servicios de forma individual para cada empleado.
-*   **Logros Principales:**
-    *   Extensión de la interfaz `Employee` en `types.ts` para incluir la propiedad `hours: Hours;`.
-    *   Adaptación de `context/BusinessContext.tsx` con la acción `UPDATE_EMPLOYEE_HOURS` para gestionar los horarios individuales de los empleados.
-    *   Refactorización de `services/api.ts` (`getAvailableSlots`) para considerar los horarios individuales de los empleados (con fallback al horario del negocio).
-    *   Creación de `components/admin/EmployeeHoursEditor.tsx` para la edición de horarios por empleado.
-    *   Creación de `components/admin/ServiceAssignmentEditor.tsx` para la asignación de servicios a empleados.
-    *   Integración de los nuevos editores en `components/admin/EmployeesEditor.tsx` y `components/admin/ServicesEditor.tsx`.
-
-#### **Fase 3: Corrección y Validación de Agenda**
-*   **Objetivo:** Resolver bugs críticos en la lógica de disponibilidad y mejorar la integridad de los datos de horarios mediante validaciones en la UI.
-*   **Logros Principales:**
-    *   Corrección del bug en `services/api.ts` (`getAvailableSlots`) que causaba disponibilidad fuera del horario asignado a un empleado.
-    *   Adición de la función `validarIntervalos` en `utils/availability.ts` para detectar solapamientos de horarios.
-    *   Implementación de validaciones en `components/admin/EmployeeHoursEditor.tsx` para:
-        *   Prevenir el guardado de intervalos de tiempo solapados.
-        *   Asegurar que todos los campos de hora de inicio y fin estén completos.
-        *   Verificar que la hora de cierre sea posterior a la hora de inicio en cada intervalo.
-
-#### **Fase 4: Optimización y Estabilidad (Inicial)**
-*   **Objetivo:** Abordar mejoras de rendimiento, corregir errores lógicos y asegurar la consistencia de estilos.
-*   **Logros Principales:**
-    *   Implementación de la acción `HYDRATE_STATE` en `context/BusinessContext.tsx` para una carga inicial más eficiente.
-    *   Corrección de la lógica duplicada en `components/admin/EmployeesEditor.tsx` (`handleDeleteEmployee`) para usar la acción `DELETE_EMPLOYEE` del reducer.
-    *   Mejora de la inmutabilidad en `components/admin/HoursEditor.tsx`, reemplazando `JSON.parse(JSON.stringify(...))` por desestructuración.
-    *   Corrección de inconsistencia de estilo en el botón "Cancelar" de `components/admin/ServiceAssignmentEditor.tsx`.
-
-#### **Fase 5: Optimización y Estabilidad (Adicional)**
-*   **Objetivo:** Refinar la experiencia de usuario, la accesibilidad y el rendimiento con validaciones adicionales y optimizaciones de React.
-*   **Logros Principales:**
-    *   **Validaciones (`components/admin/ServiceAssignmentEditor.tsx`):** Implementación de validación para asegurar que al menos un empleado sea asignado a un servicio.
-    *   **Manejo de Errores (`components/admin/ServiceAssignmentEditor.tsx`):** Adición de `try...catch` en `handleSave` para un manejo de errores más robusto y notificación al usuario.
-    *   **Accesibilidad (`components/admin/ServiceAssignmentEditor.tsx`):** Inclusión de atributos ARIA (`role="dialog"`, `aria-labelledby`) en el modal para mejorar la accesibilidad.
-    *   **Optimización de Estado (`components/admin/ServiceAssignmentEditor.tsx`):** El componente fue envuelto con `React.memo` y la función `handleToggleEmployee` fue memorizada con `useCallback` para optimizar el rendimiento.
-    *   **Rendimiento (`context/BusinessContext.tsx`):** Implementación de `useMemo` para memorizar valores derivados del estado (`totalEmployees`, `activeServices`), mejorando el rendimiento general del contexto.
-
-#### **Fase 6: Asignación Inteligente de Empleados y Robustez de Reservas**
-*   **Objetivo:** Resolver el problema de sobre-reserva con la opción "Cualquiera disponible" y mejorar la lógica de disponibilidad.
-*   **Logros Principales:**
-    *   **Corrección de Bug Crítico:** Se solucionó el problema donde las reservas con `employeeId === 'any'` no asignaban un empleado real, lo que podía llevar a sobre-reservas.
-    *   **Refactorización de Lógica de Asignación:** Se introdujo la función centralizada [`findAvailableEmployeeForSlot`](services/api.ts:99) en [`services/api.ts`](services/api.ts:1). Esta función ahora maneja la lógica de búsqueda de un empleado elegible y disponible, mejorando la mantenibilidad y evitando la duplicación de código.
-    *   **Integración en `ConfirmationModal`:** El componente [`ConfirmationModal.tsx`](components/common/ConfirmationModal.tsx:1) fue actualizado para utilizar [`findAvailableEmployeeForSlot`](services/api.ts:99) al confirmar reservas con `employeeId === 'any'`, asegurando que cada reserva tenga un empleado asignado.
-    *   **Mejora en `getAvailableSlots`:** Se corrigió un bug en `getAvailableSlots` que permitía mostrar horarios para empleados no calificados para un servicio específico, mejorando la precisión de la disponibilidad.
-    *   **Pruebas de Integración Robustas:** Se añadieron y ajustaron pruebas de integración en [`services/api.integration.test.ts`](services/api.integration.test.ts:1) para verificar el correcto funcionamiento del flujo "Cualquiera disponible", el bloqueo de turnos y la ausencia de regresiones.
+### Vista de Cliente Público
+- **Flujo de Reserva:** Servicio → Empleado → Fecha → Hora → Confirmación
+- **Cálculo Inteligente:** Disponibilidad basada en horarios, servicios y reservas existentes
+- **Confirmación:** Formulario con export a calendario (ICS) o WhatsApp
 
 ---
 
-## 🚀 Cómo Empezarlo
+## 🏗️ Arquitectura
 
-Este proyecto está construido con **React y TypeScript** y utiliza **Vite** como herramienta de construcción.
+### Stack Tecnológico
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS + PostCSS
+- **Backend:** Supabase (PostgreSQL + Row Level Security)
+- **Serverless:** Edge Functions (Deno runtime)
+- **Testing:** Jest (89 tests unitarios) + Playwright (3 E2E)
 
-1.  **Clona el repositorio:**
-    ```bash
-    git clone https://github.com/tu-usuario/nombre-del-repo.git
-    ```
-2.  **Navega al directorio del proyecto:**
-    ```bash
-    cd nombre-del-repo
-    ```
-3.  **Instala las dependencias:**
-    ```bash
-    npm install
-    ```
-4.  **Inicia el servidor de desarrollo:**
-    ```bash
-    npm run dev
-    ```
-    Esto iniciará la aplicación en modo de desarrollo, generalmente accesible en `http://localhost:5173` (o un puerto similar).
-5.  **Para construir la aplicación para producción:**
-    ```bash
-    npm run build
-    ```
-    Esto generará los archivos estáticos en la carpeta `dist/`, listos para ser desplegados.
+### Seguridad Multi-Tenant
+- **RLS Policies:** Aislamiento por `business_id`
+- **Admin CRUD:** Edge Functions con `service_role` key
+- **Cliente Público:** Validación de `share_token` activo
+- **Ownership Checks:** Validación de pertenencia en updates/deletes
+
+### Componentes Clave
+```
+components/
+├── admin/              # Panel de administración
+│   ├── AdminView.tsx
+│   ├── ReservationsManager.tsx
+│   └── [editores especializados]
+├── views/
+│   ├── ClientView.tsx
+│   └── PublicClientLoader.tsx
+└── common/
+    ├── ConfirmationModal.tsx
+    └── StyleInjector.tsx
+
+supabase/
+├── functions/          # Edge Functions
+│   ├── admin-employees/
+│   ├── admin-services/
+│   ├── admin-businesses/
+│   └── public-bookings/
+└── migrations/         # SQL migrations
+
+services/
+├── supabaseBackend.ts  # Cliente Supabase
+├── mockBackend.e2e.ts  # Mock para tests
+└── supabaseWrapper.ts  # Retry automático
+
+utils/
+├── logger.ts           # Logging configurable
+├── validation.ts       # Validación centralizada
+└── availability.ts     # Lógica de disponibilidad
+```
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## 🚀 Setup
 
-*   **React 18:** Biblioteca de JavaScript para construir interfaces de usuario.
-*   **TypeScript:** Un superset de JavaScript que añade tipado estático.
-*   **Vite:** Herramienta de construcción rápida para proyectos web modernos.
-*   **Tailwind CSS:** Framework CSS de utilidad para un diseño rápido y personalizado.
-*   **qrcode:** Librería para generar códigos QR.
-*   **PostCSS & Autoprefixer:** Para procesar CSS y añadir prefijos de proveedor automáticamente.
+### Prerrequisitos
+- Node.js 18+ 
+- npm/pnpm
+- Cuenta Supabase
+- Supabase CLI (para Edge Functions)
+
+### Variables de Entorno
+Crear `.env` basado en `.env.example`:
+```bash
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+VITE_LOG_LEVEL=debug  # debug | info | warn | error | none
+```
+
+### Instalación
+```bash
+npm install
+npm run dev  # Development server en localhost:5173
+```
+
+### Database Setup
+```bash
+# Aplicar migraciones
+supabase db push
+
+# Deploy Edge Functions
+supabase functions deploy admin-employees
+supabase functions deploy admin-services
+supabase functions deploy admin-businesses
+supabase functions deploy public-bookings
+```
+
+### Build Producción
+```bash
+npm run build  # Output en dist/
+```
+
+---
+
+## 🧪 Testing
+
+### Tests Unitarios
+```bash
+npm test           # Suite completa (89 tests)
+npm test -- -t "nombre del test"  # Test específico
+```
+
+### Tests E2E (Playwright)
+```bash
+npm run e2e        # Todos los escenarios
+npm run e2e:ui     # Modo interactivo
+```
+
+**Escenarios cubiertos:**
+- Happy path: Reserva completa cliente público
+- Error scenarios: Token expirado
+- Edge cases: Servicios sin empleados disponibles
+
+---
+
+## 📊 Performance
+
+- **Bundle size:** 432KB (128KB gzip)
+- **Fonts:** Poppins + Roboto (optimizado)
+- **Retry automático:** 3 intentos con backoff exponencial
+- **Browser support:** Chrome, Firefox, Safari (fallback `color-mix()`)
+
+---
+
+## ⚠️ Limitaciones Conocidas
+
+### 🚨 Autenticación (BLOQUEANTE PARA PRODUCCIÓN)
+
+**Problema arquitectónico crítico:** Admin y clientes comparten el mismo mecanismo de acceso (`share_token`).
+
+**Consecuencias:**
+- ❌ Solo soporta UN negocio por instancia
+- ❌ Admin pierde acceso si revoca token público
+- ❌ No hay separación real entre usuarios
+
+**Uso actual válido:**
+- ✅ Prueba de concepto cerrada
+- ✅ Piloto con un solo negocio
+- ❌ **NO** lanzamiento multi-tenant
+
+**Para producción real se requiere:**
+- Implementar Supabase Auth + OAuth
+- Reescribir RLS policies con `owner_id`
+- Separar flujos admin vs cliente público
+- **Estimado:** 2-3 semanas de desarrollo
+
+---
+
+## 📝 Historial de Versiones
+
+### v0.5 - Production Readiness (Oct 2025)
+- ✅ Migración completa a Supabase
+- ✅ RLS + Edge Functions implementadas
+- ✅ Logger configurable con niveles
+- ✅ Retry automático para errores de red
+- ✅ Bundle analysis + optimización de fonts
+- ✅ E2E testing con Playwright
+- ✅ Validación centralizada de inputs
+- ✅ Browser compatibility (color-mix fallback)
+- ✅ Trigger automático para `booking_services`
+- ⚠️ Autenticación real pendiente
+
+### v0.4 - Asignación Inteligente
+- Corrección sobre-reserva con "Cualquiera disponible"
+- Función `findAvailableEmployeeForSlot` centralizada
+- Tests de integración robustos
+
+### v0.3 - Validación de Agenda
+- Corrección bugs de disponibilidad
+- Validación de solapamiento de horarios
+- Integridad de intervalos en UI
+
+### v0.2 - Horarios Individuales
+- Horarios por empleado (fallback a negocio)
+- Asignación de servicios por empleado
+- Editores especializados
+
+### v0.1 - MVP
+- Panel admin completo
+- Vista cliente básica
+- Persistencia localStorage
 
 ---
 
 ## 🤝 Contribución
 
-¡Las contribuciones son bienvenidas! Si deseas mejorar este proyecto, sigue estos pasos:
+1. Fork del repositorio
+2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -m 'feat: descripción'`)
+4. Push a tu fork (`git push origin feature/nueva-funcionalidad`)
+5. Abrir Pull Request
 
-1.  Haz un fork del repositorio.
-2.  Crea una nueva rama (`git checkout -b feature/nueva-funcionalidad`).
-3.  Realiza tus cambios y asegúrate de que el código pase las pruebas (si las hubiera).
-4.  Haz commit de tus cambios (`git commit -m 'feat: Añade nueva funcionalidad'`).
-5.  Sube tus cambios a tu fork (`git push origin feature/nueva-funcionalidad`).
-6.  Abre un Pull Request detallando tus cambios.
+**Convenciones:**
+- Commits: [Conventional Commits](https://www.conventionalcommits.org/)
+- Tests obligatorios para nuevas features
+- TypeScript strict mode
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+MIT License - Ver archivo `LICENSE`
+
+---
+
+## 🔗 Links Útiles
+
+- [Documentación Supabase](https://supabase.com/docs)
+- [Edge Functions Guide](https://supabase.com/docs/guides/functions)
+- [RLS Policies](https://supabase.com/docs/guides/auth/row-level-security)
+- [Playwright Docs](https://playwright.dev)
+
+---
+
+**Estado del Proyecto:** 🟡 Beta - Funcional para pilotos individuales, requiere auth para SaaS multi-tenant

@@ -303,15 +303,27 @@ export const supabaseBackend = {
   },
 
   updateBusinessData: async (newData: Business): Promise<Business> => {
-    // Usar Edge Function admin-businesses (service_role)
+    // Determinar acción: si no existe aún en Supabase, usar 'upsert'
+    let action: 'update' | 'upsert' = 'update';
+    try {
+      const probe = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('id', newData.id)
+        .maybeSingle();
+      if (!probe.data) action = 'upsert';
+    } catch {
+      action = 'upsert';
+    }
+
     const { data, error } = await supabase.functions.invoke('admin-businesses', {
       body: {
-        action: 'update',
+        action,
         businessId: newData.id,
         data: {
           id: newData.id,
           name: newData.name,
-          description: newData.description,
+            description: newData.description,
           phone: newData.phone,
           profile_image_url: newData.profileImageUrl,
           cover_image_url: newData.coverImageUrl,
@@ -325,6 +337,11 @@ export const supabaseBackend = {
     });
 
     if (error || data?.error) throw new Error(error?.message || data?.error);
+
+    // Guardar businessId si se creó
+    if (action === 'upsert' && !localStorage.getItem('supabase_business_id')) {
+      localStorage.setItem('supabase_business_id', newData.id);
+    }
 
     return buildBusinessObject(newData.id);
   },
