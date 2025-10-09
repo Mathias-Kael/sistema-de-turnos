@@ -11,8 +11,7 @@ export default defineConfig(() => {
         filename: 'bundle-report.html',
         template: 'treemap',
         gzipSize: true,
-        brotliSize: true,
-        json: true
+        brotliSize: true
       })
     ],
     build: {

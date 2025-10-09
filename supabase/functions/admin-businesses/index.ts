@@ -1,5 +1,8 @@
+// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// @ts-ignore
+declare const Deno: any;
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +12,6 @@ const corsHeaders: Record<string, string> = {
 interface Payload {
   action?: 'update' | 'upsert' | 'create';
   data: any;
-  businessId?: string; // opcional para creación
 }
 
 serve(async (req) => {
@@ -23,7 +25,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { action: rawAction, data, businessId }: Payload = await req.json();
+    // Validación JWT
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) throw new Error('Missing authorization header');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !userData?.user) throw new Error('Unauthorized');
+
+    // Cliente con RLS usando el JWT del usuario
+    const supabaseRls = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { action: rawAction, data }: Payload = await req.json();
 
     const action = rawAction || 'update';
 
@@ -36,19 +52,12 @@ serve(async (req) => {
       throw new Error('Missing name');
     }
 
-    // Id que intentaremos usar / asegurar
-    const targetId = data.id || businessId; // preferimos id explícito
-
-    if (!targetId) {
-      throw new Error('Missing business id for operation');
-    }
-
-    if (businessId && data.id && businessId !== data.id) {
-      throw new Error('businessId mismatch');
-    }
+    // Id objetivo (puede venir del payload)
+    const targetId = data.id;
+    if (!targetId) throw new Error('Missing business id for operation');
 
     // Obtener si existe actualmente
-    const { data: existingRows, error: selectError } = await supabaseAdmin
+    const { data: existingRows, error: selectError } = await supabaseRls
       .from('businesses')
       .select('id')
       .eq('id', targetId);
@@ -61,7 +70,7 @@ serve(async (req) => {
 
     if (action === 'create' || (action === 'upsert' && !exists) || (action === 'update' && !exists)) {
       // Crear nuevo registro
-      const { error: insertError } = await supabaseAdmin
+      const { error: insertError } = await supabaseRls
         .from('businesses')
         .insert({
           id: targetId,
@@ -89,7 +98,7 @@ serve(async (req) => {
     }
 
     if (action === 'update' || action === 'upsert') {
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseRls
         .from('businesses')
         .update({
           name: data.name,

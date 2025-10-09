@@ -319,11 +319,10 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-businesses', {
       body: {
         action,
-        businessId: newData.id,
         data: {
           id: newData.id,
           name: newData.name,
-            description: newData.description,
+          description: newData.description,
           phone: newData.phone,
           profile_image_url: newData.profileImageUrl,
           cover_image_url: newData.coverImageUrl,
@@ -423,7 +422,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-bookings', {
       body: {
         action: 'update',
-        businessId,
         data: {
           id: bookingId,
           updates: {
@@ -444,7 +442,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-bookings', {
       body: {
         action: 'delete',
-        businessId,
         data: { id: bookingId },
       },
     });
@@ -458,7 +455,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
         action: 'create',
-        businessId,
         data: {
           business_id: businessId,
           name: employee.name,
@@ -479,7 +475,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
         action: 'update',
-        businessId,
         data: {
           id: updatedEmployee.id,
           updates: {
@@ -517,7 +512,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
         action: 'delete',
-        businessId,
         data: { id: employeeId },
       },
     });
@@ -532,7 +526,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
         action: 'create',
-        businessId,
         data: {
           business_id: businessId,
           name: service.name,
@@ -556,7 +549,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
         action: 'update',
-        businessId,
         data: {
           id: updatedService.id,
           updates: {
@@ -597,7 +589,6 @@ export const supabaseBackend = {
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
         action: 'delete',
-        businessId,
         data: { id: serviceId },
       },
     });

@@ -1,40 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { BusinessProvider } from './context/BusinessContext';
 import { StyleInjector } from './components/common/StyleInjector';
 import { ClientView } from './components/views/ClientView';
 import { AdminView } from './components/views/AdminView';
 import { PublicClientLoader } from './components/views/PublicClientLoader';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
 
 // ShareLink se importa ahora desde types.ts
 
+function LegacyQueryRedirect() {
+  // Maneja compat ?token y ?client
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+  const clientPreview = params.get('client');
+  if (token) return <Navigate to={`/public/${token}`} replace />;
+  if (clientPreview === '1') return <Navigate to="/admin/preview" replace />;
+  return <Navigate to="/admin" replace />;
+}
+
 function App() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const token = searchParams.get('token');
-  const clientPreview = searchParams.get('client');
-
-  // Si hay un token en la URL, estamos en la vista de cliente.
-  if (token) {
-    return <PublicClientLoader />;
-  }
-
-  // Modo de previsualización directa del cliente para E2E / QA: ?client=1
-  if (clientPreview === '1') {
-    return (
-      <BusinessProvider>
-        <StyleInjector />
-        <ClientView />
-      </BusinessProvider>
-    );
-  }
-
-  // De lo contrario, es la vista de administrador.
   return (
-    <BusinessProvider>
-      <StyleInjector />
-      <main>
-        <AdminView />
-      </main>
-    </BusinessProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/public/:token" element={<PublicClientLoader />} />
+
+          {/* Compatibilidad con query params antiguos */}
+          <Route path="/" element={<LegacyQueryRedirect />} />
+
+          {/* Rutas protegidas */}
+          <Route element={<ProtectedRoute />}> 
+            <Route
+              path="/admin"
+              element={(
+                <BusinessProvider>
+                  <StyleInjector />
+                  <main>
+                    <AdminView />
+                  </main>
+                </BusinessProvider>
+              )}
+            />
+            <Route
+              path="/admin/preview"
+              element={(
+                <BusinessProvider>
+                  <StyleInjector />
+                  <ClientView />
+                </BusinessProvider>
+              )}
+            />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

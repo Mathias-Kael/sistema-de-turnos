@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { Business } from '../../types';
@@ -8,8 +9,9 @@ import { logger } from '../../utils/logger';
 type Status = 'validating' | 'valid' | 'paused' | 'invalid';
 
 export const PublicClientLoader: React.FC = () => {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+  const { token: tokenFromPath } = useParams<{ token: string }>();
+  const qs = new URLSearchParams(window.location.search);
+  const token = tokenFromPath || qs.get('token');
   const [status, setStatus] = useState<Status>('validating');
   const [business, setBusiness] = useState<Business | null>(null);
   const [error, setError] = useState<string>('');
