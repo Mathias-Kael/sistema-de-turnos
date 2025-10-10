@@ -16,9 +16,10 @@ interface ConfirmationModalProps {
     employeeId: string | 'any';
     business: Business;
     onClose: () => void;
+    publicToken?: string;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot, selectedServices, employeeId, business, onClose }) => {
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot, selectedServices, employeeId, business, onClose, publicToken }) => {
     let dispatch: any = null;
     try { dispatch = useBusinessDispatch(); } catch { /* en modo público sin provider */ }
     const [clientName, setClientName] = useState('');
@@ -74,7 +75,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             }
 
             const dateStr = date.toISOString().split('T')[0];
-            const token = new URLSearchParams(window.location.search).get('token');
+            const token = publicToken ?? new URLSearchParams(window.location.search).get('token') ?? undefined;
 
             if (dispatch) {
                 const newBooking: Omit<Booking, 'id'> = {

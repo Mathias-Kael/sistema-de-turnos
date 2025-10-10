@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BrandingEditor } from '../admin/BrandingEditor';
 import { ServicesEditor } from '../admin/ServicesEditor';
 import { HoursEditor } from '../admin/HoursEditor';
@@ -10,10 +10,15 @@ import { ClientView } from './ClientView';
 import { HeroSection } from '../common/HeroSection';
 import { EditInfoModal } from '../admin/EditInfoModal';
 import { ImageUploader } from '../common/ImageUploader';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'preview' | 'branding';
 
 export const AdminView: React.FC = () => {
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('services');
     const business = useBusinessState();
     const dispatch = useBusinessDispatch();
@@ -31,6 +36,31 @@ export const AdminView: React.FC = () => {
     const [editingProfile, setEditingProfile] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // User menu (avatar + dropdown)
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const userEmail = user?.email ?? '';
+    const avatarUrl: string | undefined = (user as any)?.user_metadata?.avatar_url ?? undefined;
+    const userInitial = (userEmail || business.name || 'U').charAt(0).toUpperCase();
+
+    const handleSignOut = async () => {
+        try {
+            await supabase.auth.signOut();
+        } finally {
+            navigate('/login', { replace: true });
+        }
+    };
+
+    useEffect(() => {
+        const onClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+        if (menuOpen) document.addEventListener('mousedown', onClickOutside);
+        return () => document.removeEventListener('mousedown', onClickOutside);
+    }, [menuOpen]);
 
     const renderContent = () => {
         switch (activeTab) {
@@ -112,6 +142,54 @@ export const AdminView: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background text-primary">
+            {/* Top bar con menú de usuario */}
+            <div className="bg-background border-b border-default">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-end">
+                    <div className="relative" ref={menuRef}>
+                        <button
+                            type="button"
+                            onClick={() => setMenuOpen((v) => !v)}
+                            className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring focus-visible:ring-primary/40"
+                            aria-haspopup="menu"
+                            aria-expanded={menuOpen}
+                        >
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt="Avatar"
+                                    className="h-9 w-9 rounded-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-brand-text text-sm font-semibold">
+                                    {userInitial}
+                                </span>
+                            )}
+                        </button>
+
+                        {menuOpen && (
+                            <div
+                                role="menu"
+                                aria-label="Menú de usuario"
+                                className="absolute right-0 mt-2 w-56 rounded-md border border-default bg-background shadow-lg z-50 overflow-hidden"
+                            >
+                                <div className="px-3 py-2 border-b border-default">
+                                    <p className="text-xs text-secondary truncate" title={userEmail}>
+                                        {userEmail || 'Usuario'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleSignOut}
+                                    className="w-full text-left px-3 py-2 text-primary hover:bg-surface"
+                                    role="menuitem"
+                                >
+                                    Cerrar sesión
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 <HeroSection
                     business={business}

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -58,7 +59,7 @@ serve(async (req) => {
     const serviceIds = body.services.map(s => s.id);
     const { data: svcRows, error: svcErr } = await supabaseAdmin
       .from('services')
-      .select('id, duration, buffer, business_id')
+      .select('id, name, price, duration, buffer, business_id')
       .in('id', serviceIds);
     if (svcErr) throw new Error('Service lookup failed');
     if (!svcRows || svcRows.length !== serviceIds.length) throw new Error('Some services not found');
@@ -107,12 +108,17 @@ serve(async (req) => {
     if (insErr || !inserted) throw new Error('Insert failed');
 
     // 6. Insert booking_services rows
-    for (const svc of serviceIds) {
+    // Mapear detalles para nombre y precio
+    const svcMap = new Map<string, { name: string; price: number }>(
+      (svcRows || []).map((s: any) => [s.id, { name: s.name, price: Number(s.price) }])
+    );
+    for (const svcId of serviceIds) {
+      const meta = svcMap.get(svcId) || { name: '', price: 0 };
       await supabaseAdmin.from('booking_services').insert({
         booking_id: inserted.id,
-        service_id: svc,
-        service_name: '', // opc: podría poblar con trigger, aquí se deja vacío para no duplicar info
-        service_price: 0
+        service_id: svcId,
+        service_name: meta.name,
+        service_price: meta.price,
       });
     }
 

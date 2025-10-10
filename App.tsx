@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 
 // ShareLink se importa ahora desde types.ts
 
@@ -31,6 +32,7 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/public/:token" element={<PublicClientLoader />} />
 
           {/* Compatibilidad con query params antiguos */}

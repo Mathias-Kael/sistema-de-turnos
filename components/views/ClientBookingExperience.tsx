@@ -11,12 +11,13 @@ import { HeroSection } from '../common/HeroSection';
 export interface ClientBookingExperienceProps {
   business: Business;
   mode: 'public' | 'admin';
+  publicToken?: string;
 }
 
 /**
  * UI principal de reserva. No conoce de context ni de token.
  */
-export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = ({ business, mode }) => {
+export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = ({ business, mode, publicToken }) => {
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | 'any' | null>(null);
   const today = new Date();
@@ -96,6 +97,7 @@ export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = (
             selectedServices={selectedServices}
             employeeId={selectedEmployeeId}
             business={business}
+            publicToken={publicToken}
             onClose={() => setSelectedSlot(null)}
         />
       )}

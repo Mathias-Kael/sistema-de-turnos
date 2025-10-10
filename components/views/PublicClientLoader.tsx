@@ -105,5 +105,5 @@ export const PublicClientLoader: React.FC = () => {
       </div>
     );
   }
-  return <ClientBookingExperience business={business} mode="public" />;
+  return <ClientBookingExperience business={business} mode="public" publicToken={token!} />;
 };
