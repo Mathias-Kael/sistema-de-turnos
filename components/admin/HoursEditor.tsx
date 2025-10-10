@@ -112,32 +112,57 @@ export const HoursEditor: React.FC = () => {
                         </label>
                     </div>
 
-                    {draftHours[dayKey].enabled && (
-                        <div className="space-y-3">
-                            {draftHours[dayKey].intervals.map((interval, index) => (
-                                <div key={index} className="flex flex-col xs:flex-row xs:items-center gap-2">
-                                    <input
-                                        type="time"
-                                        value={interval.open}
-                                        onChange={(e) => handleIntervalChange(dayKey, index, 'open', e.target.value)}
-                                        className="w-full px-3 py-2 border border-default rounded-md shadow-sm bg-surface text-primary"
-                                    />
-                                    <span className="text-secondary">-</span>
-                                    <input
-                                        type="time"
-                                        value={interval.close}
-                                        onChange={(e) => handleIntervalChange(dayKey, index, 'close', e.target.value)}
-                                        className="w-full px-3 py-2 border border-default rounded-md shadow-sm bg-surface text-primary"
-                                    />
-                                    <button
-                                        onClick={() => removeInterval(dayKey, index)}
-                                        className="p-2 bg-state-danger-bg text-state-danger-text rounded-full hover:opacity-90 transition-colors"
-                                        aria-label="Eliminar intervalo"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
-                                    </button>
-                                </div>
-                            ))}
+                                        {draftHours[dayKey].enabled && (
+                                                <div className="space-y-3">
+                                                        {/* Encabezados de columnas */}
+                                                        <div className="hidden sm:grid grid-cols-[1fr_auto_1fr_auto] items-center text-xs text-secondary px-1">
+                                                            <span>Desde</span>
+                                                            <span></span>
+                                                            <span>Hasta</span>
+                                                            <span></span>
+                                                        </div>
+                                                        {draftHours[dayKey].intervals.map((interval, index) => {
+                                                            const invalid = !interval.open || !interval.close || interval.open >= interval.close;
+                                                            const baseInput = "w-full px-3 py-2 border rounded-md shadow-sm bg-surface text-primary focus:outline-none focus:ring-1";
+                                                            const validBorder = "border-default focus:ring-primary";
+                                                            const invalidBorder = "border-red-400 focus:ring-red-400";
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2"
+                                                                >
+                                                                    <input
+                                                                        type="time"
+                                                                        value={interval.open}
+                                                                        onChange={(e) => handleIntervalChange(dayKey, index, 'open', e.target.value)}
+                                                                        aria-label="Hora de apertura"
+                                                                        placeholder="Desde"
+                                                                        className={`${baseInput} ${invalid ? invalidBorder : validBorder}`}
+                                                                    />
+                                                                    <span className="text-secondary px-1">-</span>
+                                                                    <input
+                                                                        type="time"
+                                                                        value={interval.close}
+                                                                        onChange={(e) => handleIntervalChange(dayKey, index, 'close', e.target.value)}
+                                                                        aria-label="Hora de cierre"
+                                                                        placeholder="Hasta"
+                                                                        className={`${baseInput} ${invalid ? invalidBorder : validBorder}`}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => removeInterval(dayKey, index)}
+                                                                        className="justify-self-end p-2 bg-state-danger-bg text-state-danger-text rounded-full hover:opacity-90 transition-colors"
+                                                                        aria-label="Eliminar intervalo"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
+                                                                    </button>
+                                                                    {invalid && (
+                                                                        <div className="col-span-4 text-xs text-red-500 mt-1">
+                                                                            La hora de inicio debe ser anterior a la de fin.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
                             <button
                                 onClick={() => addInterval(dayKey)}
                                 className="w-full mt-2 px-4 py-2 border-2 border-dashed border-default text-secondary rounded-md hover:bg-surface-hover hover:border-primary transition-all"
