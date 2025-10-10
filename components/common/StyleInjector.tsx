@@ -19,6 +19,28 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
         branding = useBusinessState().branding;
     }
 
+    // Defensive programming: validate branding structure
+    useEffect(() => {
+        console.log('[StyleInjector] Branding received:', JSON.stringify(branding, null, 2));
+        
+        if (!branding) {
+            console.error('[StyleInjector] Branding is undefined!');
+        } else {
+            if (!branding.primaryColor) console.warn('[StyleInjector] Missing primaryColor');
+            if (!branding.secondaryColor) console.warn('[StyleInjector] Missing secondaryColor');
+            if (!branding.textColor) console.warn('[StyleInjector] Missing textColor');
+            if (!branding.font) console.warn('[StyleInjector] Missing font');
+        }
+    }, [branding]);
+
+    // Fallbacks for missing branding values
+    const safeBranding = {
+        primaryColor: branding?.primaryColor || '#3b82f6',
+        secondaryColor: branding?.secondaryColor || '#10b981',
+        textColor: branding?.textColor || '#ffffff',
+        font: branding?.font || 'Poppins, sans-serif'
+    };
+
     // Import all fonts used in presets to ensure they are available.
     const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap";
 
@@ -40,8 +62,8 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
 
     // Fallbacks equivalentes a las expresiones color-mix utilizadas abajo
     // blend ahora recibe porcentaje entero (0-100) para la proporción del primer color
-    const primaryDarkFallback = blend(branding.primaryColor, '#000000', 80); // 80% brand + 20% black
-    const primaryLightFallback = blend(branding.primaryColor, '#ffffff', 15); // 15% brand + 85% white
+    const primaryDarkFallback = blend(safeBranding.primaryColor, '#000000', 80); // 80% brand + 20% black
+    const primaryLightFallback = blend(safeBranding.primaryColor, '#ffffff', 15); // 15% brand + 85% white
 
     const dynamicStyles = `
         :root {
@@ -65,10 +87,10 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
             --color-state-danger-strong: #b91c1c; /* Added for light mode */
 
             /* Branding Colors */
-            --color-brand-primary: ${branding.primaryColor};
-            --color-brand-secondary: ${branding.secondaryColor};
-            --color-brand-text: ${branding.textColor};
-            --font-family-brand: ${branding.font};
+            --color-brand-primary: ${safeBranding.primaryColor};
+            --color-brand-secondary: ${safeBranding.secondaryColor};
+            --color-brand-text: ${safeBranding.textColor};
+            --font-family-brand: ${safeBranding.font};
             /* Modern variables usando color-mix */
             --color-brand-primary-dark: color-mix(in srgb, var(--color-brand-primary) 80%, black);
             --color-brand-primary-light: color-mix(in srgb, var(--color-brand-primary) 15%, white);
@@ -99,8 +121,8 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
                 --color-state-danger-strong: #dc2626; /* Added for dark mode */
 
                 /* Adapt branding colors for dark mode */
-                --color-brand-primary: ${adjustColorForDarkMode(branding.primaryColor)};
-                --color-brand-secondary: ${adjustColorForDarkMode(branding.secondaryColor)};
+                --color-brand-primary: ${adjustColorForDarkMode(safeBranding.primaryColor)};
+                --color-brand-secondary: ${adjustColorForDarkMode(safeBranding.secondaryColor)};
             }
         }
         

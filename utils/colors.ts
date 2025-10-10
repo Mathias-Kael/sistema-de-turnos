@@ -52,7 +52,13 @@ const rgbToHex = (r: number, g: number, b: number): string => {
  * @param hexColor - El color original en formato hexadecimal.
  * @returns El nuevo color aclarado en formato hexadecimal.
  */
-export const adjustColorForDarkMode = (hexColor: string): string => {
+export const adjustColorForDarkMode = (hexColor: string | undefined): string => {
+    // Defensive check: return default if undefined or invalid
+    if (!hexColor || typeof hexColor !== 'string') {
+        console.warn('[adjustColorForDarkMode] Invalid color received:', hexColor);
+        return '#3b82f6'; // Default blue
+    }
+    
     if (!hexColor.startsWith('#')) return hexColor;
 
     const hsl = hexToHsl(hexColor);
