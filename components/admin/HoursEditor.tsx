@@ -53,6 +53,21 @@ export const HoursEditor: React.FC = () => {
         handleHoursChange(day, { ...draftHours[day], intervals: newIntervals });
     };
 
+    const copyDayToRest = (day: keyof Hours) => {
+        if (!window.confirm('Esto reemplazará los intervalos del resto de los días. ¿Querés continuar?')) return;
+        const source = draftHours[day];
+        const updated: Hours = { ...draftHours } as Hours;
+        for (const k of Object.keys(updated) as (keyof Hours)[]) {
+            if (k === day) continue;
+            updated[k] = {
+                enabled: source.enabled,
+                intervals: source.intervals.map((i: Interval) => ({ ...i })),
+            };
+        }
+        setDraftHours(updated);
+        validateHours(updated);
+    };
+
     const validateHours = (hours: Hours): boolean => {
         for (const dayKey of Object.keys(hours) as (keyof Hours)[]) {
             const dayHours = hours[dayKey];
@@ -113,23 +128,23 @@ export const HoursEditor: React.FC = () => {
                     </div>
 
                                         {draftHours[dayKey].enabled && (
-                                                <div className="space-y-3">
+                                                                        <div className="space-y-3">
                                                         {/* Encabezados de columnas */}
-                                                        <div className="hidden sm:grid grid-cols-[1fr_auto_1fr_auto] items-center text-xs text-secondary px-1">
+                                                                                                            <div className="hidden sm:grid grid-cols-[1fr_auto_1fr_auto] items-center text-xs text-secondary px-1">
                                                             <span>Desde</span>
                                                             <span></span>
                                                             <span>Hasta</span>
-                                                            <span></span>
+                                                                                    <span></span>
                                                         </div>
-                                                        {draftHours[dayKey].intervals.map((interval, index) => {
+                                                                                {draftHours[dayKey].intervals.map((interval, index) => {
                                                             const invalid = !interval.open || !interval.close || interval.open >= interval.close;
                                                             const baseInput = "w-full px-3 py-2 border rounded-md shadow-sm bg-surface text-primary focus:outline-none focus:ring-1";
                                                             const validBorder = "border-default focus:ring-primary";
                                                             const invalidBorder = "border-red-400 focus:ring-red-400";
                                                             return (
                                                                 <div
-                                                                    key={index}
-                                                                    className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2"
+                                                                                            key={index}
+                                                                                                                                className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2"
                                                                 >
                                                                     <input
                                                                         type="time"
@@ -148,7 +163,7 @@ export const HoursEditor: React.FC = () => {
                                                                         placeholder="Hasta"
                                                                         className={`${baseInput} ${invalid ? invalidBorder : validBorder}`}
                                                                     />
-                                                                    <button
+                                                                                                                                <button
                                                                         onClick={() => removeInterval(dayKey, index)}
                                                                         className="justify-self-end p-2 bg-state-danger-bg text-state-danger-text rounded-full hover:opacity-90 transition-colors"
                                                                         aria-label="Eliminar intervalo"
@@ -163,12 +178,21 @@ export const HoursEditor: React.FC = () => {
                                                                 </div>
                                                             );
                                                         })}
-                            <button
-                                onClick={() => addInterval(dayKey)}
-                                className="w-full mt-2 px-4 py-2 border-2 border-dashed border-default text-secondary rounded-md hover:bg-surface-hover hover:border-primary transition-all"
-                            >
-                                + Añadir Turno
-                            </button>
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                                                                    <button
+                                                                                            onClick={() => addInterval(dayKey)}
+                                                                                            className="w-full px-4 py-2 border-2 border-dashed border-default text-secondary rounded-md hover:bg-surface-hover hover:border-primary transition-all"
+                                                                                    >
+                                                                                            + Añadir Turno
+                                                                                    </button>
+                                                                                    <button
+                                                                                            type="button"
+                                                                                            onClick={() => copyDayToRest(dayKey)}
+                                                                                            className="w-full px-4 py-2 border border-default text-secondary rounded-md hover:bg-surface-hover transition-all"
+                                                                                    >
+                                                                                            Copiar al resto de la semana
+                                                                                    </button>
+                                                                                </div>
                         </div>
                     )}
                 </div>
