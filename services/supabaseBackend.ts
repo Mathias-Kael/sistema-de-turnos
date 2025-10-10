@@ -272,37 +272,77 @@ async function migrateFromLocalStorage(ownerId: string): Promise<string | null> 
 
 export const supabaseBackend = {
   getBusinessData: async (): Promise<Business> => {
-    const { data: userData } = await supabase.auth.getUser();
+    logger.debug('[getBusinessData] Iniciando...');
+    
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    logger.debug('[getBusinessData] auth.getUser() resultado:', { 
+      hasUser: !!userData?.user, 
+      userId: userData?.user?.id,
+      error: userErr?.message 
+    });
+    
     const userId = userData.user?.id;
-    if (!userId) throw new Error('Usuario no autenticado');
+    if (!userId) {
+      logger.error('[getBusinessData] No userId - usuario no autenticado');
+      throw new Error('Usuario no autenticado');
+    }
 
     // Cache por sesión
     const cached = businessCacheByUser.get(userId);
+    logger.debug('[getBusinessData] Cache check:', { hasCached: !!cached, businessId: cached?.businessId });
     if (cached?.businessId) {
+      logger.debug('[getBusinessData] Usando negocio cacheado:', cached.businessId);
       return buildBusinessObject(cached.businessId);
     }
 
-    // Buscar negocio por owner
+    // Buscar negocio por owner (toma el más reciente si hay duplicados)
+    logger.debug('[getBusinessData] Buscando negocio por owner_id:', userId);
     const { data: biz, error: bizErr } = await supabase
       .from('businesses')
-      .select('id')
+      .select('id, status, owner_id')
       .eq('owner_id', userId)
       .eq('status', 'active')
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    logger.debug('[getBusinessData] Query resultado:', { 
+      found: !!biz, 
+      businessId: biz?.id,
+      status: biz?.status,
+      owner_id: biz?.owner_id,
+      error: bizErr?.message 
+    });
+
+    // Diagnóstico: buscar TODOS los negocios del usuario (incluidos inactivos/duplicados)
+    const { data: allBiz, error: allErr } = await supabase
+      .from('businesses')
+      .select('id, status, owner_id, name, created_at')
+      .eq('owner_id', userId);
+    
+    logger.debug('[getBusinessData] TODOS los negocios del usuario:', { 
+      count: allBiz?.length || 0,
+      businesses: allBiz,
+      error: allErr?.message 
+    });
 
     if (biz?.id) {
+      logger.debug('[getBusinessData] Negocio encontrado, guardando en cache:', biz.id);
       businessCacheByUser.set(userId, { businessId: biz.id });
       return buildBusinessObject(biz.id);
     }
 
     // Migración legacy si hay datos en localStorage
+    logger.debug('[getBusinessData] No encontrado, intentando migración legacy...');
     const migrated = await migrateFromLocalStorage(userId);
     if (migrated) {
+      logger.debug('[getBusinessData] Migración exitosa, businessId:', migrated);
       businessCacheByUser.set(userId, { businessId: migrated });
       return buildBusinessObject(migrated);
     }
 
     // Crear negocio básico si no existe
+    logger.debug('[getBusinessData] Creando nuevo negocio para userId:', userId);
     const { data: newBiz, error: createErr } = await supabase
       .from('businesses')
       .insert({
@@ -319,8 +359,19 @@ export const supabaseBackend = {
       .select('id')
       .single();
 
-    if (createErr || !newBiz) throw new Error(createErr?.message || 'No se pudo crear negocio');
+    logger.debug('[getBusinessData] Creación resultado:', { 
+      success: !!newBiz, 
+      businessId: newBiz?.id,
+      error: createErr?.message 
+    });
+
+    if (createErr || !newBiz) {
+      logger.error('[getBusinessData] Error al crear negocio:', createErr);
+      throw new Error(createErr?.message || 'No se pudo crear negocio');
+    }
+    
     businessCacheByUser.set(userId, { businessId: newBiz.id });
+    logger.debug('[getBusinessData] Negocio creado y cacheado:', newBiz.id);
     return buildBusinessObject(newBiz.id);
   },
 
