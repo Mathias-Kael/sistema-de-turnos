@@ -2,6 +2,8 @@ import { supabase } from '../lib/supabase';
 import { ImageStorageService, ImageType, ImageUploadResult } from '../types';
 import { ImageProcessor } from '../utils/imageProcessing';
 import { IMAGE_CONSTRAINTS } from '../constants';
+import { uploadWithRetry, deleteWithRetry } from '../utils/storageRetry';
+import { logger } from '../utils/logger';
 
 /**
  * Servicio de almacenamiento de imágenes usando Supabase Storage
@@ -36,13 +38,24 @@ class SupabaseImageStorage implements ImageStorageService {
       const fileName = this.generateFileName(type);
       const bucketName = this.getBucketName(type);
 
-      // 4. Subir a Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(fileName, blob, {
-          contentType: file.type,
-          upsert: false,
-        });
+      // 4. Subir a Supabase Storage con retry automático
+      logger.debug(`[SupabaseImageStorage] Subiendo ${type} a bucket ${bucketName}`);
+      
+      const { data: uploadData, error: uploadError } = await uploadWithRetry(
+        supabase.storage,
+        {
+          bucket: bucketName,
+          path: fileName,
+          file: blob,
+          options: {
+            contentType: file.type,
+            upsert: false,
+          },
+          onRetry: (attempt, maxAttempts, error) => {
+            logger.warn(`[SupabaseImageStorage] Reintento ${attempt}/${maxAttempts} tras error:`, error?.message);
+          }
+        }
+      );
 
       if (uploadError) {
         throw new Error(`Error al subir imagen: ${uploadError.message}`);
@@ -96,14 +109,21 @@ class SupabaseImageStorage implements ImageStorageService {
       bucketName = 'employee-avatars';
     }
 
-    const { error } = await supabase.storage
-      .from(bucketName)
-      .remove([fileName]);
+    logger.debug(`[SupabaseImageStorage] Eliminando ${fileName} de bucket ${bucketName}`);
+
+    const { error } = await deleteWithRetry(
+      supabase.storage,
+      bucketName,
+      fileName,
+      (attempt, maxAttempts, error) => {
+        logger.warn(`[SupabaseImageStorage] Delete retry ${attempt}/${maxAttempts}:`, error?.message);
+      }
+    );
 
     if (error) {
-      console.error('Error al eliminar imagen:', error);
+      logger.error('Error al eliminar imagen:', error);
     } else {
-      console.log('✅ Imagen anterior eliminada:', fileName);
+      logger.info('✅ Imagen anterior eliminada:', fileName);
     }
   }
 

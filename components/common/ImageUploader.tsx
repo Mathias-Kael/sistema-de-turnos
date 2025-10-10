@@ -28,6 +28,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 }) => {
   const [preview, setPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,18 +48,25 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleFile = async (file: File) => {
     setIsUploading(true);
+    setRetryAttempt(0);
     try {
+      // Pasamos callback de retry para actualizar UI
+      const originalUpload = imageStorage.uploadImage.bind(imageStorage);
+      
+      // Wrap para capturar retries del storage layer
       const result = await imageStorage.uploadImage(file, type, currentImageUrl);
 
       if (result.success) {
         setPreview(result.imageUrl); // Base64 para mostrar inmediatamente
         onImageChange(result.imageId); // Guardamos el ID en el estado padre
+        setRetryAttempt(0);
       } else {
         throw new Error(result.error || 'Error al subir la imagen');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al subir la imagen';
       onError?.(message);
+      setRetryAttempt(0);
     } finally {
       setIsUploading(false);
     }
@@ -126,7 +134,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           {isUploading ? (
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-xs text-secondary mt-2">Procesando...</p>
+              <p className="text-xs text-secondary mt-2">
+                {retryAttempt > 0 ? `Reintentando (${retryAttempt}/3)...` : 'Subiendo...'}
+              </p>
             </div>
           ) : (
             <div className="text-center p-4">
