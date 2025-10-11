@@ -378,26 +378,23 @@ export const supabaseBackend = {
   getBusinessByToken: async (token: string): Promise<Business | null> => {
     logger.debug('getBusinessByToken - token recibido:', token);
     try {
-      const data = await withRetryOrThrow(async () => {
-        const res = await supabase
-          .from('businesses')
-          .select('id, share_token_status, share_token_expires_at')
-          .eq('share_token', token)
-          .eq('share_token_status', 'active')
-          .eq('status', 'active')
-          .single();
-        return { data: res.data, error: res.error };
-      }, { operationName: 'get-business-by-token', userMessage: 'No se pudo validar el enlace.' });
+      const { data, error } = await supabase.functions.invoke<{ business?: Business; error?: string }>('validate-public-token', {
+        body: { token },
+      });
 
-      if (!data) return null;
-      if (data.share_token_status !== 'active') return null;
-      if (data.share_token_expires_at) {
-        const expiryDate = new Date(data.share_token_expires_at);
-        if (expiryDate.getTime() < Date.now()) return null;
+      if (error) {
+        logger.warn('getBusinessByToken - Edge Function error:', error.message);
+        return null;
       }
-      return buildBusinessObject(data.id);
+
+      if (!data?.business) {
+        logger.debug('getBusinessByToken - token inválido o expirado');
+        return null;
+      }
+
+      return data.business;
     } catch (e) {
-      logger.debug('getBusinessByToken - error tras retries:', e);
+      logger.error('getBusinessByToken - error invocando validate-public-token:', e);
       return null;
     }
   },
