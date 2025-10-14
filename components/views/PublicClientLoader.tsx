@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { Business } from '../../types';
 import { ClientBookingExperience } from './ClientBookingExperience';
@@ -23,52 +22,24 @@ export const PublicClientLoader: React.FC = () => {
     }
     let cancelled = false;
     (async () => {
-  logger.debug('[PublicClientLoader] Validando token', token);
+      logger.debug('[PublicClientLoader] Validando token', token);
       try {
-        const { data, error } = await supabase
-          .from('businesses')
-          .select('id, share_token_status, share_token_expires_at')
-          .eq('share_token', token)
-          .eq('status', 'active')
-          .single();
-
-  logger.debug('[PublicClientLoader] Resultado inicial', { data, error });
-
-        if (cancelled) return;
-        if (error || !data) {
-          logger.debug('[PublicClientLoader] Token no encontrado o error');
-          setStatus('invalid');
-          return;
-        }
-
-        if (data.share_token_expires_at) {
-          const expMs = new Date(data.share_token_expires_at).getTime();
-          if (Date.now() > expMs) {
-            logger.debug('[PublicClientLoader] Token expirado');
-            setStatus('invalid');
-            return;
-          }
-        }
-
-        if (data.share_token_status === 'paused') {
-          logger.debug('[PublicClientLoader] Token pausado');
-            setStatus('paused');
-            return;
-        }
-        if (data.share_token_status !== 'active') {
-          logger.debug('[PublicClientLoader] Token no activo');
-          setStatus('invalid');
-          return;
-        }
-
-  logger.debug('[PublicClientLoader] Token activo, cargando business completo');
         const full = await supabaseBackend.getBusinessByToken(token);
+        if (cancelled) return;
+
         if (!full) {
-          logger.debug('[PublicClientLoader] No se pudo construir business');
+          logger.debug('[PublicClientLoader] Token inválido o no se pudo cargar business');
           setStatus('invalid');
           return;
         }
-  logger.debug('[PublicClientLoader] Business cargado', full.id);
+
+        if (full.shareTokenStatus === 'paused') {
+          logger.debug('[PublicClientLoader] Token pausado');
+          setStatus('paused');
+          return;
+        }
+
+        logger.debug('[PublicClientLoader] Business cargado', full.id);
         setBusiness(full);
         setStatus('valid');
       } catch (e: any) {

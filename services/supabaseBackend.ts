@@ -378,7 +378,16 @@ export const supabaseBackend = {
   getBusinessByToken: async (token: string): Promise<Business | null> => {
     logger.debug('getBusinessByToken - token recibido:', token);
     try {
-      const { data, error } = await supabase.functions.invoke<{ business?: Business; error?: string }>('validate-public-token', {
+      // El tipo genérico debe coincidir con la estructura de la respuesta de la Edge Function,
+      // que es { data: { business: Business } }
+      type ValidateTokenResponse = {
+        data?: {
+          business?: Business;
+        };
+        error?: string;
+      };
+
+      const { data, error } = await supabase.functions.invoke<ValidateTokenResponse>('validate-public-token', {
         body: { token },
       });
 
@@ -386,13 +395,16 @@ export const supabaseBackend = {
         logger.warn('getBusinessByToken - Edge Function error:', error.message);
         return null;
       }
+      
+      // Acceso corregido según la estructura anidada
+      const business = data?.data?.business;
 
-      if (!data?.business) {
-        logger.debug('getBusinessByToken - token inválido o expirado');
+      if (!business) {
+        logger.debug('getBusinessByToken - token inválido, expirado o la estructura de la respuesta es incorrecta', { responseData: data });
         return null;
       }
 
-      return data.business;
+      return business;
     } catch (e) {
       logger.error('getBusinessByToken - error invocando validate-public-token:', e);
       return null;

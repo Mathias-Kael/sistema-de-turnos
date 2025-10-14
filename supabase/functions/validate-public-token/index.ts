@@ -1,6 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+declare const Deno: {
+  env: {
+    get: (key: string) => string | undefined;
+  };
+};
+
+export const config = {
+  auth: {
+    verifyJwt: false,
+  },
+};
+
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
@@ -15,6 +27,7 @@ type BusinessRow = {
   cover_image_url: string | null;
   branding: unknown;
   hours: unknown;
+  share_token: string | null;
   share_token_status: string;
   share_token_expires_at: string | null;
   status: string;
@@ -184,7 +197,7 @@ function transformBusiness(
     coverImageUrl: business.cover_image_url,
     branding: business.branding,
     hours: business.hours,
-    shareToken: null,
+  shareToken: business.share_token,
     shareTokenStatus: business.share_token_status,
     shareTokenExpiresAt: business.share_token_expires_at,
     employees: employeesSafe,
@@ -207,34 +220,81 @@ serve(async (req) => {
 
   try {
     const body: ValidateTokenRequest = await req.json();
-    if (!body?.token || typeof body.token !== 'string') {
+    
+    // Log de diagnóstico: Ver el cuerpo completo de la solicitud
+    console.log('validate-public-token: full request body', JSON.stringify(body, null, 2));
+
+    const token = body?.token;
+
+    if (!token || typeof token !== 'string') {
+      console.error('validate-public-token: token is missing or not a string', { token });
       return badRequest('Missing token');
     }
+
+    console.log('validate-public-token: incoming request', {
+      tokenLength: token.length,
+      tokenPreview: `${token.slice(0, 4)}...${token.slice(-4)}`,
+    });
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const url = Deno.env.get('SUPABASE_URL');
+    const hasServiceRole = Boolean(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
+    console.log('validate-public-token: environment check', {
+      hasSupabaseUrl: Boolean(url),
+      hasServiceRole,
+    });
+
     const { data: business, error: bizError } = await supabaseAdmin
       .from('businesses')
       .select(
-        'id, name, description, phone, profile_image_url, cover_image_url, branding, hours, share_token_status, share_token_expires_at, status'
+        'id, name, description, phone, profile_image_url, cover_image_url, branding, hours, share_token, share_token_status, share_token_expires_at, status'
       )
-      .eq('share_token', body.token)
+      .eq('share_token', token)
       .single();
+
+    if (bizError) {
+      // Log de diagnóstico: Mostrar el error completo de la base de datos
+      console.error('validate-public-token: business query failed', {
+        message: bizError.message,
+        details: bizError.details,
+        hint: bizError.hint,
+        code: bizError.code,
+      });
+    }
+
+    console.log('validate-public-token: business lookup result', {
+      found: Boolean(business),
+      bizStatus: business?.status,
+      shareTokenStatus: business?.share_token_status,
+      hasExpiration: Boolean(business?.share_token_expires_at),
+    });
 
     if (bizError || !business) {
       return unauthorized('Invalid token');
     }
 
     if (business.status !== 'active' || business.share_token_status !== 'active') {
+      console.warn('validate-public-token: inactive business or share token', {
+        bizStatus: business.status,
+        shareTokenStatus: business.share_token_status,
+      });
       return unauthorized('Booking link disabled');
     }
-
+ 
     if (business.share_token_expires_at) {
       const expires = new Date(business.share_token_expires_at);
-      if (Number.isNaN(expires.getTime()) || expires.getTime() < Date.now()) {
+      const expired = Number.isNaN(expires.getTime()) || expires.getTime() < Date.now();
+      console.log('validate-public-token: expiration check', {
+        expiresAt: business.share_token_expires_at,
+        expiresTimestamp: expires.getTime(),
+        expired,
+        now: Date.now(),
+      });
+      if (expired) {
         return unauthorized('Booking link expired');
       }
     }
