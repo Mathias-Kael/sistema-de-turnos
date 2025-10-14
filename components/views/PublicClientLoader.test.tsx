@@ -69,7 +69,11 @@ describe('PublicClientLoader', () => {
 
   test('estado paused', async () => {
     mockUrl('pausedTok');
-    mockSupabaseOnce({ data: { id: 'biz1', share_token_status: 'paused', share_token_expires_at: null }, error: null });
+    mockedGetBusinessByToken.mockResolvedValueOnce({
+      ...baseBusiness,
+      shareTokenStatus: 'paused',
+      shareTokenExpiresAt: null,
+    });
     render(<PublicClientLoader />);
     await waitFor(() => {
       expect(screen.getByText(/Agenda Pausada/i)).toBeInTheDocument();

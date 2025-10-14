@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+.last-run.json
