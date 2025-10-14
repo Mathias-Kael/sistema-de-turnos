@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { imageStorage } from '../../services/imageStorage';
 import { ImageType } from '../../types';
+import ImageCropModal from './ImageCropModal';
+import { Button } from '../ui/Button';
 
 interface ImageUploaderProps {
   currentImageUrl?: string; // ID o URL previa
@@ -13,7 +15,7 @@ interface ImageUploaderProps {
 
 /**
  * Componente reutilizable para subir imágenes con:
- * - Drag & drop
+ * - Recorte y ajuste (cropping)
  * - Previsualización instantánea
  * - Eliminación de imagen previa (si se reemplaza)
  * - Uso de capa de abstracción imageStorage
@@ -30,6 +32,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [croppingImage, setCroppingImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar preview inicial si existe imagen actual
@@ -46,19 +49,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   }, [currentImageUrl]);
 
-  const handleFile = async (file: File) => {
+  const handleImageUpload = async (file: File) => {
     setIsUploading(true);
     setRetryAttempt(0);
     try {
-      // Pasamos callback de retry para actualizar UI
-      const originalUpload = imageStorage.uploadImage.bind(imageStorage);
-      
-      // Wrap para capturar retries del storage layer
       const result = await imageStorage.uploadImage(file, type, currentImageUrl);
 
       if (result.success) {
-        setPreview(result.imageUrl); // Base64 para mostrar inmediatamente
-        onImageChange(result.imageId); // Guardamos el ID en el estado padre
+        setPreview(result.imageUrl);
+        onImageChange(result.imageId);
         setRetryAttempt(0);
       } else {
         throw new Error(result.error || 'Error al subir la imagen');
@@ -75,14 +74,28 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    // DRAG & DROP DESHABILITADO TEMPORALMENTE POR SEGURIDAD
     console.warn('Drag & drop deshabilitado. Usa el botón de selección.');
     return;
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCroppingImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset file input to allow re-selecting the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const onCropComplete = (croppedImage: File) => {
+    setCroppingImage(null);
+    handleImageUpload(croppedImage);
   };
 
   const handleDelete = async () => {
@@ -93,30 +106,71 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     onImageChange('');
   };
 
+  const handleEdit = () => {
+    if (preview) {
+      setCroppingImage(preview);
+    }
+  };
+
   // Estilos condicionales
-  const aspectRatioClass = type === 'cover' ? 'aspect-[3/1]' : 'aspect-square';
+  const aspectRatio = type === 'cover' ? 16 / 9 : 1;
+  const aspectRatioClass = type === 'cover' ? 'aspect-[16/9]' : 'aspect-square';
   const sizeClass = type === 'cover' ? 'h-40 w-full' : 'h-32 w-32';
+
+  const isAvatar = type !== 'cover';
+
+  const ActionButtons = () => (
+    <div
+      className={`flex gap-4 ${
+        isAvatar
+          ? 'md:flex-col md:justify-center' // Desktop: vertical
+          : 'justify-center' // Cover: horizontal
+      }`}
+    >
+      <Button
+        onClick={handleEdit}
+        disabled={isUploading}
+        variant="outline"
+        className="flex items-center gap-2"
+      >
+        ✏️<span>Editar</span>
+      </Button>
+      <Button
+        onClick={handleDelete}
+        disabled={isUploading}
+        variant="danger"
+        className="flex items-center gap-2"
+      >
+        🗑️<span>Eliminar</span>
+      </Button>
+    </div>
+  );
 
   return (
     <div className={`space-y-2 ${className}`}>
+      {croppingImage && (
+        <ImageCropModal
+          image={croppingImage}
+          aspect={aspectRatio}
+          onCropComplete={onCropComplete}
+          onCancel={() => setCroppingImage(null)}
+        />
+      )}
+
       <label className="block text-sm font-medium text-primary">{label}</label>
 
       {preview ? (
-        <div className="relative inline-block">
+        <div
+          className={`flex flex-col gap-4 ${
+            isAvatar ? 'md:flex-row' : ''
+          }`}
+        >
           <img
             src={preview}
             alt={label}
             className={`${sizeClass} ${aspectRatioClass} object-cover rounded-lg border-2 border-default`}
           />
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition disabled:opacity-50"
-            disabled={isUploading}
-            title="Eliminar imagen"
-          >
-            ✕
-          </button>
+          <ActionButtons />
         </div>
       ) : (
         <div

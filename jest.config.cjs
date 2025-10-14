@@ -3,7 +3,10 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFiles: ['<rootDir>/jest.polyfills.ts'],
   setupFilesAfterEnv: ['@testing-library/jest-dom','<rootDir>/setupTests.ts'],
-  moduleNameMapper: { '\\.(css|scss|sass)$': 'identity-obj-proxy' },
+  moduleNameMapper: {
+    '\\.(css|scss|sass)$': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/$1',
+  },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[tj]sx?$',
   // Ignoramos la carpeta e2e porque Playwright se ejecuta fuera de Jest
   testPathIgnorePatterns: ['<rootDir>/e2e/'],
