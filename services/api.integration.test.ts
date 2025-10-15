@@ -10,19 +10,48 @@ const clone = <T>(data: T): T => JSON.parse(JSON.stringify(data));
 describe('API Integration Tests - Business Logic', () => {
     let initialTestBusinessState: Business;
 
+    const setupTestData = () => {
+        const DEFAULT_HOURS_TEMPLATE = {
+            monday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+            tuesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+            wednesday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+            thursday: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+            friday: { enabled: true, intervals: [{ open: '09:00', close: '20:00' }] },
+            saturday: { enabled: true, intervals: [{ open: '10:00', close: '16:00' }] },
+            sunday: { enabled: false, intervals: [] },
+        };
+
+        return {
+            id: 'biz_1',
+            name: 'Test Business',
+            description: 'Test Description',
+            phone: '123456789',
+            profileImageUrl: '',
+            coverImageUrl: '',
+            branding: {
+                primaryColor: '#1a202c',
+                secondaryColor: '#edf2f7',
+                textColor: '#2d3748',
+                font: "'Poppins', sans-serif",
+            },
+            employees: [
+                { id: 'e1', businessId: 'biz_1', name: 'Carlos Gomez', avatarUrl: '', whatsapp: '', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+                { id: 'e2', businessId: 'biz_1', name: 'Lucía Fernandez', avatarUrl: '', whatsapp: '', hours: { ...DEFAULT_HOURS_TEMPLATE } },
+            ],
+            services: [
+                { id: 's1', businessId: 'biz_1', name: 'Lavado Básico', description: '', duration: 30, buffer: 0, price: 20, employeeIds: ['e1', 'e2'] },
+                { id: 's2', businessId: 'biz_1', name: 'Limpieza Interior', description: '', duration: 60, buffer: 10, price: 50, requiresDeposit: true, employeeIds: ['e2'] },
+                { id: 's3', businessId: 'biz_1', name: 'Lavado Premium', description: '', duration: 90, buffer: 10, price: 70, requiresDeposit: true, employeeIds: ['e1'] },
+            ],
+            hours: { ...DEFAULT_HOURS_TEMPLATE },
+            bookings: [],
+        };
+    };
+
     beforeEach(() => {
-        // Limpiar localStorage para asegurar un estado limpio
         localStorage.clear();
-
-        // Cargar un conjunto de datos predecible antes de cada prueba
-        // Ahora el estado es unificado, pero sin reservas futuras por defecto para evitar interferencias
-        initialTestBusinessState = clone(INITIAL_BUSINESS_DATA);
-        initialTestBusinessState.bookings = []; // Vaciar reservas futuras por defecto
-
-        // Sembrar datos en el mockBackend (simulando una base de datos limpia)
+        initialTestBusinessState = setupTestData() as Business;
         localStorage.setItem('businessData', JSON.stringify(initialTestBusinessState));
-
-        // Recargar los datos en el backend para que use nuestro estado sembrado
         mockBackend.loadDataForTests();
     });
 

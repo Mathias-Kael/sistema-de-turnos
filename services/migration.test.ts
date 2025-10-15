@@ -20,7 +20,15 @@ describe('Migración businessId', () => {
 
   it('agrega businessId faltantes a employees, services y bookings (incluyendo services internos)', async () => {
     // 1. Crear estado legacy sin businessId en entidades
-    const legacy: Business = clone(INITIAL_BUSINESS_DATA);
+    const legacy: Business = {
+      id: 'biz_1',
+      name: 'Legacy Business',
+      employees: [{ id: 'e1', name: 'Legacy Employee' }],
+      services: [{ id: 's1', name: 'Legacy Service', employeeIds: ['e1'] }],
+      bookings: [],
+      hours: {},
+      branding: {},
+    } as any;
 
     // Eliminar businessId de employees, services y bookings (si hubiese)
     legacy.employees = legacy.employees.map(({ businessId, ...rest }: any) => ({ ...rest }));

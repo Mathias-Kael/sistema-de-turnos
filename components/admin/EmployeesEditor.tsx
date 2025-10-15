@@ -9,9 +9,10 @@ import { ImageUploader } from '../common/ImageUploader';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Button } from '../ui/Button';
 
-const newEmployeeTemplate: Omit<Employee, 'id' | 'hours'> = {
+const newEmployeeTemplate: Omit<Employee, 'id' | 'hours' | 'businessId'> = {
     name: '',
     avatarUrl: '',
+    whatsapp: '',
 };
 
 export const EmployeesEditor: React.FC = () => {
@@ -33,7 +34,15 @@ export const EmployeesEditor: React.FC = () => {
         const employeeToAdd: Employee = {
             id: `e${Date.now()}`,
             businessId: business.id,
-            hours: INITIAL_BUSINESS_DATA.hours,
+            hours: {
+                monday: { enabled: false, intervals: [] },
+                tuesday: { enabled: false, intervals: [] },
+                wednesday: { enabled: false, intervals: [] },
+                thursday: { enabled: false, intervals: [] },
+                friday: { enabled: false, intervals: [] },
+                saturday: { enabled: false, intervals: [] },
+                sunday: { enabled: false, intervals: [] },
+            },
             ...newEmployee
         };
         try {

@@ -14,28 +14,19 @@ export const DEFAULT_HOURS_TEMPLATE = {
 
 export const INITIAL_BUSINESS_DATA: Business = {
     id: 'biz_1',
-    name: 'Autolavado "El Impecable"',
-    description: 'Tu auto, nuestra pasión. Expertos en detailing y cuidado automotriz.',
-    profileImageUrl: undefined, // Imagen local del perfil/logo
-    coverImageUrl: undefined, // Imagen de portada
-    phone: '5491112345678',
+    name: '',
+    description: '',
+    profileImageUrl: undefined,
+    coverImageUrl: undefined,
+    phone: '',
     branding: {
         primaryColor: '#1a202c',    // Dark gray/black
         secondaryColor: '#edf2f7',  // Light gray
         textColor: '#2d3748',       // Darker text
         font: "'Poppins', sans-serif",
     },
-    employees: [
-        { id: 'e1', businessId: 'biz_1', name: 'Carlos Gomez', avatarUrl: 'https://i.imgur.com/8Km9t4u.png', whatsapp: '+54 9 11 2222 3333', hours: { ...DEFAULT_HOURS_TEMPLATE } },
-        { id: 'e2', businessId: 'biz_1', name: 'Lucía Fernandez', avatarUrl: 'https://i.imgur.com/DeT4v2s.png', hours: { ...DEFAULT_HOURS_TEMPLATE } },
-        { id: 'e3', businessId: 'biz_1', name: 'Miguel Angel', avatarUrl: 'https://i.imgur.com/tH1iTLA.png', whatsapp: '+54 9 11 7777 8888', hours: { ...DEFAULT_HOURS_TEMPLATE } },
-    ],
-    services: [
-        { id: 's1', businessId: 'biz_1', name: 'Lavado Básico Exterior', description: 'Lavado de carrocería y secado a mano.', duration: 25, buffer: 5, price: 20, employeeIds: ['e1', 'e3'] },
-        { id: 's2', businessId: 'biz_1', name: 'Limpieza Interior Completa', description: 'Aspirado profundo, limpieza de tapizados y paneles.', duration: 50, buffer: 10, price: 40, requiresDeposit: true, employeeIds: ['e2'] },
-        { id: 's3', businessId: 'biz_1', name: 'Lavado Premium (Completo)', description: 'Incluye lavado básico y limpieza interior.', duration: 80, buffer: 10, price: 55, requiresDeposit: true, employeeIds: ['e1', 'e2', 'e3'] },
-        { id: 's4', businessId: 'biz_1', name: 'Pulido y Encerado', description: 'Tratamiento para realzar el brillo y proteger la pintura.', duration: 110, buffer: 10, price: 80, employeeIds: ['e1'] },
-    ],
+    employees: [],
+    services: [],
     hours: { ...DEFAULT_HOURS_TEMPLATE },
     bookings: MOCK_BOOKINGS, // Inicializar con las reservas mock
 };
