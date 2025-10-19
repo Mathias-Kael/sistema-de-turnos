@@ -4,6 +4,7 @@ import { supabaseBackend } from '../../services/supabaseBackend';
 import { Business } from '../../types';
 import { ClientBookingExperience } from './ClientBookingExperience';
 import { logger } from '../../utils/logger';
+import { Helmet } from 'react-helmet-async';
 
 type Status = 'validating' | 'valid' | 'paused' | 'invalid';
 
@@ -76,5 +77,18 @@ export const PublicClientLoader: React.FC = () => {
       </div>
     );
   }
-  return <ClientBookingExperience business={business} mode="public" publicToken={token!} />;
+  return (
+    <>
+      {business && (
+        <Helmet>
+          <title>{business.name} - Reservar cita</title>
+          <meta property="og:title" content={business.name} />
+          <meta property="og:image" content={business.profileImageUrl || "/assets/logo-astra.png"} />
+          <meta property="og:image:width" content="400" />
+          <meta property="og:image:height" content="400" />
+        </Helmet>
+      )}
+      <ClientBookingExperience business={business} mode="public" publicToken={token!} />
+    </>
+  );
 };
