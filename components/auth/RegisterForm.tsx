@@ -5,7 +5,7 @@ import { PasswordInput } from '../ui/PasswordInput';
 export const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [businessName, setBusinessName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -18,16 +18,19 @@ export const RegisterForm: React.FC = () => {
 
   const onEmailPasswordRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
     setInfo(null);
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setSubmitting(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          business_name: businessName,
-        },
         emailRedirectTo: `${window.location.origin}/admin`,
       },
     });
@@ -51,18 +54,6 @@ export const RegisterForm: React.FC = () => {
 
       <form onSubmit={onEmailPasswordRegister} className="space-y-5">
         <div className="relative">
-          <label htmlFor="businessName" className="sr-only">Nombre del negocio</label>
-          <input
-            id="businessName"
-            type="text"
-            value={businessName}
-            onChange={e => setBusinessName(e.target.value)}
-            required
-            placeholder="Nombre del negocio"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-        <div className="relative">
           <label htmlFor="email" className="sr-only">Email</label>
           <input
             id="email"
@@ -82,6 +73,16 @@ export const RegisterForm: React.FC = () => {
             onChange={e => setPassword(e.target.value)}
             required
             placeholder="••••••••"
+          />
+        </div>
+        <div className="relative">
+          <label htmlFor="confirmPassword" className="sr-only">Confirmar Contraseña</label>
+          <PasswordInput
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+            placeholder="Confirmar contraseña"
           />
         </div>
         <button
