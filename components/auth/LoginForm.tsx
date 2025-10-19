@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { PasswordInput } from '../ui/PasswordInput';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -12,13 +13,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ openResetPassword }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const translateError = (message: string) => {
+    if (message.includes('Invalid login credentials')) return 'Email o contraseña incorrectos.';
+    if (message.includes('Email not confirmed')) return 'Por favor, confirmá tu email.';
+    return message;
+  };
+
   const onEmailPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError(translateError(error.message));
       setSubmitting(false);
     }
     // On success, the parent component will handle the navigation
@@ -46,14 +53,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ openResetPassword }) => {
         </div>
         <div>
           <label htmlFor="password" className="sr-only">Contraseña</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
             placeholder="••••••••"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
         <button

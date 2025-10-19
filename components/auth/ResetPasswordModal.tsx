@@ -21,6 +21,11 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
+  const translateError = (message: string) => {
+    if (message.includes('Email not found')) return 'No existe una cuenta con este email.';
+    return message;
+  };
+
   const onResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetError(null);
@@ -34,7 +39,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
     const { error } = await supabase.auth.resetPasswordForEmail(value, { redirectTo });
     setResetSubmitting(false);
     if (error) {
-      setResetError(error.message);
+      setResetError(translateError(error.message));
       return;
     }
     onSuccess('Revisa tu email para ver el enlace de recuperación.');

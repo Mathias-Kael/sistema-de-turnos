@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { PasswordInput } from '../ui/PasswordInput';
 
 export const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,12 @@ export const RegisterForm: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  const translateError = (message: string) => {
+    if (message.includes('duplicate key value violates unique constraint "users_email_key"')) return 'Ya existe una cuenta con este email.';
+    if (message.includes('Password should be at least 6 characters')) return 'La contraseña debe tener al menos 6 caracteres.';
+    return message;
+  };
 
   const onEmailPasswordRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +31,7 @@ export const RegisterForm: React.FC = () => {
         emailRedirectTo: `${window.location.origin}/admin`,
       },
     });
-    if (error) setError(error.message);
+    if (error) setError(translateError(error.message));
     else setInfo('Revisá tu email para confirmar la cuenta.');
     setSubmitting(false);
   };
@@ -32,18 +39,19 @@ export const RegisterForm: React.FC = () => {
   return (
     <div className="w-full max-w-md">
       {error && (
-        <div className="mb-4 text-center text-sm text-red-500">
+        <div className="mb-4 text-center text-sm text-red-600">
           {error}
         </div>
       )}
       {info && (
-        <div className="mb-4 text-center text-sm text-green-500">
+        <div className="mb-4 text-center text-sm text-green-600">
           {info}
         </div>
       )}
 
       <form onSubmit={onEmailPasswordRegister} className="space-y-5">
         <div className="relative">
+          <label htmlFor="businessName" className="sr-only">Nombre del negocio</label>
           <input
             id="businessName"
             type="text"
@@ -55,6 +63,7 @@ export const RegisterForm: React.FC = () => {
           />
         </div>
         <div className="relative">
+          <label htmlFor="email" className="sr-only">Email</label>
           <input
             id="email"
             type="email"
@@ -66,14 +75,13 @@ export const RegisterForm: React.FC = () => {
           />
         </div>
         <div className="relative">
-          <input
+          <label htmlFor="password" className="sr-only">Contraseña</label>
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
             placeholder="••••••••"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
         <button
