@@ -18,7 +18,13 @@ export const LoginPage: React.FC = () => {
       setResetSuccess('Tu contraseña fue restablecida con éxito. Ingresá con tu nueva contraseña.');
       try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
     }
-  }, [location.search]);
+
+    if (location.state?.openResetModal) {
+      setResetOpen(true);
+      // Limpiar el estado para que no se vuelva a abrir en futuras navegaciones
+      window.history.replaceState({ ...window.history.state, openResetModal: false }, '');
+    }
+  }, [location.search, location.state]);
 
   if (loading) return <div className="fixed inset-0 bg-white flex items-center justify-center">Cargando...</div>;
   if (user) return <Navigate to="/admin" replace />;

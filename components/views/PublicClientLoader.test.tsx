@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { HelmetProvider } from 'react-helmet-async';
 import { PublicClientLoader } from './PublicClientLoader';
 import { supabase } from '../../lib/supabase';
 import { supabaseBackend } from '../../services/supabaseBackend';
@@ -61,7 +62,7 @@ describe('PublicClientLoader', () => {
   test('estado invalid cuando token no existe', async () => {
     mockUrl('missing');
     mockSupabaseOnce({ data: null, error: { message: 'not found' } });
-    render(<PublicClientLoader />);
+    render(<HelmetProvider><PublicClientLoader /></HelmetProvider>);
     await waitFor(() => {
       expect(screen.getByText(/Enlace Inválido/i)).toBeInTheDocument();
     });
@@ -74,7 +75,7 @@ describe('PublicClientLoader', () => {
       shareTokenStatus: 'paused',
       shareTokenExpiresAt: null,
     });
-    render(<PublicClientLoader />);
+    render(<HelmetProvider><PublicClientLoader /></HelmetProvider>);
     await waitFor(() => {
       expect(screen.getByText(/Agenda Pausada/i)).toBeInTheDocument();
     });
@@ -83,7 +84,7 @@ describe('PublicClientLoader', () => {
   test('estado expired', async () => {
     mockUrl('expTok');
     mockSupabaseOnce({ data: { id: 'biz1', share_token_status: 'active', share_token_expires_at: new Date(Date.now() - 1000).toISOString() }, error: null });
-    render(<PublicClientLoader />);
+    render(<HelmetProvider><PublicClientLoader /></HelmetProvider>);
     await waitFor(() => {
       expect(screen.getByText(/Enlace Inválido/i)).toBeInTheDocument();
     });
@@ -93,7 +94,7 @@ describe('PublicClientLoader', () => {
     mockUrl('valTok');
     mockSupabaseOnce({ data: { id: 'biz1', share_token_status: 'active', share_token_expires_at: null }, error: null });
     mockedGetBusinessByToken.mockResolvedValueOnce(baseBusiness);
-    render(<PublicClientLoader />);
+    render(<HelmetProvider><PublicClientLoader /></HelmetProvider>);
     await waitFor(() => {
       expect(screen.getByText(/Biz/)).toBeInTheDocument();
     });
