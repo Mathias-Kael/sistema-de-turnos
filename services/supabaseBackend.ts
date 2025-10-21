@@ -348,7 +348,7 @@ export const supabaseBackend = {
       .insert({
         name: INITIAL_BUSINESS_DATA.name || 'Mi Negocio',
         description: INITIAL_BUSINESS_DATA.description || '',
-        phone: INITIAL_BUSINESS_DATA.phone || null,
+        phone: INITIAL_BUSINESS_DATA.phone || '',
         profile_image_url: INITIAL_BUSINESS_DATA.profileImageUrl || null,
         cover_image_url: INITIAL_BUSINESS_DATA.coverImageUrl || null,
         branding: INITIAL_BUSINESS_DATA.branding || null,
