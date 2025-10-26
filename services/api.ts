@@ -157,3 +157,31 @@ export const findAvailableEmployeeForSlot = (
     // If no available employee is found
     return null;
 };
+
+
+import { supabase } from '../lib/supabase';
+
+export const createBookingSafe = async (bookingData: {
+  employee_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  client_name: string;
+  client_phone: string;
+  business_id: string;
+  service_ids: string[];
+}) => {
+  const { data, error } = await supabase.rpc('create_booking_safe', {
+    p_employee_id: bookingData.employee_id,
+    p_date: bookingData.date,
+    p_start: bookingData.start_time,
+    p_end: bookingData.end_time,
+    p_client_name: bookingData.client_name,
+    p_client_phone: bookingData.client_phone,
+    p_business_id: bookingData.business_id,
+    p_service_ids: bookingData.service_ids
+  });
+  
+  if (error) throw new Error(error.message);
+  return data;
+};

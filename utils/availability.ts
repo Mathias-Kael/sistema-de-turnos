@@ -68,10 +68,45 @@ export const minutesToTime = (totalMinutes: number): string => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
+function calcularHuecosLibres(
+  intervalo: { start: number; end: number },
+  reservas: Array<{ start: number; end: number }>
+): Array<{ start: number; end: number }> {
+  // Ordenar reservas por start_time (CRÍTICO)
+  const reservasOrdenadas = [...reservas]
+    .sort((a, b) => a.start - b.start);
+  
+  const huecos: Array<{ start: number; end: number }> = [];
+  let proximoDisponible = intervalo.start;
+  
+  // Filtrar solo reservas que intersectan con este intervalo
+  const reservasRelevantes = reservasOrdenadas.filter(
+    r => r.end > intervalo.start && r.start < intervalo.end
+  );
+  
+  // Calcular gaps entre reservas
+  for (const reserva of reservasRelevantes) {
+    if (reserva.start > proximoDisponible) {
+      huecos.push({
+        start: proximoDisponible,
+        end: Math.min(reserva.start, intervalo.end)
+      });
+    }
+    proximoDisponible = Math.max(proximoDisponible, reserva.end);
+  }
+  
+  // Gap final hasta cierre
+  if (proximoDisponible < intervalo.end) {
+    huecos.push({ start: proximoDisponible, end: intervalo.end });
+  }
+  
+  return huecos;
+}
+
 /**
  * Calcula los turnos disponibles para un día específico, considerando los
  * horarios de apertura, la duración del servicio y las reservas existentes.
- * 
+ *
  * @param params Objeto con los parámetros necesarios para el cálculo.
  * @returns Un array de strings con los horarios de inicio de los turnos disponibles.
  */
@@ -85,64 +120,45 @@ export const calcularTurnosDisponibles = ({
         return [];
     }
 
-    const ahora = new Date();
-    const esHoy = fecha.getFullYear() === ahora.getFullYear() &&
-                fecha.getMonth() === ahora.getMonth() &&
-                fecha.getDate() === ahora.getDate();
-    const minutosAhora = esHoy ? ahora.getHours() * 60 + ahora.getMinutes() : -1;
-
-    // Convertir reservas ocupadas a intervalos de minutos
-    const intervalosOcupados = reservasOcupadas.map(reserva => ({
-        start: timeToMinutes(reserva.start),
-        end: timeToMinutes(reserva.end),
+    const reservasEnMinutos = reservasOcupadas.map(r => ({
+        start: timeToMinutes(r.start),
+        end: timeToMinutes(r.end)
     }));
 
     const turnosDisponibles: string[] = [];
-    const granularidad = 10; // El algoritmo "piensa" en bloques de 10 minutos para precisión.
 
     // Iterar sobre cada intervalo de trabajo del día (ej: mañana y tarde)
     horarioDelDia.intervals.forEach(intervalo => {
         const inicioIntervalo = timeToMinutes(intervalo.open);
         const finIntervalo = timeToMinutes(intervalo.close);
 
-        // Iterar dentro del intervalo de trabajo, en saltos de la granularidad definida.
-        for (let minutoActual = inicioIntervalo; minutoActual < finIntervalo; minutoActual += granularidad) {
-            
-            // CORRECCIÓN: Solo considerar horarios de inicio que se alinean con la duración del servicio.
-            // Si la duración es 30, solo se considerarán las 9:00, 9:30, 10:00, etc.
-            // Esto crea la lista de turnos agrupados que el usuario espera ver.
-            if ((minutoActual - inicioIntervalo) % duracionTotal !== 0) {
-                continue;
-            }
+        const huecos = calcularHuecosLibres(
+            { start: inicioIntervalo, end: finIntervalo },
+            reservasEnMinutos
+        );
 
-            // Si es hoy, no mostrar turnos que ya pasaron
-            if (esHoy && minutoActual < minutosAhora) {
-                continue;
-            }
+        for (const hueco of huecos) {
+            let minutoActual = hueco.start;
 
-            const finTurno = minutoActual + duracionTotal;
-
-            // 1. Verificar que el turno completo cabe dentro del horario laboral
-            if (finTurno > finIntervalo) {
-                continue; // El turno termina después de la hora de cierre
-            }
-
-            // 2. Verificar que el turno no se solape con ninguna reserva existente
-            let haySolapamiento = false;
-            for (const ocupado of intervalosOcupados) {
-                // Un solapamiento ocurre si:
-                // (InicioTurno < FinOcupado) y (FinTurno > InicioOcupado)
-                if (minutoActual < ocupado.end && finTurno > ocupado.start) {
-                    haySolapamiento = true;
-                    break;
-                }
-            }
-
-            if (!haySolapamiento) {
+            while (minutoActual + duracionTotal <= hueco.end) {
                 turnosDisponibles.push(minutesToTime(minutoActual));
+                minutoActual += duracionTotal;
             }
         }
     });
+
+    // Filtrado (AL FINAL, antes de return)
+    const esFechaHoy = fecha.toDateString() === new Date().toDateString();
+
+    if (esFechaHoy) {
+        const ahora = new Date();
+        const minutoActual = ahora.getHours() * 60 + ahora.getMinutes();
+        
+        return turnosDisponibles.filter(turno => {
+            const minutoTurno = timeToMinutes(turno);
+            return minutoTurno >= minutoActual;
+        });
+    }
 
     return turnosDisponibles;
 };

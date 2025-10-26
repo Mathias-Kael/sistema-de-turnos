@@ -3,6 +3,7 @@ import { Business, Service, Branding, Hours, Employee, Booking } from '../types'
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
 import { mockBackendTest } from '../services/mockBackend.e2e';
+import { createBookingSafe } from '../services/api';
 
 // --- Tipos de Acción ---
 type Action =
@@ -113,8 +114,26 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     }
                     break;
                 case 'CREATE_BOOKING':
-                    const updatedBusinessAfterCreateBooking = await backend.createBooking(action.payload);
-                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreateBooking });
+                    const { id: businessId } = currentState;
+                    const { client, date, start, end, employeeId, services } = action.payload;
+
+                    const bookingData = {
+                        employee_id: employeeId,
+                        date,
+                        start_time: start,
+                        end_time: end,
+                        client_name: client.name,
+                        client_phone: client.phone,
+                        business_id: businessId,
+                        service_ids: services.map(s => s.id),
+                    };
+
+                    // Usamos la nueva función RPC
+                    await createBookingSafe(bookingData);
+
+                    // Re-hidratamos el estado del negocio para ver el cambio
+                    const updatedBusinessAfterCreate = await backend.getBusinessData();
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreate });
                     break;
                 case 'UPDATE_BOOKING':
                     const updatedBusinessAfterUpdateBooking = await backend.updateBooking(action.payload);

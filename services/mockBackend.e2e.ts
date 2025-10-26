@@ -65,6 +65,42 @@ export const mockBackendTest = {
   updateBusinessData: async (newData: Business): Promise<Business> => {
     await new Promise(r => setTimeout(r, 5));
     validateHours(newData);
+
+    // --- Lógica de Validación de Integridad ---
+    const changedDays = Object.keys(newData.hours).filter(day =>
+        JSON.stringify(newData.hours[day as keyof Business['hours']]) !== JSON.stringify(state.hours[day as keyof Business['hours']])
+    );
+
+    if (changedDays.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const futureBookings = state.bookings.filter(b => b.date >= today);
+
+        for (const day of changedDays) {
+            const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
+            const bookingsForDay = futureBookings.filter(b => new Date(b.date + 'T12:00:00Z').getDay() === dayIndex);
+            
+            if (bookingsForDay.length === 0) continue;
+
+            const newDayHours = newData.hours[day as keyof Business['hours']];
+
+            for (const booking of bookingsForDay) {
+                if (!newDayHours.enabled) {
+                    throw new Error(`Deshabilitar el ${day} cancelaría la reserva #${booking.id} del ${booking.date}.`);
+                }
+                const bookingStart = parseInt(booking.start.replace(':', ''), 10);
+                const bookingEnd = parseInt(booking.end.replace(':', ''), 10);
+                const isBookingValid = newDayHours.intervals.some(interval => {
+                    const intervalStart = parseInt(interval.open.replace(':', ''), 10);
+                    const intervalEnd = parseInt(interval.close.replace(':', ''), 10);
+                    return bookingStart >= intervalStart && bookingEnd <= intervalEnd;
+                });
+                if (!isBookingValid) {
+                    throw new Error(`El nuevo horario para el ${day} entra en conflicto con la reserva #${booking.id} de ${booking.start} a ${booking.end} el día ${booking.date}.`);
+                }
+            }
+        }
+    }
+
     state = { ...state, ...newData };
     ensureBusinessIds();
     persist();
@@ -81,6 +117,39 @@ export const mockBackendTest = {
     persist();
     return state;
   },
+
+  createBookingSafe: async (bookingData: {
+    employee_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    client_name: string;
+    client_phone: string;
+    business_id: string;
+    service_ids: string[];
+  }): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    const booking: Booking = {
+      id: `bk_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+      businessId: bookingData.business_id,
+      employeeId: bookingData.employee_id,
+      date: bookingData.date,
+      start: bookingData.start_time,
+      end: bookingData.end_time,
+      client: {
+        name: bookingData.client_name,
+        phone: bookingData.client_phone,
+        email: ''
+      },
+      services: [], // Mocked, not needed for this test
+      status: 'confirmed',
+      notes: ''
+    };
+    state = { ...state, bookings: [...state.bookings, booking] };
+    persist();
+    return state;
+  },
+
   updateBooking: async (updated: Booking): Promise<Business> => {
     await new Promise(r => setTimeout(r, 5));
     state = { ...state, bookings: state.bookings.map(b => b.id === updated.id ? updated : b) };
@@ -141,6 +210,19 @@ export const mockBackendTest = {
     state = { ...state, services: state.services.filter(s => s.id !== serviceId) };
     persist();
     return state;
+  },
+  loadDataForTests: () => {
+    state = (() => {
+      try {
+        const raw = localStorage.getItem('businessData');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return { ...INITIAL_BUSINESS_DATA, ...parsed } as Business;
+        }
+      } catch {}
+      return INITIAL_BUSINESS_DATA;
+    })();
+    ensureBusinessIds();
   }
 };
 

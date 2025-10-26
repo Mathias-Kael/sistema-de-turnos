@@ -1,4 +1,5 @@
 import { mockBackend } from './mockBackend';
+import { mockBackendTest, __resetMockBackendTest } from './mockBackend.e2e';
 import { getAvailableSlots, findAvailableEmployeeForSlot } from './api';
 import { Business, Booking, Service, Employee } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
@@ -51,8 +52,7 @@ describe('API Integration Tests - Business Logic', () => {
     beforeEach(() => {
         localStorage.clear();
         initialTestBusinessState = setupTestData() as Business;
-        localStorage.setItem('businessData', JSON.stringify(initialTestBusinessState));
-        mockBackend.loadDataForTests();
+        __resetMockBackendTest(initialTestBusinessState);
     });
 
     describe('Booking Creation Scenarios', () => {
@@ -190,15 +190,16 @@ describe('API Integration Tests - Business Logic', () => {
             // Crear la reserva directamente en el estado inicial para el test
             const businessWithFutureBooking = clone(initialTestBusinessState);
             businessWithFutureBooking.bookings.push(newBooking);
+            __resetMockBackendTest(businessWithFutureBooking);
             localStorage.setItem('businessData', JSON.stringify(businessWithFutureBooking));
-            mockBackend.loadDataForTests();
+            __resetMockBackendTest(businessWithFutureBooking);
 
             // Ahora, intentamos modificar el horario del Lunes para que cierre antes de la reserva.
             const updatedBusinessData = clone(businessWithFutureBooking); // Clonar el estado con la reserva
             updatedBusinessData.hours.monday.intervals = [{ open: '09:00', close: '16:00' }];
 
             // Esperamos que esta operación falle y lance un error.
-            await expect(mockBackend.updateBusinessData(updatedBusinessData))
+            await expect(mockBackendTest.updateBusinessData(updatedBusinessData))
                 .rejects
                 .toThrow('El nuevo horario para el monday entra en conflicto con la reserva #future_booking_1 de 17:00 a 18:00 el día 2025-10-20.');
         });
