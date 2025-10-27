@@ -16,13 +16,11 @@ test.describe('RLS Security: Public Access', () => {
     // Setup: Obtener anon key y crear cliente Supabase público
     await page.goto('http://localhost:5173');
     
-    const result = await page.evaluate(async () => {
+    // Pasar variables de entorno al contexto del navegador
+    const result = await page.evaluate(async ([url, key]) => {
       // @ts-ignore - supabase está en window
       const { createClient } = window.supabase;
-      const supabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
+      const supabase = createClient(url, key);
       
       // Intentar INSERT directo (debería fallar)
       const { data, error } = await supabase
@@ -39,7 +37,7 @@ test.describe('RLS Security: Public Access', () => {
         });
       
       return { data, error: error?.message };
-    });
+    }, [process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY]);
     
     // Verificar que el INSERT fue bloqueado por RLS
     expect(result.data).toBeNull();
@@ -50,13 +48,10 @@ test.describe('RLS Security: Public Access', () => {
     // TODO: Requiere negocio con share_token en DB
     await page.goto('http://localhost:5173');
     
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(async ([url, key]) => {
       // @ts-ignore
       const { createClient } = window.supabase;
-      const supabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
+      const supabase = createClient(url, key);
       
       // SELECT de negocio compartido (debería funcionar)
       const { data, error } = await supabase
@@ -67,7 +62,7 @@ test.describe('RLS Security: Public Access', () => {
         .maybeSingle();
       
       return { hasData: !!data, error: error?.message };
-    });
+    }, [process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY]);
     
     // Verificar que el SELECT funcionó
     expect(result.error).toBeUndefined();
@@ -94,13 +89,10 @@ test.describe('RLS Security: Authenticated Access', () => {
     // Esperar autenticación
     // await page.waitForSelector('[data-testid="admin-view"]');
     
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(async ([url, key]) => {
       // @ts-ignore
       const { createClient } = window.supabase;
-      const supabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
+      const supabase = createClient(url, key);
       
       // Obtener sesión actual
       const { data: { session } } = await supabase.auth.getSession();
@@ -124,7 +116,7 @@ test.describe('RLS Security: Authenticated Access', () => {
         .single();
       
       return { success: !!data, error: error?.message };
-    });
+    }, [process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY]);
     
     expect(result.success).toBe(true);
     expect(result.error).toBeUndefined();
@@ -140,13 +132,10 @@ test.describe('RLS Security: Authenticated Access', () => {
     // const ownerA_businessId = 'business-a-id';
     
     // Intentar UPDATE de business de Owner B
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(async ([url, key]) => {
       // @ts-ignore
       const { createClient } = window.supabase;
-      const supabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
+      const supabase = createClient(url, key);
       
       // ID de negocio que NO pertenece al usuario actual
       const otherBusinessId = 'other-owner-business-id';
@@ -162,7 +151,7 @@ test.describe('RLS Security: Authenticated Access', () => {
         rowsAffected: data?.length || 0, 
         error: error?.message 
       };
-    });
+    }, [process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY]);
     
     // Verificar que no se modificó nada
     expect(result.rowsAffected).toBe(0);

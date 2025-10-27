@@ -170,10 +170,15 @@ describe('API Integration Tests - Business Logic', () => {
 
     describe('Entity Modification Scenarios', () => {
         it('should throw an error when updating hours if it conflicts with a future booking', async () => {
-            // Escenario: Hay una reserva para el Lunes 2025-10-20 a las 17:00.
+            // Escenario: Hay una reserva para el Lunes FUTURO a las 17:00.
             // Intentaremos cambiar el horario del lunes para que cierre a las 16:00.
-            const testDate = new Date('2025-10-20T10:00:00.000Z'); // Lunes
-            const testDateString = testDate.toISOString().split('T')[0];
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 7); // +7 días desde hoy
+            // Ajustar al próximo lunes si no cae en lunes
+            while (futureDate.getDay() !== 1) {
+                futureDate.setDate(futureDate.getDate() + 1);
+            }
+            const testDateString = futureDate.toISOString().split('T')[0];
 
             const newBooking: Booking = {
                 id: 'future_booking_1',
@@ -201,7 +206,7 @@ describe('API Integration Tests - Business Logic', () => {
             // Esperamos que esta operación falle y lance un error.
             await expect(mockBackendTest.updateBusinessData(updatedBusinessData))
                 .rejects
-                .toThrow('El nuevo horario para el monday entra en conflicto con la reserva #future_booking_1 de 17:00 a 18:00 el día 2025-10-20.');
+                .toThrow(/El nuevo horario para el monday entra en conflicto con la reserva #future_booking_1/);
         });
     });
 

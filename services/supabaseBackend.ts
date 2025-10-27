@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import { Business, Booking, Service, Employee, Hours } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { withRetryOrThrow } from '../utils/supabaseWrapper';
+
 // Cache por sesión de usuario
 const businessCacheByUser = new Map<string, { businessId: string }>();
 
@@ -12,6 +13,21 @@ const businessCacheByUser = new Map<string, { businessId: string }>();
  * Este archivo reemplaza mockBackend.ts pero mantiene la misma interfaz.
  * Migra de localStorage a base de datos real en Supabase.
  */
+
+/**
+ * Dictionary for translating common Supabase booking errors to Spanish
+ */
+const ERROR_TRANSLATIONS: Record<string, string> = {
+  'Employee already has booking at this time': 'El empleado ya tiene una reserva en este horario',
+  'Slot overlaps': 'Este horario se superpone con otra reserva existente',
+  'Employee already has booking': 'El empleado ya tiene una reserva en este horario',
+  'Invalid booking time': 'Horario de reserva inválido',
+  'Business not found': 'Negocio no encontrado',
+  'Employee not found': 'Empleado no encontrado',
+  'Service not found': 'Servicio no encontrado',
+  'Booking overlaps with existing booking': 'La reserva se superpone con una reserva existente',
+  'Employee not available at this time': 'El empleado no está disponible en este horario',
+};
 
 // =====================================================
 // HELPER: Construir objeto Business desde tablas
@@ -533,7 +549,15 @@ export const supabaseBackend = {
       p_service_ids: bookingData.service_ids
     });
     
-    if (error) throw new Error(error.message);
+    if (error) {
+      const translatedMessage = ERROR_TRANSLATIONS[error.message] || error.message;
+      const enrichedError = new Error(translatedMessage);
+      enrichedError.name = 'BookingCreationError';
+      (enrichedError as any).code = error.code;
+      (enrichedError as any).details = error.details;
+      (enrichedError as any).hint = error.hint;
+      throw enrichedError;
+    }
     return data;
   },
 

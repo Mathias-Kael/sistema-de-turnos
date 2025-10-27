@@ -161,6 +161,40 @@ export const findAvailableEmployeeForSlot = (
 
 import { supabase } from '../lib/supabase';
 
+/**
+ * Custom error class for booking operations that preserves Supabase error details
+ */
+export class BookingError extends Error {
+    constructor(
+        message: string,
+        public code?: string,
+        public details?: string,
+        public hint?: string
+    ) {
+        super(message);
+        this.name = 'BookingError';
+        // Maintain proper stack trace for debugging
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, BookingError);
+        }
+    }
+}
+
+/**
+ * Dictionary for translating common Supabase booking errors to Spanish
+ */
+const ERROR_TRANSLATIONS: Record<string, string> = {
+    'Employee already has booking at this time': 'El empleado ya tiene una reserva en este horario',
+    'Slot overlaps': 'Este horario se superpone con otra reserva existente',
+    'Employee already has booking': 'El empleado ya tiene una reserva en este horario',
+    'Invalid booking time': 'Horario de reserva inválido',
+    'Business not found': 'Negocio no encontrado',
+    'Employee not found': 'Empleado no encontrado',
+    'Service not found': 'Servicio no encontrado',
+    'Booking overlaps with existing booking': 'La reserva se superpone con una reserva existente',
+    'Employee not available at this time': 'El empleado no está disponible en este horario',
+};
+
 export const createBookingSafe = async (bookingData: {
   employee_id: string;
   date: string;
@@ -182,6 +216,14 @@ export const createBookingSafe = async (bookingData: {
     p_service_ids: bookingData.service_ids
   });
   
-  if (error) throw new Error(error.message);
+  if (error) {
+    const translatedMessage = ERROR_TRANSLATIONS[error.message] || error.message;
+    throw new BookingError(
+      translatedMessage,
+      error.code,
+      error.details,
+      error.hint
+    );
+  }
   return data;
 };

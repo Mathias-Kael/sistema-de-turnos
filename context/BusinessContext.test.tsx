@@ -60,7 +60,14 @@ describe('BusinessContext', () => {
 
         await act(async () => {}); // Esperar a la carga inicial
 
-        const newEmployee: Employee = { id: 'e4', name: 'Nuevo Empleado', avatarUrl: '', hours: INITIAL_BUSINESS_DATA.hours };
+        const newEmployee: Employee = { 
+            id: 'e4', 
+            businessId: INITIAL_BUSINESS_DATA.id,
+            name: 'Nuevo Empleado', 
+            avatarUrl: '', 
+            whatsapp: '',
+            hours: INITIAL_BUSINESS_DATA.hours 
+        };
         
         // El mock ahora debe devolver el estado completo del negocio
         mockAddEmployee.mockResolvedValue({
@@ -82,7 +89,14 @@ describe('BusinessContext', () => {
 
         await act(async () => {}); // Esperar a la carga inicial
 
-        const newEmployee: Employee = { id: 'e4', name: 'Test', avatarUrl: '', hours: INITIAL_BUSINESS_DATA.hours };
+        const newEmployee: Employee = { 
+            id: 'e4', 
+            businessId: INITIAL_BUSINESS_DATA.id,
+            name: 'Test', 
+            avatarUrl: '', 
+            whatsapp: '',
+            hours: INITIAL_BUSINESS_DATA.hours 
+        };
         const errorMessage = 'Error de red simulado';
         mockAddEmployee.mockRejectedValue(new Error(errorMessage));
 

@@ -128,12 +128,18 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         service_ids: services.map(s => s.id),
                     };
 
-                    // Usamos la nueva función RPC
-                    await createBookingSafe(bookingData);
-
-                    // Re-hidratamos el estado del negocio para ver el cambio
-                    const updatedBusinessAfterCreate = await backend.getBusinessData();
-                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreate });
+                    // Usar backend apropiado según el modo
+                    if (devMock) {
+                        // Mock backend maneja createBookingSafe internamente
+                        const updatedBusinessAfterCreate = await backend.createBookingSafe(bookingData);
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreate });
+                    } else {
+                        // Producción: usar RPC de Supabase directamente
+                        await createBookingSafe(bookingData);
+                        // Re-hidratar estado del negocio
+                        const updatedBusinessAfterCreate = await backend.getBusinessData();
+                        dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreate });
+                    }
                     break;
                 case 'UPDATE_BOOKING':
                     const updatedBusinessAfterUpdateBooking = await backend.updateBooking(action.payload);

@@ -1,6 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AstraLogo } from '../../src/assets/icons';
+// TODO: Crear archivo de iconos en src/assets/icons.tsx con AstraLogo
+// import { AstraLogo } from '../../src/assets/icons';
+
+// Placeholder SVG hasta que se cree el archivo de assets
+const AstraLogo = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="20" cy="20" r="18" fill="currentColor" opacity="0.2"/>
+    <circle cx="20" cy="20" r="12" fill="currentColor"/>
+  </svg>
+);
 
 export const BrandHeader: React.FC = () => {
   return (
