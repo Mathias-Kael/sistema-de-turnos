@@ -5,6 +5,12 @@ import { Input } from '../ui/Input';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { createBookingSafe } from '../../services/api';
 
+// Helper para convertir tiempo a minutos
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
 export interface SpecialBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +32,10 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [notes, setNotes] = useState('');
+  
+  const [allowExtension, setAllowExtension] = useState(false);
+  const [extendedStart, setExtendedStart] = useState('');
+  const [extendedEnd, setExtendedEnd] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +72,14 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
       .map(b => ({ start: b.start, end: b.end }));
   }, [employeeId, selectedDate, business.bookings]);
 
+  // Inicializar horarios extendidos cuando se selecciona empleado
+  useEffect(() => {
+    if (employeeId) {
+      setExtendedStart(businessHoursForDay.start);
+      setExtendedEnd(businessHoursForDay.end);
+    }
+  }, [employeeId, businessHoursForDay]);
+
   const handleTimeSelect = (timeSlot: TimeSlot) => {
     setSelectedTime(timeSlot);
     setError(null);
@@ -77,6 +95,24 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
     if (!serviceId || !employeeId || !selectedTime || !clientName.trim()) {
       setError("Por favor, completa todos los campos requeridos.");
       return;
+    }
+
+    // Validar extensión de horario si está activa
+    if (allowExtension) {
+      const extStart = timeToMinutes(extendedStart);
+      const extEnd = timeToMinutes(extendedEnd);
+      const bizStart = timeToMinutes(businessHoursForDay.start);
+      const bizEnd = timeToMinutes(businessHoursForDay.end);
+      
+      if (extStart >= extEnd) {
+        setError('El horario de cierre debe ser posterior al de apertura');
+        return;
+      }
+      
+      if (extStart > bizStart || extEnd < bizEnd) {
+        setError('No puedes reducir el horario base del negocio');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -174,6 +210,75 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
           {serviceId && employeeId && (
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2">Paso 2: Seleccionar Horario</h3>
+              
+              {/* Toggle de extensión de horario */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowExtension}
+                    onChange={(e) => {
+                      setAllowExtension(e.target.checked);
+                      if (!e.target.checked) {
+                        setSelectedTime(null); // Limpiar selección al desactivar
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="font-medium text-blue-900">
+                    Extender horario de atención este día
+                  </span>
+                </label>
+                <p className="text-xs text-blue-700 mt-1 ml-6">
+                  Permite agendar fuera del horario normal (solo para esta reserva)
+                </p>
+              </div>
+
+              {/* Slider de rango (condicional) */}
+              {allowExtension && (
+                <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-300">
+                  <label className="block text-sm font-medium text-slate-900 mb-3">
+                    📅 Horario extendido para este día:
+                  </label>
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-600 block mb-1">Apertura:</label>
+                      <input
+                        type="time"
+                        value={extendedStart}
+                        onChange={(e) => {
+                          setExtendedStart(e.target.value);
+                          setSelectedTime(null); // Limpiar selección al cambiar horario
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <span className="text-slate-400 font-bold text-xl">→</span>
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-600 block mb-1">Cierre:</label>
+                      <input
+                        type="time"
+                        value={extendedEnd}
+                        onChange={(e) => {
+                          setExtendedEnd(e.target.value);
+                          setSelectedTime(null); // Limpiar selección al cambiar horario
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
+                    <p className="text-xs text-amber-800 flex items-start gap-2">
+                      <span className="text-base">⚠️</span>
+                      <span>
+                        <strong>Importante:</strong> Este cambio solo aplica para esta reserva específica. 
+                        No modifica el horario general del negocio.
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <TimelinePicker
                 date={selectedDate}
                 businessHours={businessHoursForDay}
@@ -181,7 +286,15 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                 selectionDuration={selectedService?.duration || 30}
                 onTimeSelect={handleTimeSelect}
                 onTimeClear={handleTimeClear}
-                allowBusinessHoursExtension={true}
+                allowBusinessHoursExtension={allowExtension}
+                extendedHours={allowExtension ? {
+                  start: extendedStart,
+                  end: extendedEnd
+                } : undefined}
+                onBusinessHoursChange={(newHours) => {
+                  setExtendedStart(newHours.start);
+                  setExtendedEnd(newHours.end);
+                }}
               />
             </div>
           )}

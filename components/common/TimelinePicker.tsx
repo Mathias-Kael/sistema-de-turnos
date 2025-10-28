@@ -180,6 +180,43 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
     );
   };
 
+  const renderExtendedHoursBackground = () => {
+    if (!extendedHours) return null;
+    
+    const bizStart = timeToMinutes(businessHours.start);
+    const bizEnd = timeToMinutes(businessHours.end);
+    const extStart = timeToMinutes(extendedHours.start);
+    const extEnd = timeToMinutes(extendedHours.end);
+    
+    const beforeExtension = extStart < bizStart;
+    const afterExtension = extEnd > bizEnd;
+    
+    return (
+      <>
+        {beforeExtension && (
+          <div
+            className="absolute h-full bg-blue-50 opacity-50 pointer-events-none"
+            style={{
+              left: minutesToX(extStart) + 'px',
+              width: (bizStart - extStart) * pixelsPerMinute + 'px'
+            }}
+            title="Horario extendido"
+          />
+        )}
+        {afterExtension && (
+          <div
+            className="absolute h-full bg-blue-50 opacity-50 pointer-events-none"
+            style={{
+              left: minutesToX(bizEnd) + 'px',
+              width: (extEnd - bizEnd) * pixelsPerMinute + 'px'
+            }}
+            title="Horario extendido"
+          />
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="w-full space-y-4">
       <div className="flex gap-4 text-xs text-gray-600">
@@ -195,6 +232,12 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
           <div className="w-4 h-4 bg-red-100 border-2 border-red-500"></div>
           <span>Conflicto</span>
         </div>
+        {extendedHours && (
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-blue-50 opacity-50 border border-blue-300"></div>
+            <span>Horario extendido</span>
+          </div>
+        )}
       </div>
       <div className="overflow-x-auto border border-gray-300 rounded-lg bg-white p-4">
         <div className="relative" style={{ width: timelineWidth + 'px', minWidth: '100%' }}>
@@ -213,6 +256,7 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
             onMouseLeave={handleMouseLeave}
             style={{ width: timelineWidth + 'px' }}
           >
+            {renderExtendedHoursBackground()}
             {timeMarkers.map(marker => (
               <div
                 key={marker.time}
