@@ -68,12 +68,13 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
   }, { operationName: 'get-services', userMessage: 'No se pudieron cargar servicios.' })) || [];
 
   // 4. Obtener bookings con sus services
+  // IMPORTANTE: Usar LEFT JOIN (!left) para incluir breaks sin servicios
   const bookingsData = (await withRetryOrThrow(async () => {
     const res = await supabase
       .from('bookings')
       .select(`
         *,
-        booking_services!inner(service_id, service_name, service_price)
+        booking_services!left(service_id, service_name, service_price)
       `)
       .eq('business_id', businessId)
       .eq('archived', false);
@@ -123,27 +124,30 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
       date: b.booking_date,
       start: b.start_time,
       end: b.end_time,
-      services: b.booking_services.map((bs: any) => {
-        // Fallback: si el nombre o precio no están poblados en booking_services, usar catálogo de servicios
-        const rawName = (bs.service_name ?? '').toString();
-        const hasName = rawName.trim().length > 0;
-        const hasPrice = bs.service_price !== null && bs.service_price !== undefined && bs.service_price !== '';
-        let name = rawName;
-        let price = hasPrice ? parseFloat(bs.service_price) : NaN;
-        if (!hasName || !hasPrice || isNaN(price)) {
-          const svcRow = (servicesData || []).find((s: any) => s.id === bs.service_id);
-          if (svcRow) {
-            name = hasName ? name : (svcRow.name ?? '');
-            price = !isNaN(price) && hasPrice ? price : parseFloat(svcRow.price);
+      // Manejar breaks: booking_services puede ser null/undefined o array vacío
+      services: (b.booking_services || [])
+        .filter((bs: any) => bs !== null) // Filtrar nulls del LEFT JOIN
+        .map((bs: any) => {
+          // Fallback: si el nombre o precio no están poblados en booking_services, usar catálogo de servicios
+          const rawName = (bs.service_name ?? '').toString();
+          const hasName = rawName.trim().length > 0;
+          const hasPrice = bs.service_price !== null && bs.service_price !== undefined && bs.service_price !== '';
+          let name = rawName;
+          let price = hasPrice ? parseFloat(bs.service_price) : NaN;
+          if (!hasName || !hasPrice || isNaN(price)) {
+            const svcRow = (servicesData || []).find((s: any) => s.id === bs.service_id);
+            if (svcRow) {
+              name = hasName ? name : (svcRow.name ?? '');
+              price = !isNaN(price) && hasPrice ? price : parseFloat(svcRow.price);
+            }
           }
-        }
-        return {
-          id: bs.service_id,
-          businessId: businessId,
-          name,
-          price: isNaN(price) ? 0 : price,
-        };
-      }),
+          return {
+            id: bs.service_id,
+            businessId: businessId,
+            name,
+            price: isNaN(price) ? 0 : price,
+          };
+        }),
       employeeId: b.employee_id,
       status: b.status,
       notes: b.notes,

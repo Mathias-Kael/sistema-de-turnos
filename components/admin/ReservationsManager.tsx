@@ -3,6 +3,8 @@ import { Booking, BookingStatus } from '../../types';
 import { BookingCalendar } from './BookingCalendar';
 import { BookingDetailModal } from './BookingDetailModal';
 import { ManualBookingModal } from './ManualBookingModal';
+import SpecialBookingModal from './SpecialBookingModal';
+import CreateBreakModal from './CreateBreakModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 
 
@@ -14,6 +16,8 @@ export const ReservationsManager: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [isCreatingSpecial, setIsCreatingSpecial] = useState(false);
+    const [isCreatingBreak, setIsCreatingBreak] = useState(false);
     const [dateForNewBooking, setDateForNewBooking] = useState(new Date());
     const [error, setError] = useState<string | null>(null);
 
@@ -78,9 +82,32 @@ export const ReservationsManager: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-lg font-medium text-primary">Gestión de Reservas</h3>
-                 <button onClick={() => openCreateModal(new Date())} className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark w-full sm:w-auto">
-                     + Nueva Reserva
-                 </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <button 
+                        onClick={() => openCreateModal(new Date())} 
+                        className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark"
+                    >
+                        + Reserva Normal
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setDateForNewBooking(selectedDate);
+                            setIsCreatingSpecial(true);
+                        }} 
+                        className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50"
+                    >
+                        ⚡ Reserva Especial
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setDateForNewBooking(selectedDate);
+                            setIsCreatingBreak(true);
+                        }} 
+                        className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50"
+                    >
+                        ☕ Agregar Break
+                    </button>
+                </div>
             </div>
             <div className="grid md:grid-cols-3 gap-6 md:gap-8">
                 <div className="md:col-span-1">
@@ -126,7 +153,12 @@ export const ReservationsManager: React.FC = () => {
                                         </span>
                                         <p className="font-bold text-primary m-0">{booking.start} - {booking.client.name}</p>
                                     </div>
-                                    <p className="text-sm text-secondary">{booking.services.map(s => s.name).join(', ')}</p>
+                                    <p className="text-sm text-secondary">
+                                        {booking.services.length > 0 
+                                            ? booking.services.map(s => s.name).join(', ')
+                                            : '☕ Break / Bloqueo'
+                                        }
+                                    </p>
                                     {employee && <p className="text-xs text-secondary mt-1">Con: {employee.name}</p>}
                                 </li>
                             );
@@ -156,6 +188,30 @@ export const ReservationsManager: React.FC = () => {
                     existingBookings={business.bookings || []}
                     onClose={() => setIsCreating(false)}
                     onSave={handleAddBooking}
+                />
+            )}
+
+            {isCreatingSpecial && (
+                <SpecialBookingModal
+                    selectedDate={dateForNewBooking}
+                    isOpen={isCreatingSpecial}
+                    onClose={() => {
+                        setIsCreatingSpecial(false);
+                        // Refrescar la vista actual
+                        setSelectedDate(new Date(selectedDate));
+                    }}
+                />
+            )}
+
+            {isCreatingBreak && (
+                <CreateBreakModal
+                    selectedDate={dateForNewBooking}
+                    isOpen={isCreatingBreak}
+                    onClose={() => {
+                        setIsCreatingBreak(false);
+                        // Refrescar la vista actual
+                        setSelectedDate(new Date(selectedDate));
+                    }}
                 />
             )}
         </div>
