@@ -7,6 +7,23 @@ import SpecialBookingModal from './SpecialBookingModal';
 import CreateBreakModal from './CreateBreakModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 
+// Tipo para bookings agrupados (breaks conjuntos)
+interface GroupedBooking {
+    id: string; // ID compuesto para identificación
+    type: 'booking' | 'break-conjunto' | 'break-individual';
+    bookings: Booking[]; // Uno o más bookings agrupados
+    date: string;
+    start: string;
+    end: string;
+    status: BookingStatus;
+}
+
+// Helper: formatear rango de tiempo HH:MM-HH:MM
+const formatTimeRange = (start: string, end: string): string => {
+    const formatTime = (time: string) => time.slice(0, 5);
+    return formatTime(start) + '-' + formatTime(end);
+};
+
 
 
 export const ReservationsManager: React.FC = () => {
@@ -27,6 +44,60 @@ export const ReservationsManager: React.FC = () => {
             .filter(b => b.date === dateStr)
             .sort((a, b) => a.start.localeCompare(b.start));
     }, [selectedDate, business.bookings]);
+
+    // Agrupar breaks que coincidan en horario
+    const groupedBookings = useMemo((): GroupedBooking[] => {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const bookings = (business.bookings || []).filter(b => b.date === dateStr);
+        
+        // Separar breaks de reservas normales
+        const breaks = bookings.filter(b => b.client.name === 'BREAK');
+        const normalBookings = bookings.filter(b => b.client.name !== 'BREAK');
+        
+        // Agrupar breaks por horario
+        const breaksGrouped = new Map<string, Booking[]>();
+        breaks.forEach(b => {
+            const key = b.start + '_' + b.end;
+            if (!breaksGrouped.has(key)) {
+                breaksGrouped.set(key, []);
+            }
+            breaksGrouped.get(key)!.push(b);
+        });
+        
+        const result: GroupedBooking[] = [];
+        
+        // Convertir breaks agrupados
+        breaksGrouped.forEach(group => {
+            const first = group[0];
+            const isAllEmployees = group.length === business.employees.length && business.employees.length > 0;
+            
+            result.push({
+                id: 'break_' + first.start + '_' + first.end,
+                type: isAllEmployees ? 'break-conjunto' : 'break-individual',
+                bookings: group,
+                date: first.date,
+                start: first.start,
+                end: first.end,
+                status: first.status,
+            });
+        });
+        
+        // Agregar reservas normales
+        normalBookings.forEach(b => {
+            result.push({
+                id: b.id,
+                type: 'booking',
+                bookings: [b],
+                date: b.date,
+                start: b.start,
+                end: b.end,
+                status: b.status,
+            });
+        });
+        
+        // Ordenar por hora de inicio
+        return result.sort((a, b) => a.start.localeCompare(b.start));
+    }, [selectedDate, business.bookings, business.employees.length]);
     
     const bookingsByDate = useMemo(() => {
         return (business.bookings || []).reduce<Record<string, BookingStatus[]>>((acc, booking) => {
@@ -122,44 +193,112 @@ export const ReservationsManager: React.FC = () => {
                     <h4 className="font-semibold mb-4 text-primary">
                         Reservas para el {selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                     </h4>
-                    {bookingsForSelectedDay.length > 0 ? (
+                    {groupedBookings.length > 0 ? (
                         <ul className="space-y-3">
-                            {bookingsForSelectedDay.map(booking => {
-                                const employee = business.employees.find(e => e.id === booking.employeeId);
+                            {groupedBookings.map(grouped => {
+                                const firstBooking = grouped.bookings[0];
+                                const isBreak = grouped.type !== 'booking';
+                                
                                 return (
                                 <li
-                                    key={booking.id}
-                                    onClick={() => setSelectedBooking(booking)}
-                                                                        className={`p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover border-l-4 ${
-                                                                            booking.status === 'pending' ? 'border-yellow-400' :
-                                                                            booking.status === 'confirmed' ? 'border-green-500' :
-                                                                            booking.status === 'cancelled' ? 'border-red-500' :
-                                                                            'border-transparent'
-                                                                        } shadow-md`}
-                                >
-                                    <div className="flex items-center gap-2 mb-1">
-                                                                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border bg-white ${
-                                                                                    booking.status === 'pending' ? 'border-yellow-400 text-yellow-700' :
-                                                                                    booking.status === 'confirmed' ? 'border-green-500 text-green-700' :
-                                                                                    booking.status === 'cancelled' ? 'border-red-500 text-red-700' :
-                                                                                    'border-transparent'
-                                                                                }`}
-                                              aria-label={`Estado: ${booking.status}`}
-                                        >
-                                            {booking.status === 'pending' && 'Pendiente'}
-                                            {booking.status === 'confirmed' && 'Confirmada'}
-                                            {booking.status === 'cancelled' && 'Cancelada'}
-                                            {booking.status === 'completed' && 'Completada'}
-                                        </span>
-                                        <p className="font-bold text-primary m-0">{booking.start} - {booking.client.name}</p>
-                                    </div>
-                                    <p className="text-sm text-secondary">
-                                        {booking.services.length > 0 
-                                            ? booking.services.map(s => s.name).join(', ')
-                                            : '☕ Break / Bloqueo'
+                                    key={grouped.id}
+                                    onClick={() => {
+                                        // Solo abrir modal para reservas normales o breaks individuales
+                                        if (grouped.type === 'booking') {
+                                            setSelectedBooking(firstBooking);
+                                        } else if (grouped.type === 'break-individual' && grouped.bookings.length === 1) {
+                                            setSelectedBooking(firstBooking);
                                         }
-                                    </p>
-                                    {employee && <p className="text-xs text-secondary mt-1">Con: {employee.name}</p>}
+                                    }}
+                                    className={'p-3 bg-surface rounded-lg cursor-pointer hover:bg-surface-hover border-l-4 shadow-md ' + (
+                                        grouped.status === 'pending' ? 'border-yellow-400' :
+                                        grouped.status === 'confirmed' ? 'border-green-500' :
+                                        grouped.status === 'cancelled' ? 'border-red-500' :
+                                        'border-transparent'
+                                    )}
+                                >
+                                    {/* Línea 1: Estado + Horario */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={'inline-block px-2 py-0.5 rounded text-xs font-semibold border bg-white ' + (
+                                            grouped.status === 'pending' ? 'border-yellow-400 text-yellow-700' :
+                                            grouped.status === 'confirmed' ? 'border-green-500 text-green-700' :
+                                            grouped.status === 'cancelled' ? 'border-red-500 text-red-700' :
+                                            'border-transparent'
+                                        )}
+                                            aria-label={'Estado: ' + grouped.status}
+                                        >
+                                            {grouped.status === 'pending' && 'Pendiente'}
+                                            {grouped.status === 'confirmed' && 'Confirmada'}
+                                            {grouped.status === 'cancelled' && 'Cancelada'}
+                                        </span>
+                                        <p className="font-bold text-primary m-0">
+                                            {formatTimeRange(grouped.start, grouped.end)}
+                                        </p>
+                                    </div>
+
+                                    {/* Renderizado según tipo */}
+                                    {grouped.type === 'break-conjunto' ? (
+                                        // Break para todos los empleados
+                                        <>
+                                            <p className="text-sm font-semibold text-primary">🏢 {business.name}</p>
+                                            <p className="text-sm text-secondary">☕ Break / Bloqueo</p>
+                                            {firstBooking.notes && (
+                                                <p className="text-xs text-secondary mt-1">
+                                                    📝 "{firstBooking.notes}"
+                                                </p>
+                                            )}
+                                        </>
+                                    ) : grouped.type === 'break-individual' ? (
+                                        // Break individual o para algunos empleados
+                                        <>
+                                            <p className="text-sm font-semibold text-primary">
+                                                {grouped.bookings.map(b => {
+                                                    const emp = business.employees.find(e => e.id === b.employeeId);
+                                                    return emp ? emp.name : 'Empleado';
+                                                }).join(', ')}
+                                            </p>
+                                            <p className="text-sm text-secondary">☕ Break / Bloqueo</p>
+                                            {firstBooking.notes && (
+                                                <p className="text-xs text-secondary mt-1">
+                                                    📝 "{firstBooking.notes}"
+                                                </p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        // Reserva normal o especial
+                                        <>
+                                            <p className="text-sm font-semibold text-primary">
+                                                👤 {firstBooking.client.name}
+                                            </p>
+                                            <p className="text-xs text-secondary">
+                                                📞 {firstBooking.client.phone}
+                                            </p>
+                                            {firstBooking.client.email && (
+                                                <p className="text-xs text-secondary">
+                                                    📧 {firstBooking.client.email}
+                                                </p>
+                                            )}
+                                            <p className="text-sm text-secondary mt-1">
+                                                {firstBooking.services.length > 0 
+                                                    ? firstBooking.services.map(s => s.name).join(', ')
+                                                    : '(Sin servicios)'
+                                                }
+                                            </p>
+                                            {(() => {
+                                                const employee = business.employees.find(e => e.id === firstBooking.employeeId);
+                                                return employee && (
+                                                    <p className="text-xs text-secondary mt-1">
+                                                        Con: {employee.name}
+                                                    </p>
+                                                );
+                                            })()}
+                                            {firstBooking.notes && (
+                                                <p className="text-xs text-secondary mt-1">
+                                                    📝 "{firstBooking.notes}"
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
                                 </li>
                             );
                             })}

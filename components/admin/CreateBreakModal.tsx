@@ -180,7 +180,7 @@ const CreateBreakModal: React.FC<CreateBreakModalProps> = ({
                   onChange={handleSelectAll} 
                 />
                 <label htmlFor="all-employees" className="ml-2 font-bold">
-                  Todos los empleados
+                  {business.name || 'Todos los empleados'}
                 </label>
               </div>
               <hr className="my-2"/>
