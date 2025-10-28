@@ -153,7 +153,7 @@ export const ReservationsManager: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-lg font-medium text-primary">Gestión de Reservas</h3>
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col md:flex-row gap-2">
                     <button 
                         onClick={() => openCreateModal(new Date())} 
                         className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark"
@@ -165,7 +165,7 @@ export const ReservationsManager: React.FC = () => {
                             setDateForNewBooking(selectedDate);
                             setIsCreatingSpecial(true);
                         }} 
-                        className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50"
+                        className="px-4 py-2 bg-surface text-primary text-sm font-medium rounded-md border border-default hover:bg-surface-hover"
                     >
                         ⚡ Reserva Especial
                     </button>
@@ -174,7 +174,7 @@ export const ReservationsManager: React.FC = () => {
                             setDateForNewBooking(selectedDate);
                             setIsCreatingBreak(true);
                         }} 
-                        className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50"
+                        className="px-4 py-2 bg-surface text-primary text-sm font-medium rounded-md border border-default hover:bg-surface-hover"
                     >
                         ☕ Agregar Break
                     </button>

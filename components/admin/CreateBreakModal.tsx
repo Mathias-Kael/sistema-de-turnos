@@ -162,84 +162,103 @@ const CreateBreakModal: React.FC<CreateBreakModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
-        <form onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-bold mb-4">⏸ Agregar Break / Bloqueo</h2>
+  // Formatear fecha en español con día de semana
+  const formatDate = (date: Date): string => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
 
-          {/* Step 1: Employee Selection */}
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Paso 1: ¿Para quién es el break?</h3>
-            <div className="p-2 border border-gray-300 rounded-md max-h-48 overflow-y-auto">
-              <div className="flex items-center mb-2">
-                <input 
-                  type="checkbox" 
-                  id="all-employees" 
-                  checked={selectedEmployeeIds.length === business.employees.length && business.employees.length > 0} 
-                  onChange={handleSelectAll} 
-                />
-                <label htmlFor="all-employees" className="ml-2 font-bold">
-                  {business.name || 'Todos los empleados'}
-                </label>
-              </div>
-              <hr className="my-2"/>
-              {business.employees.map(emp => (
-                <div key={emp.id} className="flex items-center">
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header fijo */}
+        <div className="p-6 border-b border-default">
+          <h2 className="text-2xl font-bold text-primary">⏸ Agregar Break / Bloqueo</h2>
+          <p className="text-sm text-secondary mt-1">📅 {formatDate(selectedDate)}</p>
+        </div>
+
+        {/* Contenido scrolleable */}
+        <div className="overflow-y-auto flex-1 p-6">
+          <form onSubmit={handleSubmit} id="create-break-form">
+            {/* Step 1: Employee Selection */}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: ¿Para quién es el break?</h3>
+              <div className="p-2 border border-default rounded-md max-h-48 overflow-y-auto bg-surface">
+                <div className="flex items-center mb-2">
                   <input 
                     type="checkbox" 
-                    id={'emp-' + emp.id} 
-                    checked={selectedEmployeeIds.includes(emp.id)} 
-                    onChange={() => handleEmployeeToggle(emp.id)} 
+                    id="all-employees" 
+                    checked={selectedEmployeeIds.length === business.employees.length && business.employees.length > 0} 
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 accent-primary rounded focus:ring-2 focus:ring-primary"
                   />
-                  <label htmlFor={'emp-' + emp.id} className="ml-2">
-                    {emp.name}
+                  <label htmlFor="all-employees" className="ml-2 font-bold text-primary">
+                    {business.name || 'Todos los empleados'}
                   </label>
                 </div>
-              ))}
+                <hr className="my-2 border-default"/>
+                {business.employees.map(emp => (
+                  <div key={emp.id} className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      id={'emp-' + emp.id} 
+                      checked={selectedEmployeeIds.includes(emp.id)} 
+                      onChange={() => handleEmployeeToggle(emp.id)}
+                      className="w-4 h-4 accent-primary rounded focus:ring-2 focus:ring-primary"
+                    />
+                    <label htmlFor={'emp-' + emp.id} className="ml-2 text-primary">
+                      {emp.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Step 2: Time Selection */}
-          {selectedEmployeeIds.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">Paso 2: Seleccionar Horario</h3>
-              <div className="mb-2">
-                <Input 
-                  label="Duración del Break (minutos)" 
-                  type="number" 
-                  value={duration.toString()} 
-                  onChange={e => setDuration(Number(e.target.value))} 
-                  min="10" 
-                  step="5" 
+            {/* Step 2: Time Selection */}
+            {selectedEmployeeIds.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Horario</h3>
+                <div className="mb-2">
+                  <Input 
+                    label="Duración del Break (minutos)" 
+                    type="number" 
+                    value={duration.toString()} 
+                    onChange={e => setDuration(Number(e.target.value))} 
+                    min="10" 
+                    step="5" 
+                  />
+                </div>
+                <TimelinePicker
+                  date={selectedDate}
+                  businessHours={businessHoursForDay}
+                  existingBookings={combinedBookings}
+                  selectionDuration={duration}
+                  onTimeSelect={setSelectedTime}
+                  onTimeClear={() => setSelectedTime(null)}
                 />
               </div>
-              <TimelinePicker
-                date={selectedDate}
-                businessHours={businessHoursForDay}
-                existingBookings={combinedBookings}
-                selectionDuration={duration}
-                onTimeSelect={setSelectedTime}
-                onTimeClear={() => setSelectedTime(null)}
-              />
+            )}
+            
+            {/* Step 3: Reason */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 3: Motivo (Opcional)</h3>
+              <Input label="Motivo del break" value={reason} onChange={e => setReason(e.target.value)} />
             </div>
-          )}
-          
-          {/* Step 3: Reason */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Paso 3: Motivo (Opcional)</h3>
-            <Input label="Motivo del break" value={reason} onChange={e => setReason(e.target.value)} />
-          </div>
 
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && <p className="text-state-danger-text text-sm mb-4">{error}</p>}
+          </form>
+        </div>
 
+        {/* Footer fijo con botones */}
+        <div className="p-6 border-t border-default">
           <div className="flex justify-end gap-4">
             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading || !selectedTime || selectedEmployeeIds.length === 0}>
+            <Button type="submit" form="create-break-form" disabled={isLoading || !selectedTime || selectedEmployeeIds.length === 0}>
               {isLoading ? 'Guardando...' : 'Guardar Break'}
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

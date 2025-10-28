@@ -161,58 +161,71 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Formatear fecha en español con día de semana
+  const formatDate = (date: Date): string => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
-        <form onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-bold mb-4">★ Nueva Reserva Especial</h2>
-          
-          {/* Step 1: Booking Details */}
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Paso 1: Detalles de la Reserva</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="service" className="block text-sm font-medium text-gray-700">Servicio</label>
-                <select 
-                  id="service" 
-                  value={serviceId ?? ''} 
-                  onChange={e => setServiceId(e.target.value)} 
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="" disabled>Selecciona un servicio</option>
-                  {business.services.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.duration} min)
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="employee" className="block text-sm font-medium text-gray-700">Empleado</label>
-                <select 
-                  id="employee" 
-                  value={employeeId ?? ''} 
-                  onChange={e => setEmployeeId(e.target.value)} 
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="" disabled>Selecciona un empleado</option>
-                  {business.employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name}
-                    </option>
-                  ))}
-                </select>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header fijo */}
+        <div className="p-6 border-b border-default">
+          <h2 className="text-2xl font-bold text-primary">★ Nueva Reserva Especial</h2>
+          <p className="text-sm text-secondary mt-1">📅 {formatDate(selectedDate)}</p>
+        </div>
+
+        {/* Contenido scrolleable */}
+        <div className="overflow-y-auto flex-1 p-6">
+          <form onSubmit={handleSubmit} id="special-booking-form">
+            {/* Step 1: Booking Details */}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Detalles de la Reserva</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="service" className="block text-sm font-medium text-secondary">Servicio</label>
+                  <select 
+                    id="service" 
+                    value={serviceId ?? ''} 
+                    onChange={e => setServiceId(e.target.value)} 
+                    className="mt-1 block w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="" disabled>Selecciona un servicio</option>
+                    {business.services.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.duration} min)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="employee" className="block text-sm font-medium text-secondary">Empleado</label>
+                  <select 
+                    id="employee" 
+                    value={employeeId ?? ''} 
+                    onChange={e => setEmployeeId(e.target.value)} 
+                    className="mt-1 block w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="" disabled>Selecciona un empleado</option>
+                    {business.employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
 
           {/* Step 2: Time Selection */}
           {serviceId && employeeId && (
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">Paso 2: Seleccionar Horario</h3>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Horario</h3>
               
               {/* Toggle de extensión de horario */}
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -220,55 +233,55 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                     onChange={(e) => {
                       setAllowExtension(e.target.checked);
                       if (!e.target.checked) {
-                        setSelectedTime(null); // Limpiar selección al desactivar
+                        setSelectedTime(null);
                       }
                     }}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-4 h-4 accent-primary rounded focus:ring-2 focus:ring-primary"
                   />
-                  <span className="font-medium text-blue-900">
+                  <span className="font-medium text-primary">
                     Extender horario de atención este día
                   </span>
                 </label>
-                <p className="text-xs text-blue-700 mt-1 ml-6">
+                <p className="text-xs text-secondary mt-1 ml-6">
                   Permite agendar fuera del horario normal (solo para esta reserva)
                 </p>
               </div>
 
               {/* Slider de rango (condicional) */}
               {allowExtension && (
-                <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-300">
-                  <label className="block text-sm font-medium text-slate-900 mb-3">
+                <div className="mb-4 p-4 bg-surface rounded-lg border border-default">
+                  <label className="block text-sm font-medium text-primary mb-3">
                     📅 Horario extendido para este día:
                   </label>
                   <div className="flex gap-4 items-center">
                     <div className="flex-1">
-                      <label className="text-xs text-slate-600 block mb-1">Apertura:</label>
+                      <label className="text-xs text-secondary block mb-1">Apertura:</label>
                       <input
                         type="time"
                         value={extendedStart}
                         onChange={(e) => {
                           setExtendedStart(e.target.value);
-                          setSelectedTime(null); // Limpiar selección al cambiar horario
+                          setSelectedTime(null);
                         }}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
-                    <span className="text-slate-400 font-bold text-xl">→</span>
+                    <span className="text-secondary font-bold text-xl">→</span>
                     <div className="flex-1">
-                      <label className="text-xs text-slate-600 block mb-1">Cierre:</label>
+                      <label className="text-xs text-secondary block mb-1">Cierre:</label>
                       <input
                         type="time"
                         value={extendedEnd}
                         onChange={(e) => {
                           setExtendedEnd(e.target.value);
-                          setSelectedTime(null); // Limpiar selección al cambiar horario
+                          setSelectedTime(null);
                         }}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
                   </div>
-                  <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
-                    <p className="text-xs text-amber-800 flex items-start gap-2">
+                  <div className="mt-3 p-2 bg-state-warning-bg/20 border border-state-warning-bg rounded">
+                    <p className="text-xs text-state-warning-text flex items-start gap-2">
                       <span className="text-base">⚠️</span>
                       <span>
                         <strong>Importante:</strong> Este cambio solo aplica para esta reserva específica. 
@@ -301,7 +314,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
           {/* Step 3: Client Details */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Paso 3: Datos del Cliente</h3>
+            <h3 className="text-lg font-semibold mb-2 text-primary">Paso 3: Datos del Cliente</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input label="Nombre del Cliente" value={clientName} onChange={e => setClientName(e.target.value)} required />
                 <Input label="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
@@ -310,15 +323,19 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-state-danger-text text-sm mb-4">{error}</p>}
+          </form>
+        </div>
 
+        {/* Footer fijo con botones */}
+        <div className="p-6 border-t border-default">
           <div className="flex justify-end gap-4">
             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading || !selectedTime}>
+            <Button type="submit" form="special-booking-form" disabled={isLoading || !selectedTime}>
               {isLoading ? 'Guardando...' : 'Guardar Reserva'}
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
