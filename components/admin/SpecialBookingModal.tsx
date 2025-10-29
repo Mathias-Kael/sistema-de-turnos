@@ -210,36 +210,39 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Servicios</h3>
               
-              {/* Service Selection - Checkboxes */}
-              <div className="space-y-2 p-4 border border-default rounded-md bg-surface max-h-60 overflow-y-auto">
+              {/* Service Selection - Botones multi-select */}
+              <div className="border border-default p-4 rounded-md bg-surface">
                 {business.services.length === 0 ? (
                   <p className="text-secondary text-sm">No hay servicios disponibles</p>
                 ) : (
-                  business.services.map(service => (
-                    <label key={service.id} className="flex items-start gap-3 p-2 hover:bg-surface-hover rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedServiceIds.includes(service.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedServiceIds(prev => [...prev, service.id]);
-                          } else {
-                            setSelectedServiceIds(prev => prev.filter(id => id !== service.id));
-                          }
-                          // Reset empleado y tiempo cuando cambian servicios
-                          setEmployeeId(null);
-                          setSelectedTime(null);
-                        }}
-                        className="w-4 h-4 mt-1 accent-primary rounded focus:ring-2 focus:ring-primary"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-primary">{service.name}</div>
-                        <div className="text-xs text-secondary">
-                          {service.duration} min • ${service.price}
-                        </div>
-                      </div>
-                    </label>
-                  ))
+                  <div className="flex flex-wrap gap-2">
+                    {business.services.map(service => {
+                      const isSelected = selectedServiceIds.includes(service.id);
+                      return (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedServiceIds(prev => prev.filter(id => id !== service.id));
+                            } else {
+                              setSelectedServiceIds(prev => [...prev, service.id]);
+                            }
+                            // Reset empleado y tiempo cuando cambian servicios
+                            setEmployeeId(null);
+                            setSelectedTime(null);
+                          }}
+                          className={`px-3 py-2 border border-default rounded-full text-sm cursor-pointer transition-colors ${
+                            isSelected 
+                              ? 'bg-primary text-brand-text' 
+                              : 'bg-background text-primary hover:bg-surface-hover'
+                          }`}
+                        >
+                          {service.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               
