@@ -25,7 +25,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   const business = useBusinessState();
   const dispatch = useBusinessDispatch();
 
-  const [serviceId, setServiceId] = useState<string | null>(null);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
   const [clientName, setClientName] = useState('');
@@ -40,18 +40,24 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedService = useMemo(() => {
-    return business.services.find(s => s.id === serviceId);
-  }, [serviceId, business.services]);
+  const selectedServices = useMemo(() => {
+    return business.services.filter(s => selectedServiceIds.includes(s.id));
+  }, [selectedServiceIds, business.services]);
 
-  // Filtrar empleados capacitados para el servicio seleccionado
+  // Calcular duración total de los servicios seleccionados
+  const totalDuration = useMemo(() => {
+    return selectedServices.reduce((sum, service) => sum + service.duration + (service.buffer || 0), 0);
+  }, [selectedServices]);
+
+  // Filtrar empleados que pueden realizar TODOS los servicios seleccionados (intersección)
   const availableEmployees = useMemo(() => {
-    if (!serviceId) return business.employees;
+    if (selectedServiceIds.length === 0) return business.employees;
     
+    const serviceEmployeeSets = selectedServices.map(s => new Set(s.employeeIds));
     return business.employees.filter(emp => 
-      selectedService?.employeeIds.includes(emp.id)
+      serviceEmployeeSets.every(idSet => idSet.has(emp.id))
     );
-  }, [serviceId, selectedService, business.employees]);
+  }, [selectedServiceIds, selectedServices, business.employees]);
 
   // Obtener horario efectivo del negocio para la fecha seleccionada
   const businessHoursForDay = useMemo(() => {
@@ -89,16 +95,16 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
     }
   }, [employeeId, businessHoursForDay]);
 
-  // Resetear empleado seleccionado si no está disponible para el nuevo servicio
+  // Resetear empleado seleccionado si no está disponible para los nuevos servicios
   useEffect(() => {
-    if (serviceId && employeeId) {
+    if (selectedServiceIds.length > 0 && employeeId) {
       const isEmployeeAvailable = availableEmployees.some(emp => emp.id === employeeId);
       if (!isEmployeeAvailable) {
         setEmployeeId(null);
         setSelectedTime(null);
       }
     }
-  }, [serviceId, employeeId, availableEmployees]);
+  }, [selectedServiceIds, employeeId, availableEmployees]);
 
   const handleTimeSelect = (timeSlot: TimeSlot) => {
     setSelectedTime(timeSlot);
@@ -112,7 +118,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!serviceId || !employeeId || !selectedTime || !clientName.trim()) {
+    if (selectedServiceIds.length === 0 || !employeeId || !selectedTime || !clientName.trim()) {
       setError("Por favor, completa todos los campos requeridos.");
       return;
     }
@@ -149,7 +155,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
         client_name: clientName.trim(),
         client_phone: clientPhone.trim() || '',
         business_id: business.id,
-        service_ids: [serviceId],
+        service_ids: selectedServiceIds,
       });
 
       // Recargar datos del negocio para reflejar la nueva reserva
@@ -162,7 +168,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
       await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
       
       // Cerrar modal y limpiar form
-      setServiceId(null);
+      setSelectedServiceIds([]);
       setEmployeeId(null);
       setSelectedTime(null);
       setClientName('');
@@ -202,53 +208,82 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
           <form onSubmit={handleSubmit} id="special-booking-form">
             {/* Step 1: Booking Details */}
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Detalles de la Reserva</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="service" className="block text-sm font-medium text-secondary">Servicio</label>
-                  <select 
-                    id="service" 
-                    value={serviceId ?? ''} 
-                    onChange={e => setServiceId(e.target.value)} 
-                    className="mt-1 block w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="" disabled>Selecciona un servicio</option>
-                    {business.services.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.duration} min)
-                      </option>
-                    ))}
-                  </select>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Servicios</h3>
+              
+              {/* Service Selection - Checkboxes */}
+              <div className="space-y-2 p-4 border border-default rounded-md bg-surface max-h-60 overflow-y-auto">
+                {business.services.length === 0 ? (
+                  <p className="text-secondary text-sm">No hay servicios disponibles</p>
+                ) : (
+                  business.services.map(service => (
+                    <label key={service.id} className="flex items-start gap-3 p-2 hover:bg-surface-hover rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedServiceIds.includes(service.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedServiceIds(prev => [...prev, service.id]);
+                          } else {
+                            setSelectedServiceIds(prev => prev.filter(id => id !== service.id));
+                          }
+                          // Reset empleado y tiempo cuando cambian servicios
+                          setEmployeeId(null);
+                          setSelectedTime(null);
+                        }}
+                        className="w-4 h-4 mt-1 accent-primary rounded focus:ring-2 focus:ring-primary"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-primary">{service.name}</div>
+                        <div className="text-xs text-secondary">
+                          {service.duration} min • ${service.price}
+                        </div>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+              
+              {selectedServices.length > 0 && (
+                <div className="mt-2 p-2 bg-primary/10 rounded text-sm text-primary">
+                  <strong>Duración total:</strong> {totalDuration} minutos ({selectedServices.length} servicio{selectedServices.length > 1 ? 's' : ''})
                 </div>
-                <div>
-                  <label htmlFor="employee" className="block text-sm font-medium text-secondary">Empleado</label>
+              )}
+            </div>
+
+            {/* Step 2: Employee Selection */}
+            {selectedServiceIds.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Empleado</h3>
+                
+                {availableEmployees.length === 0 ? (
+                  <div className="p-4 border border-state-warning-bg rounded-md bg-state-warning-bg/20">
+                    <p className="text-state-warning-text text-sm">
+                      ⚠️ No hay empleados que puedan realizar todos los servicios seleccionados. 
+                      Por favor, ajusta tu selección de servicios.
+                    </p>
+                  </div>
+                ) : (
                   <select 
                     id="employee" 
                     value={employeeId ?? ''} 
                     onChange={e => setEmployeeId(e.target.value)} 
-                    className="mt-1 block w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
-                    disabled={!serviceId}
+                    className="w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                   >
-                    <option value="" disabled>
-                      {serviceId ? 'Selecciona un empleado' : 'Primero selecciona un servicio'}
-                    </option>
+                    <option value="" disabled>Selecciona un empleado capacitado</option>
                     {availableEmployees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name}
                       </option>
                     ))}
-                    {serviceId && availableEmployees.length === 0 && (
-                      <option value="" disabled>No hay empleados capacitados para este servicio</option>
-                    )}
                   </select>
-                </div>
+                )}
               </div>
-            </div>
+            )}
 
-          {/* Step 2: Time Selection */}
-          {serviceId && employeeId && (
+          {/* Step 3: Time Selection */}
+          {selectedServiceIds.length > 0 && employeeId && (
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Horario</h3>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 3: Seleccionar Horario</h3>
               
               {/* Toggle de extensión de horario */}
               <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
@@ -322,7 +357,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                 date={selectedDate}
                 businessHours={businessHoursForDay}
                 existingBookings={existingBookings}
-                selectionDuration={selectedService?.duration || 30}
+                selectionDuration={totalDuration}
                 onTimeSelect={handleTimeSelect}
                 onTimeClear={handleTimeClear}
                 allowBusinessHoursExtension={allowExtension}
@@ -338,9 +373,9 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             </div>
           )}
 
-          {/* Step 3: Client Details */}
+          {/* Step 4: Client Details */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2 text-primary">Paso 3: Datos del Cliente</h3>
+            <h3 className="text-lg font-semibold mb-2 text-primary">Paso 4: Datos del Cliente</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input label="Nombre del Cliente" value={clientName} onChange={e => setClientName(e.target.value)} required />
                 <Input label="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
