@@ -44,6 +44,15 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
     return business.services.find(s => s.id === serviceId);
   }, [serviceId, business.services]);
 
+  // Filtrar empleados capacitados para el servicio seleccionado
+  const availableEmployees = useMemo(() => {
+    if (!serviceId) return business.employees;
+    
+    return business.employees.filter(emp => 
+      selectedService?.employeeIds.includes(emp.id)
+    );
+  }, [serviceId, selectedService, business.employees]);
+
   // Obtener horario efectivo del negocio para la fecha seleccionada
   const businessHoursForDay = useMemo(() => {
     const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][
@@ -79,6 +88,17 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
       setExtendedEnd(businessHoursForDay.end);
     }
   }, [employeeId, businessHoursForDay]);
+
+  // Resetear empleado seleccionado si no está disponible para el nuevo servicio
+  useEffect(() => {
+    if (serviceId && employeeId) {
+      const isEmployeeAvailable = availableEmployees.some(emp => emp.id === employeeId);
+      if (!isEmployeeAvailable) {
+        setEmployeeId(null);
+        setSelectedTime(null);
+      }
+    }
+  }, [serviceId, employeeId, availableEmployees]);
 
   const handleTimeSelect = (timeSlot: TimeSlot) => {
     setSelectedTime(timeSlot);
@@ -207,13 +227,19 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                     value={employeeId ?? ''} 
                     onChange={e => setEmployeeId(e.target.value)} 
                     className="mt-1 block w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
+                    disabled={!serviceId}
                   >
-                    <option value="" disabled>Selecciona un empleado</option>
-                    {business.employees.map(emp => (
+                    <option value="" disabled>
+                      {serviceId ? 'Selecciona un empleado' : 'Primero selecciona un servicio'}
+                    </option>
+                    {availableEmployees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name}
                       </option>
                     ))}
+                    {serviceId && availableEmployees.length === 0 && (
+                      <option value="" disabled>No hay empleados capacitados para este servicio</option>
+                    )}
                   </select>
                 </div>
               </div>
