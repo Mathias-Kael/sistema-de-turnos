@@ -23,6 +23,9 @@ type BusinessRow = {
   name: string;
   description: string | null;
   phone: string | null;
+  whatsapp: string | null;
+  instagram: string | null;
+  facebook: string | null;
   profile_image_url: string | null;
   cover_image_url: string | null;
   branding: unknown;
@@ -193,11 +196,14 @@ function transformBusiness(
     name: business.name,
     description: business.description ?? '',
     phone: business.phone,
+    whatsapp: business.whatsapp ?? undefined,
+    instagram: business.instagram ?? undefined,
+    facebook: business.facebook ?? undefined,
     profileImageUrl: business.profile_image_url,
     coverImageUrl: business.cover_image_url,
     branding: business.branding,
     hours: business.hours,
-  shareToken: business.share_token,
+    shareToken: business.share_token,
     shareTokenStatus: business.share_token_status,
     shareTokenExpiresAt: business.share_token_expires_at,
     employees: employeesSafe,
@@ -251,7 +257,7 @@ serve(async (req) => {
     const { data: business, error: bizError } = await supabaseAdmin
       .from('businesses')
       .select(
-        'id, name, description, phone, profile_image_url, cover_image_url, branding, hours, share_token, share_token_status, share_token_expires_at, status'
+        'id, name, description, phone, whatsapp, instagram, facebook, profile_image_url, cover_image_url, branding, hours, share_token, share_token_status, share_token_expires_at, status'
       )
       .eq('share_token', token)
       .single();

@@ -19,6 +19,9 @@ export const INITIAL_BUSINESS_DATA: Business = {
     profileImageUrl: undefined,
     coverImageUrl: undefined,
     phone: '',
+    whatsapp: undefined,
+    instagram: undefined,
+    facebook: undefined,
     branding: {
         primaryColor: '#1a202c',    // Dark gray/black
         secondaryColor: '#edf2f7',  // Light gray

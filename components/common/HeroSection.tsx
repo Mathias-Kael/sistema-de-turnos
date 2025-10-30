@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Business } from '../../types';
 import { imageStorage } from '../../services/imageStorage';
+import { SocialMediaButtons } from './SocialMediaButtons';
 
 interface HeroSectionProps {
   business: Business;
@@ -85,31 +86,40 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Profile + Info */}
   {/* Aumentamos agresivamente el tamaño del avatar y ajustamos el solapamiento */}
   <div className="flex items-start gap-4 md:gap-6 px-4 md:px-6 -mt-20 md:-mt-32 relative z-10 pointer-events-none">
-        {/* Profile Image */}
-        <div className="relative flex-shrink-0">
-          {profileUrl ? (
-            <img
-              src={profileUrl}
-              alt={business.name}
-              /* Tamaños anteriores: w-24 (96px) / md:w-40 (160px)
-                 Requerido: >=128px móvil y >=200px desktop.
-                 Elegimos w-32 (128px) y md:w-56 (~224px) para un salto claramente visible. */
-              className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl object-cover"
-            />
-          ) : (
-            <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl bg-surface flex items-center justify-center text-secondary text-sm">
-              Sin foto
-            </div>
-          )}
+        {/* Profile Image + Social Media Buttons */}
+        <div className="relative flex-shrink-0 flex flex-col items-center gap-3">
+          <div className="relative">
+            {profileUrl ? (
+              <img
+                src={profileUrl}
+                alt={business.name}
+                /* Tamaños anteriores: w-24 (96px) / md:w-40 (160px)
+                   Requerido: >=128px móvil y >=200px desktop.
+                   Elegimos w-32 (128px) y md:w-56 (~224px) para un salto claramente visible. */
+                className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl object-cover"
+              />
+            ) : (
+              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-background shadow-xl bg-surface flex items-center justify-center text-secondary text-sm">
+                Sin foto
+              </div>
+            )}
 
-          {editable && onEditProfile && (
-            <button
-              onClick={onEditProfile}
-              className="absolute bottom-0 right-0 z-20 bg-background text-primary p-1.5 md:p-2 rounded-full shadow-lg hover:bg-surface transition border border-default pointer-events-auto"
-              title="Editar foto de perfil"
-            >
-              📷
-            </button>
+            {editable && onEditProfile && (
+              <button
+                onClick={onEditProfile}
+                className="absolute bottom-0 right-0 z-20 bg-background text-primary p-1.5 md:p-2 rounded-full shadow-lg hover:bg-surface transition border border-default pointer-events-auto"
+                title="Editar foto de perfil"
+              >
+                📷
+              </button>
+            )}
+          </div>
+
+          {/* Social Media Buttons - Solo en vista cliente */}
+          {!editable && (
+            <div className="pointer-events-auto">
+              <SocialMediaButtons business={business} />
+            </div>
           )}
         </div>
 

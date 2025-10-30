@@ -1,6 +1,11 @@
 import { Business, Booking, Service, Employee } from '../types';
 import { validarIntervalos } from '../utils/availability';
 import { INITIAL_BUSINESS_DATA } from '../constants';
+import {
+  sanitizeWhatsappNumber,
+  sanitizeInstagramUsername,
+  sanitizeFacebookPage,
+} from '../utils/socialMedia';
 
 const BUSINESS_STORAGE_KEY = 'businessData';
 
@@ -142,7 +147,20 @@ export const mockBackend = {
             }
         }
         
-        state = { ...state, ...newData };
+        // Sanitizar campos de redes sociales antes de guardar
+        const sanitizedWhatsapp = newData.whatsapp ? sanitizeWhatsappNumber(newData.whatsapp) : undefined;
+        const sanitizedInstagram = newData.instagram ? sanitizeInstagramUsername(newData.instagram) : undefined;
+        const sanitizedFacebook = newData.facebook ? sanitizeFacebookPage(newData.facebook) : undefined;
+        
+        const sanitizedData = {
+            ...newData,
+            // Solo guardar si el valor sanitizado no está vacío
+            whatsapp: sanitizedWhatsapp && sanitizedWhatsapp.length > 0 ? sanitizedWhatsapp : undefined,
+            instagram: sanitizedInstagram && sanitizedInstagram.length > 0 ? sanitizedInstagram : undefined,
+            facebook: sanitizedFacebook && sanitizedFacebook.length > 0 ? sanitizedFacebook : undefined,
+        };
+        
+        state = { ...state, ...sanitizedData };
         saveState(state);
         return state;
     },

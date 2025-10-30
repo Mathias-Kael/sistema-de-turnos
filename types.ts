@@ -55,6 +55,10 @@ export interface Business {
   profileImageUrl?: string; // Nueva: imagen local del perfil/logo
   coverImageUrl?: string; // Nueva: imagen de portada
   phone: string;
+  // Redes sociales (opcional)
+  whatsapp?: string; // Número de WhatsApp del negocio (formato internacional)
+  instagram?: string; // Username de Instagram (sin @)
+  facebook?: string; // Username o ID de página de Facebook
   branding: Branding;
   employees: Employee[];
   services: Service[];

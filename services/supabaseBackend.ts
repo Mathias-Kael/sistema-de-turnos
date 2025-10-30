@@ -3,6 +3,11 @@ import { logger } from '../utils/logger';
 import { Business, Booking, Service, Employee, Hours } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { withRetryOrThrow } from '../utils/supabaseWrapper';
+import {
+  sanitizeWhatsappNumber,
+  sanitizeInstagramUsername,
+  sanitizeFacebookPage,
+} from '../utils/socialMedia';
 
 // Cache por sesión de usuario
 const businessCacheByUser = new Map<string, { businessId: string }>();
@@ -87,6 +92,9 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
     name: bizData.name,
     description: bizData.description || '',
     phone: bizData.phone,
+    whatsapp: bizData.whatsapp || undefined,
+    instagram: bizData.instagram || undefined,
+    facebook: bizData.facebook || undefined,
     profileImageUrl: bizData.profile_image_url,
     coverImageUrl: bizData.cover_image_url,
     branding: bizData.branding,
@@ -455,6 +463,16 @@ export const supabaseBackend = {
       action = 'upsert';
     }
 
+    // Sanitizar campos de redes sociales antes de guardar
+    const sanitizedWhatsapp = newData.whatsapp ? sanitizeWhatsappNumber(newData.whatsapp) : undefined;
+    const sanitizedInstagram = newData.instagram ? sanitizeInstagramUsername(newData.instagram) : undefined;
+    const sanitizedFacebook = newData.facebook ? sanitizeFacebookPage(newData.facebook) : undefined;
+
+    // Solo guardar si el valor sanitizado no está vacío
+    const finalWhatsapp = sanitizedWhatsapp && sanitizedWhatsapp.length > 0 ? sanitizedWhatsapp : undefined;
+    const finalInstagram = sanitizedInstagram && sanitizedInstagram.length > 0 ? sanitizedInstagram : undefined;
+    const finalFacebook = sanitizedFacebook && sanitizedFacebook.length > 0 ? sanitizedFacebook : undefined;
+
     const { data, error } = await supabase.functions.invoke('admin-businesses', {
       body: {
         action,
@@ -463,6 +481,9 @@ export const supabaseBackend = {
           name: newData.name,
           description: newData.description,
           phone: newData.phone,
+          whatsapp: finalWhatsapp,
+          instagram: finalInstagram,
+          facebook: finalFacebook,
           profile_image_url: newData.profileImageUrl,
           cover_image_url: newData.coverImageUrl,
           branding: newData.branding,
