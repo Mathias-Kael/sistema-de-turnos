@@ -115,7 +115,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     break;
                 case 'CREATE_BOOKING':
                     const { id: businessId } = currentState;
-                    const { client, date, start, end, employeeId, services } = action.payload;
+                    const { client, clientId, date, start, end, employeeId, services } = action.payload;
 
                     const bookingData = {
                         employee_id: employeeId,
@@ -124,6 +124,8 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         end_time: end,
                         client_name: client.name,
                         client_phone: client.phone,
+                        client_email: client.email, // ← NUEVO: Incluir email
+                        client_id: clientId, // ← NUEVO: Incluir client_id si existe
                         business_id: businessId,
                         service_ids: services.map(s => s.id),
                     };

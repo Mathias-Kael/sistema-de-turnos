@@ -73,10 +73,34 @@ export interface Business {
 }
 
 // Types related to bookings/reservations
+
+/**
+ * Client - Clientes Recurrentes (Fase 1 implementada 31 Oct 2025)
+ * Representa un cliente registrado en la base de datos.
+ * Separado de Booking para normalización y reutilización.
+ */
 export interface Client {
+  id: string; // UUID del cliente
+  businessId: string; // Relación con el negocio
+  name: string; // Nombre del cliente
+  phone: string; // Teléfono (único por business)
+  email?: string; // Email opcional
+  notes?: string; // Notas internas sobre el cliente
+  tags?: string[]; // Tags para categorización (ej: ["VIP", "Frecuente"])
+  createdAt: string; // Timestamp ISO de creación
+  updatedAt: string; // Timestamp ISO de última actualización
+}
+
+/**
+ * ClientInput - Datos mínimos para crear/actualizar un cliente
+ * Usado en formularios y operaciones CRUD
+ */
+export interface ClientInput {
   name: string;
-  email?: string;
   phone: string;
+  email?: string;
+  notes?: string;
+  tags?: string[];
 }
 
 export interface BookingService {
@@ -88,10 +112,22 @@ export interface BookingService {
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 
+/**
+ * BookingClient - Datos del cliente en una reserva
+ * Puede ser un cliente anónimo (sin ID) o vinculado a un Client registrado
+ */
+export interface BookingClient {
+  id?: string; // ID del cliente registrado (opcional para backward compatibility)
+  name: string;
+  phone: string;
+  email?: string;
+}
+
 export interface Booking {
   id: string;
   businessId: string;
-  client: Client;
+  client: BookingClient; // Ahora usa BookingClient en lugar de Client
+  clientId?: string; // Relación opcional con tabla clients
   date: string; // "YYYY-MM-DD"
   start: string; // "HH:mm"
   end: string; // "HH:mm"

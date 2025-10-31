@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
-import { Business, Booking, Service, Employee, Hours } from '../types';
+import { Business, Booking, Service, Employee, Hours, Client } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { withRetryOrThrow } from '../utils/supabaseWrapper';
 import {
@@ -564,8 +564,10 @@ export const supabaseBackend = {
     end_time: string;
     client_name: string;
     client_phone: string;
+    client_email?: string;
     business_id: string;
     service_ids: string[];
+    client_id?: string; // ← NEW: Optional client_id for registered clients
   }) => {
     const { data, error } = await supabase.rpc('create_booking_safe', {
       p_employee_id: bookingData.employee_id,
@@ -574,8 +576,10 @@ export const supabaseBackend = {
       p_end: bookingData.end_time,
       p_client_name: bookingData.client_name,
       p_client_phone: bookingData.client_phone,
+      p_client_email: bookingData.client_email || null,
       p_business_id: bookingData.business_id,
-      p_service_ids: bookingData.service_ids
+      p_service_ids: bookingData.service_ids,
+      p_client_id: bookingData.client_id || null, // ← Pass client_id if provided
     });
     
     if (error) {
@@ -958,6 +962,263 @@ export const supabaseBackend = {
     }
 
     return buildBusinessObject(businessId);
+  },
+
+  // =====================================================
+  // CLIENTS API - Clientes Recurrentes (Fase 2)
+  // =====================================================
+
+  /**
+   * Crear un nuevo cliente
+   * Validaciones:
+   * - Teléfono único por business (constraint en DB)
+   * - Nombre y teléfono obligatorios
+   */
+  createClient: async (clientData: {
+    business_id: string;
+    name: string;
+    phone: string;
+    email?: string;
+    notes?: string;
+    tags?: string[];
+  }) => {
+    // Validaciones básicas
+    if (!clientData.name?.trim()) {
+      throw new Error('El nombre del cliente es obligatorio');
+    }
+    if (!clientData.phone?.trim()) {
+      throw new Error('El teléfono del cliente es obligatorio');
+    }
+
+    // Sanitizar datos
+    const sanitizedData = {
+      business_id: clientData.business_id,
+      name: clientData.name.trim(),
+      phone: clientData.phone.trim(),
+      email: clientData.email?.trim() || null,
+      notes: clientData.notes?.trim() || null,
+      tags: clientData.tags || null,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert(sanitizedData)
+        .select()
+        .single();
+
+      if (error) {
+        // Traducir errores comunes
+        if (error.code === '23505') { // Unique constraint violation
+          throw new Error('Ya existe un cliente con este teléfono en tu negocio');
+        }
+        throw new Error(error.message);
+      }
+
+      // Mapear a interfaz Client
+      return {
+        id: data.id,
+        businessId: data.business_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email || undefined,
+        notes: data.notes || undefined,
+        tags: data.tags || undefined,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      logger.error('Error creating client:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Buscar clientes por nombre o teléfono
+   * Usa full-text search para nombre y LIKE para teléfono
+   * Target: < 500ms
+   */
+  searchClients: async (businessId: string, query: string) => {
+    if (!query?.trim()) {
+      // Si no hay query, retornar lista limitada de clientes recientes
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        logger.error('Error searching clients:', error);
+        throw new Error('Error al buscar clientes');
+      }
+
+      return (data || []).map(client => ({
+        id: client.id,
+        businessId: client.business_id,
+        name: client.name,
+        phone: client.phone,
+        email: client.email || undefined,
+        notes: client.notes || undefined,
+        tags: client.tags || undefined,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+      }));
+    }
+
+    const searchTerm = query.trim();
+
+    try {
+      // Buscar por nombre (full-text) o teléfono (LIKE)
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('business_id', businessId)
+        .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+        .order('updated_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        logger.error('Error searching clients:', error);
+        throw new Error('Error al buscar clientes');
+      }
+
+      return (data || []).map(client => ({
+        id: client.id,
+        businessId: client.business_id,
+        name: client.name,
+        phone: client.phone,
+        email: client.email || undefined,
+        notes: client.notes || undefined,
+        tags: client.tags || undefined,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+      }));
+    } catch (error: any) {
+      logger.error('Error searching clients:', error);
+      throw new Error('Error al buscar clientes');
+    }
+  },
+
+  /**
+   * Actualizar un cliente existente
+   * Validaciones:
+   * - Cliente pertenece al business (RLS policy)
+   * - Teléfono único si se modifica
+   */
+  updateClient: async (clientId: string, updates: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    notes?: string;
+    tags?: string[];
+  }) => {
+    // Sanitizar updates
+    const sanitizedUpdates: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.name !== undefined) {
+      sanitizedUpdates.name = updates.name.trim();
+      if (!sanitizedUpdates.name) {
+        throw new Error('El nombre del cliente no puede estar vacío');
+      }
+    }
+
+    if (updates.phone !== undefined) {
+      sanitizedUpdates.phone = updates.phone.trim();
+      if (!sanitizedUpdates.phone) {
+        throw new Error('El teléfono del cliente no puede estar vacío');
+      }
+    }
+
+    if (updates.email !== undefined) {
+      sanitizedUpdates.email = updates.email?.trim() || null;
+    }
+
+    if (updates.notes !== undefined) {
+      sanitizedUpdates.notes = updates.notes?.trim() || null;
+    }
+
+    if (updates.tags !== undefined) {
+      sanitizedUpdates.tags = updates.tags || null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update(sanitizedUpdates)
+        .eq('id', clientId)
+        .select()
+        .single();
+
+      if (error) {
+        // Traducir errores comunes
+        if (error.code === '23505') { // Unique constraint violation
+          throw new Error('Ya existe un cliente con este teléfono en tu negocio');
+        }
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error('Cliente no encontrado');
+      }
+
+      return {
+        id: data.id,
+        businessId: data.business_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email || undefined,
+        notes: data.notes || undefined,
+        tags: data.tags || undefined,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error: any) {
+      logger.error('Error updating client:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar un cliente
+   * Protección: No permite eliminar si tiene reservas futuras
+   */
+  deleteClient: async (clientId: string) => {
+    try {
+      // Validar que no tenga reservas futuras
+      const today = new Date().toISOString().split('T')[0];
+      const { data: futureBookings, error: bookingError } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('client_id', clientId)
+        .gte('booking_date', today)
+        .limit(1);
+
+      if (bookingError) {
+        logger.error('Error checking future bookings:', bookingError);
+        throw new Error('Error al verificar reservas del cliente');
+      }
+
+      if (futureBookings && futureBookings.length > 0) {
+        throw new Error('No se puede eliminar el cliente porque tiene reservas futuras');
+      }
+
+      // Eliminar cliente
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+
+      if (error) {
+        logger.error('Error deleting client:', error);
+        throw new Error('Error al eliminar el cliente');
+      }
+    } catch (error: any) {
+      logger.error('Error in deleteClient:', error);
+      throw error;
+    }
   },
 
   loadDataForTests: () => {

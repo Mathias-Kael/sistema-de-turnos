@@ -125,6 +125,8 @@ export const mockBackendTest = {
     end_time: string;
     client_name: string;
     client_phone: string;
+    client_email?: string; // ← NUEVO: Opcional
+    client_id?: string; // ← NUEVO: Opcional
     business_id: string;
     service_ids: string[];
   }): Promise<Business> => {
@@ -139,8 +141,10 @@ export const mockBackendTest = {
       client: {
         name: bookingData.client_name,
         phone: bookingData.client_phone,
-        email: ''
+        email: bookingData.client_email || '',
+        id: bookingData.client_id, // ← NUEVO: Incluir client_id
       },
+      clientId: bookingData.client_id, // ← NUEVO: Relación con tabla clients
       services: [], // Mocked, not needed for this test
       status: 'confirmed',
       notes: ''

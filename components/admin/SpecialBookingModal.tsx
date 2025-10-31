@@ -4,6 +4,10 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { createBookingSafe } from '../../services/api';
+import { supabaseBackend } from '../../services/supabaseBackend';
+import { ClientSearchInput } from '../common/ClientSearchInput';
+import { ClientFormModal } from '../common/ClientFormModal';
+import { Client } from '../../types';
 
 // Helper para convertir tiempo a minutos
 const timeToMinutes = (time: string): number => {
@@ -28,6 +32,13 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
+  
+  // Client state
+  const [useExistingClient, setUseExistingClient] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showClientForm, setShowClientForm] = useState(false);
+  
+  // Manual client fields (backward compatible)
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -115,6 +126,113 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
     setSelectedTime(null);
   };
 
+  // Client handlers
+  const handleClientSelect = (client: Client | null) => {
+    setSelectedClient(client);
+    if (client) {
+      setClientName(client.name);
+      setClientPhone(client.phone);
+      setClientEmail(client.email || '');
+    }
+  };
+
+  const handleCreateNewClient = () => {
+    setShowClientForm(true);
+  };
+
+  const handleClientSaved = (client: Client) => {
+    setSelectedClient(client);
+    setClientName(client.name);
+    setClientPhone(client.phone);
+    setClientEmail(client.email || '');
+    setUseExistingClient(true);
+    setShowClientForm(false);
+  };
+
+  // Validation helper
+  const isClientDataValid = () => {
+    return clientName.trim().length > 0 && clientPhone.trim().length >= 8;
+  };
+
+  // Handle "Save & Add to Clients" button
+  const handleSaveAndAddToClients = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Don't allow if already using existing client
+    if (useExistingClient && selectedClient) {
+      alert("Este cliente ya está registrado. Solo usa 'Guardar Reserva'.");
+      return;
+    }
+
+    // Validate client data
+    if (!isClientDataValid()) {
+      alert("Por favor ingresa nombre y teléfono válidos para guardar el cliente.");
+      return;
+    }
+
+    // Validate booking data
+    if (!employeeId || !selectedTime || selectedServiceIds.length === 0) {
+      alert("Por favor completa todos los campos de la reserva.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // 1. Create the client first
+      const newClient = await supabaseBackend.createClient({
+        business_id: business.id,
+        name: clientName,
+        phone: clientPhone,
+        email: clientEmail || undefined,
+      });
+
+      // 2. Create the booking with client reference
+      const dateString = selectedDate.toISOString().split('T')[0];
+      
+      await createBookingSafe({
+        employee_id: employeeId,
+        date: dateString,
+        start_time: selectedTime.start,
+        end_time: selectedTime.end,
+        client_name: newClient.name,
+        client_phone: newClient.phone,
+        business_id: business.id,
+        service_ids: selectedServiceIds,
+      });
+
+      // Reload business data
+      const params = new URLSearchParams(window.location.search);
+      const devMock = params.get('devMock') === '1';
+      const { mockBackendTest } = await import('../../services/mockBackend.e2e');
+      const backend = devMock ? mockBackendTest : supabaseBackend;
+      const updatedBusiness = await backend.getBusinessData();
+      await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
+      
+      // Reset and close
+      resetForm();
+      onClose();
+    } catch (err) {
+      console.error('Error creating booking with client:', err);
+      setError(err instanceof Error ? err.message : "Hubo un error al crear la reserva.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedServiceIds([]);
+    setEmployeeId(null);
+    setSelectedTime(null);
+    setClientName('');
+    setClientPhone('');
+    setClientEmail('');
+    setNotes('');
+    setSelectedClient(null);
+    setUseExistingClient(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -168,13 +286,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
       await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
       
       // Cerrar modal y limpiar form
-      setSelectedServiceIds([]);
-      setEmployeeId(null);
-      setSelectedTime(null);
-      setClientName('');
-      setClientPhone('');
-      setClientEmail('');
-      setNotes('');
+      resetForm();
       
       onClose();
     } catch (err) {
@@ -379,12 +491,44 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
           {/* Step 4: Client Details */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-primary">Paso 4: Datos del Cliente</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Toggle: Cliente existente / Manual */}
+            <div className="mb-4 flex items-center gap-3">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useExistingClient}
+                  onChange={(e) => {
+                    setUseExistingClient(e.target.checked);
+                    if (!e.target.checked) {
+                      setSelectedClient(null);
+                      setClientName('');
+                      setClientPhone('');
+                      setClientEmail('');
+                    }
+                  }}
+                  className="mr-2 h-4 w-4 text-primary focus:ring-primary/50 border-default rounded"
+                />
+                <span className="text-sm text-primary">Buscar cliente existente</span>
+              </label>
+            </div>
+
+            {useExistingClient ? (
+              /* Cliente Search Input */
+              <ClientSearchInput
+                businessId={business.id}
+                onClientSelect={handleClientSelect}
+                onCreateNewClient={handleCreateNewClient}
+              />
+            ) : (
+              /* Campos manuales (backward compatible) */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input label="Nombre del Cliente" value={clientName} onChange={e => setClientName(e.target.value)} required />
                 <Input label="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
                 <Input label="Email (opcional)" value={clientEmail} onChange={e => setClientEmail(e.target.value)} type="email" />
                 <Input label="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
-            </div>
+              </div>
+            )}
           </div>
 
           {error && <p className="text-state-danger-text text-sm mb-4">{error}</p>}
@@ -393,14 +537,38 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
         {/* Footer fijo con botones */}
         <div className="p-6 border-t border-default">
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+            
+            {/* Show "Add to Clients" button only when NOT using existing client */}
+            {!useExistingClient && (
+              <Button 
+                type="button"
+                variant="ghost"
+                onClick={handleSaveAndAddToClients}
+                disabled={isLoading || !selectedTime || !isClientDataValid()}
+                className="border border-primary"
+              >
+                📋 Añadir a Clientes
+              </Button>
+            )}
+            
             <Button type="submit" form="special-booking-form" disabled={isLoading || !selectedTime}>
               {isLoading ? 'Guardando...' : 'Guardar Reserva'}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Client Form Modal */}
+      {showClientForm && (
+        <ClientFormModal
+          businessId={business.id}
+          onClose={() => setShowClientForm(false)}
+          onSave={handleClientSaved}
+          initialName={clientName}
+        />
+      )}
     </div>
   );
 };

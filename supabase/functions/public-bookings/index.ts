@@ -15,7 +15,12 @@ interface BookingRequestBody {
   start: string; // HH:MM
   end: string;   // HH:MM
   employeeId: string; // already selected/assigned on client prior to call
-  client: { name: string; phone: string; email?: string };
+  client: { 
+    name: string; 
+    phone: string; 
+    email?: string;
+    id?: string; // ← NEW: Optional client_id for registered clients
+  };
   notes?: string;
 }
 
@@ -96,6 +101,7 @@ serve(async (req) => {
         client_name: body.client.name,
         client_email: body.client.email || null,
         client_phone: body.client.phone,
+        client_id: body.client.id || null, // ← NEW: Associate with registered client if provided
         booking_date: body.date,
         start_time: body.start,
         end_time: body.end,

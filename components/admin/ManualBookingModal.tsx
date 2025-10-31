@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Booking, Service } from '../../types';
+import { Booking, Service, Client } from '../../types';
 import { useBusinessState } from '../../context/BusinessContext';
 import { getAvailableSlots, findAvailableEmployeeForSlot } from '../../services/api';
+import { supabaseBackend } from '../../services/supabaseBackend';
+import { ClientSearchInput } from '../common/ClientSearchInput';
+import { ClientFormModal } from '../common/ClientFormModal';
 
 interface ManualBookingModalProps {
     selectedDate: Date;
@@ -12,9 +15,18 @@ interface ManualBookingModalProps {
 
 export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selectedDate, existingBookings, onClose, onSave }) => {
     const business = useBusinessState();
+    
+    // Client state
+    const [useExistingClient, setUseExistingClient] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [showClientForm, setShowClientForm] = useState(false);
+    
+    // Manual client fields (backward compatible)
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
+    
+    // Booking state
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | 'any' | null>(null);
     const [slot, setSlot] = useState<string | null>(null);
@@ -50,6 +62,118 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
             serviceEmployeeSets.every(idSet => idSet.size === 0 || idSet.has(emp.id))
         );
     }, [selectedServices, business.employees]);
+
+    // Client handlers
+    const handleClientSelect = (client: Client | null) => {
+        setSelectedClient(client);
+        if (client) {
+            setClientName(client.name);
+            setClientPhone(client.phone);
+            setClientEmail(client.email || '');
+        }
+    };
+
+    const handleCreateNewClient = () => {
+        setShowClientForm(true);
+    };
+
+    const handleClientSaved = (client: Client) => {
+        setSelectedClient(client);
+        setClientName(client.name);
+        setClientPhone(client.phone);
+        setClientEmail(client.email || '');
+        setUseExistingClient(true);
+        setShowClientForm(false);
+    };
+
+    // Validation helper
+    const isClientDataValid = () => {
+        return clientName.trim().length > 0 && clientPhone.trim().length >= 8;
+    };
+
+    // Handle "Save & Add to Clients" button
+    const handleSaveAndAddToClients = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // First validate and create the booking
+        if (!slot || !selectedEmployeeId) {
+            alert("Por favor completa todos los campos.");
+            return;
+        }
+
+        // Don't allow if already using existing client (no need to create again)
+        if (useExistingClient && selectedClient) {
+            alert("Este cliente ya está registrado. Solo usa 'Guardar Reserva'.");
+            return;
+        }
+
+        // Validate client data
+        if (!isClientDataValid()) {
+            alert("Por favor ingresa nombre y teléfono válidos para guardar el cliente.");
+            return;
+        }
+
+        // Validate date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingDate = new Date(selectedDate);
+        bookingDate.setHours(0, 0, 0, 0);
+        
+        if (bookingDate < today) {
+            alert("⚠️ No se pueden crear reservas en fechas pasadas");
+            return;
+        }
+
+        try {
+            // 1. Create the client first
+            const newClient = await supabaseBackend.createClient({
+                business_id: business.id,
+                name: clientName,
+                phone: clientPhone,
+                email: clientEmail || undefined,
+            });
+
+            // 2. Now create the booking with the client reference
+            const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0);
+
+            let finalEmployeeId = selectedEmployeeId;
+            if (selectedEmployeeId === 'any') {
+                const availableEmployee = findAvailableEmployeeForSlot(selectedDate, slot, totalDuration, selectedServices, business);
+                if (availableEmployee) {
+                    finalEmployeeId = availableEmployee.id;
+                } else {
+                    alert("No se encontró un empleado disponible para este horario.");
+                    return;
+                }
+            }
+
+            const startDate = new Date(`${dateStr}T${slot}:00`);
+            const endDate = new Date(startDate.getTime() + totalDuration * 60000);
+            const end = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+            
+            const newBooking: Omit<Booking, 'id'> = {
+                businessId: business.id,
+                client: { 
+                    name: newClient.name, 
+                    email: newClient.email || undefined, 
+                    phone: newClient.phone,
+                    id: newClient.id
+                },
+                clientId: newClient.id,
+                date: dateStr,
+                start: slot,
+                end,
+                services: selectedServices.map(s => ({ id: s.id, businessId: business.id, name: s.name, price: s.price })),
+                employeeId: finalEmployeeId,
+                status: 'confirmed',
+                notes: 'Reserva manual',
+            };
+            
+            onSave(newBooking);
+        } catch (error: any) {
+            alert(`Error: ${error.message || 'No se pudo guardar'}`);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,7 +213,13 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
         
         const newBooking: Omit<Booking, 'id'> = {
             businessId: business.id,
-            client: { name: clientName, email: clientEmail || undefined, phone: clientPhone },
+            client: { 
+                name: clientName, 
+                email: clientEmail || undefined, 
+                phone: clientPhone,
+                id: selectedClient?.id // ← Incluir client ID si está seleccionado
+            },
+            clientId: selectedClient?.id, // ← NUEVO: Relación con cliente registrado
             date: dateStr,
             start: slot,
             end,
@@ -112,11 +242,63 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                     {/* Client Info */}
                     <fieldset className="border border-default p-4 rounded-md bg-surface">
                         <legend className="font-semibold px-2 text-primary">Datos del Cliente</legend>
-                        <div className="grid sm:grid-cols-3 gap-4">
-                            <input type="text" placeholder="Nombre" value={clientName} onChange={e => setClientName(e.target.value)} required className="p-2 border border-default rounded-md bg-background text-primary"/>
-                            <input type="email" placeholder="Email (Opcional)" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="p-2 border border-default rounded-md bg-background text-primary"/>
-                            <input type="tel" placeholder="Teléfono" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required className="p-2 border border-default rounded-md bg-background text-primary"/>
+                        
+                        {/* Toggle: Cliente existente / Manual */}
+                        <div className="mb-4 flex items-center gap-3">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={useExistingClient}
+                                    onChange={(e) => {
+                                        setUseExistingClient(e.target.checked);
+                                        if (!e.target.checked) {
+                                            setSelectedClient(null);
+                                            setClientName('');
+                                            setClientPhone('');
+                                            setClientEmail('');
+                                        }
+                                    }}
+                                    className="mr-2 h-4 w-4 text-primary focus:ring-primary/50 border-default rounded"
+                                />
+                                <span className="text-sm text-primary">Buscar cliente existente</span>
+                            </label>
                         </div>
+
+                        {useExistingClient ? (
+                            /* Cliente Search Input */
+                            <ClientSearchInput
+                                businessId={business.id}
+                                onClientSelect={handleClientSelect}
+                                onCreateNewClient={handleCreateNewClient}
+                            />
+                        ) : (
+                            /* Campos manuales (backward compatible) */
+                            <div className="grid sm:grid-cols-3 gap-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="Nombre" 
+                                    value={clientName} 
+                                    onChange={e => setClientName(e.target.value)} 
+                                    required 
+                                    className="p-2 border border-default rounded-md bg-background text-primary"
+                                />
+                                <input 
+                                    type="email" 
+                                    placeholder="Email (Opcional)" 
+                                    value={clientEmail} 
+                                    onChange={e => setClientEmail(e.target.value)} 
+                                    className="p-2 border border-default rounded-md bg-background text-primary"
+                                />
+                                <input 
+                                    type="tel" 
+                                    placeholder="Teléfono" 
+                                    value={clientPhone} 
+                                    onChange={e => setClientPhone(e.target.value)} 
+                                    required 
+                                    className="p-2 border border-default rounded-md bg-background text-primary"
+                                />
+                            </div>
+                        )}
                     </fieldset>
 
                     {/* Service Selection */}
@@ -167,12 +349,49 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
                     )}
                 </div>
 
+                {/* Footer Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-default">
-                    <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover">Cancelar</button>
-                    <button type="submit" className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary" disabled={!slot}>Guardar Reserva</button>
+                    <button 
+                        type="button" 
+                        onClick={onClose} 
+                        className="w-full sm:w-auto bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover border border-default"
+                    >
+                        Cancelar
+                    </button>
+                    
+                    {/* Show "Add to Clients" button only when NOT using existing client */}
+                    {!useExistingClient && (
+                        <button 
+                            type="button"
+                            onClick={handleSaveAndAddToClients}
+                            className="w-full sm:flex-1 bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover border border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!slot || !isClientDataValid()}
+                            title={!isClientDataValid() ? "Completa nombre y teléfono válidos" : "Guardar reserva y añadir cliente a la base de datos"}
+                        >
+                            📋 Añadir a Clientes
+                        </button>
+                    )}
+                    
+                    <button 
+                        type="submit" 
+                        className="w-full sm:flex-1 bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary disabled:opacity-50" 
+                        disabled={!slot}
+                    >
+                        Guardar Reserva
+                    </button>
                 </div>
             </form>
             </div>
+            
+            {/* Client Form Modal */}
+            {showClientForm && (
+                <ClientFormModal
+                    businessId={business.id}
+                    onClose={() => setShowClientForm(false)}
+                    onSave={handleClientSaved}
+                    initialName={clientName}
+                />
+            )}
         </div>
     );
 };

@@ -5,6 +5,7 @@ import { HoursEditor } from '../admin/HoursEditor';
 import { EmployeesEditor } from '../admin/EmployeesEditor';
 import { SharePanel } from '../admin/SharePanel';
 import { ReservationsManager } from '../admin/ReservationsManager';
+import { ClientList } from '../admin/ClientList';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { ClientView } from './ClientView';
 import { HeroSection } from '../common/HeroSection';
@@ -14,7 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'preview' | 'branding';
+type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'clients' | 'preview' | 'branding';
 
 export const AdminView: React.FC = () => {
     const navigate = useNavigate();
@@ -27,6 +28,7 @@ export const AdminView: React.FC = () => {
         { id: 'equipo', label: 'Equipo' },
         { id: 'hours', label: 'Horarios' },
         { id: 'reservations', label: 'Reservas' },
+        { id: 'clients', label: 'Clientes' },
         { id: 'branding', label: 'Branding' },
         { id: 'share', label: 'Compartir' },
         { id: 'preview', label: 'Vista Previa' },
@@ -76,6 +78,8 @@ export const AdminView: React.FC = () => {
                 return <SharePanel />;
             case 'reservations':
                 return <ReservationsManager />;
+            case 'clients':
+                return <ClientList />;
             case 'preview':
                 return <div className="border-default rounded-lg p-2 bg-background"><ClientView /></div>;
             default:
