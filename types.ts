@@ -14,6 +14,7 @@ export interface Employee {
   avatarUrl: string;
   hours: Hours; // Horario individual del empleado
   whatsapp?: string; // Número de WhatsApp (opcional, formato internacional sugerido)
+  archived?: boolean; // Soft delete flag
 }
 
 export interface Service {
@@ -26,6 +27,7 @@ export interface Service {
   price: number;
   requiresDeposit?: boolean;
   employeeIds: string[];
+  archived?: boolean; // Soft delete flag
 }
 
 export interface Interval {

@@ -56,7 +56,8 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
     const res = await supabase
       .from('employees')
       .select('*')
-      .eq('business_id', businessId);
+      .eq('business_id', businessId)
+      .eq('archived', false);
     return { data: res.data, error: res.error };
   }, { operationName: 'get-employees', userMessage: 'No se pudieron cargar empleados.' })) || [];
 
@@ -68,7 +69,8 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
         *,
         service_employees!inner(employee_id)
       `)
-      .eq('business_id', businessId);
+      .eq('business_id', businessId)
+      .eq('archived', false);
     return { data: res.data, error: res.error };
   }, { operationName: 'get-services', userMessage: 'No se pudieron cargar servicios.' })) || [];
 
@@ -210,6 +212,7 @@ async function migrateFromLocalStorage(ownerId: string): Promise<string | null> 
           avatar_url: emp.avatarUrl,
           whatsapp: emp.whatsapp,
           hours: emp.hours,
+          archived: false,
         });
 
         if (empError) logger.error('Employee migration error:', empError);
@@ -226,6 +229,7 @@ async function migrateFromLocalStorage(ownerId: string): Promise<string | null> 
           description: svc.description,
           duration: svc.duration,
           buffer: svc.buffer,
+          archived: false,
           price: svc.price,
           requires_deposit: svc.requiresDeposit,
         })
@@ -665,6 +669,39 @@ export const supabaseBackend = {
     const cached = businessCacheByUser.get(userId);
     const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
+
+    // Verificar si ya existe un empleado con el mismo nombre
+    const { data: existingEmployees } = await supabase
+      .from('employees')
+      .select('id, name, archived')
+      .eq('business_id', businessId)
+      .ilike('name', employee.name)
+      .limit(1);
+
+    if (existingEmployees && existingEmployees.length > 0) {
+      const existing = existingEmployees[0];
+      
+      if (existing.archived) {
+        // Si está archivado, desarchivarlo y actualizar datos
+        const { error: updateError } = await supabase
+          .from('employees')
+          .update({
+            archived: false,
+            avatar_url: employee.avatarUrl,
+            whatsapp: employee.whatsapp,
+            hours: employee.hours,
+          })
+          .eq('id', existing.id);
+
+        if (updateError) throw new Error('Error al restaurar el empleado archivado');
+        return buildBusinessObject(businessId);
+      } else {
+        // Si ya existe y no está archivado, error
+        throw new Error(`Ya existe un empleado con el nombre "${employee.name}"`);
+      }
+    }
+
+    // Si no existe, crear nuevo
     const { data, error } = await supabase.functions.invoke('admin-employees', {
       body: {
         action: 'create',
@@ -677,7 +714,15 @@ export const supabaseBackend = {
         },
       },
     });
-    if (error || data?.error) throw new Error(error?.message || data?.error);
+    
+    if (error || data?.error) {
+      const errorMsg = error?.message || data?.error;
+      // Detectar unique constraint violation (código 23505)
+      if (errorMsg.includes('23505') || errorMsg.toLowerCase().includes('duplicate') || errorMsg.toLowerCase().includes('unique')) {
+        throw new Error(`Ya existe un empleado con el nombre "${employee.name}"`);
+      }
+      throw new Error(errorMsg);
+    }
 
     return buildBusinessObject(businessId);
   },
@@ -716,27 +761,29 @@ export const supabaseBackend = {
     const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
-    // Validar que no tenga reservas futuras
+    // Validar que no tenga reservas futuras confirmadas o pendientes
     const today = new Date().toISOString().split('T')[0];
     const { data: futureBookings } = await supabase
       .from('bookings')
-      .select('id')
+      .select('id, status')
       .eq('employee_id', employeeId)
       .gte('booking_date', today)
+      .in('status', ['confirmed', 'pending'])
       .limit(1);
 
     if (futureBookings && futureBookings.length > 0) {
-      throw new Error('No se puede eliminar el empleado porque tiene reservas futuras.');
+      throw new Error('No se puede eliminar el empleado porque tiene reservas futuras confirmadas o pendientes.');
     }
 
-    // Eliminar employee (CASCADE eliminará service_employees)
-    const { data, error } = await supabase.functions.invoke('admin-employees', {
-      body: {
-        action: 'delete',
-        data: { id: employeeId },
-      },
-    });
-    if (error || data?.error) throw new Error(error?.message || data?.error);
+    // Soft delete: marcar como archived
+    const { error } = await supabase
+      .from('employees')
+      .update({ archived: true })
+      .eq('id', employeeId);
+
+    if (error) {
+      throw new Error('Error al eliminar el empleado');
+    }
 
     return buildBusinessObject(businessId);
   },
@@ -748,6 +795,79 @@ export const supabaseBackend = {
     const cached = businessCacheByUser.get(userId);
     const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
+
+    // Validar que el servicio tenga al menos un empleado asignado
+    if (!service.employeeIds || service.employeeIds.length === 0) {
+      throw new Error('El servicio debe tener al menos un empleado asignado');
+    }
+
+    // Verificar si ya existe un servicio con el mismo nombre
+    const { data: existingServices } = await supabase
+      .from('services')
+      .select('id, name, archived')
+      .eq('business_id', businessId)
+      .ilike('name', service.name)
+      .limit(1);
+
+    if (existingServices && existingServices.length > 0) {
+      const existing = existingServices[0];
+      
+      if (existing.archived) {
+        // Si está archivado, desarchivarlo y actualizar datos
+        const { error: updateError } = await supabase
+          .from('services')
+          .update({
+            archived: false,
+            description: service.description,
+            duration: service.duration,
+            buffer: service.buffer,
+            price: service.price,
+            requires_deposit: service.requiresDeposit,
+          })
+          .eq('id', existing.id);
+
+        if (updateError) throw new Error('Error al restaurar el servicio archivado');
+
+        try {
+          // Actualizar las relaciones con empleados
+          // Primero eliminar relaciones existentes
+          const { error: deleteError } = await supabase
+            .from('service_employees')
+            .delete()
+            .eq('service_id', existing.id);
+
+          if (deleteError) throw deleteError;
+
+          // Luego insertar las nuevas
+          if (service.employeeIds && service.employeeIds.length > 0) {
+            const serviceEmployeeInserts = service.employeeIds.map(empId => ({
+              service_id: existing.id,
+              employee_id: empId,
+            }));
+            const { error: insertError } = await supabase
+              .from('service_employees')
+              .insert(serviceEmployeeInserts);
+
+            if (insertError) throw insertError;
+          }
+        } catch (relationError) {
+          // Rollback: volver a archivar el servicio
+          await supabase
+            .from('services')
+            .update({ archived: true })
+            .eq('id', existing.id);
+          
+          throw new Error('Error al actualizar relaciones de empleados del servicio');
+        }
+
+        return buildBusinessObject(businessId);
+      } else {
+        // Si ya existe y no está archivado, error
+        throw new Error(`Ya existe un servicio con el nombre "${service.name}"`);
+      }
+    }
+
+    // Si no existe, crear nuevo
     const { data, error } = await supabase.functions.invoke('admin-services', {
       body: {
         action: 'create',
@@ -763,7 +883,15 @@ export const supabaseBackend = {
         },
       },
     });
-    if (error || data?.error) throw new Error(error?.message || data?.error);
+    
+    if (error || data?.error) {
+      const errorMsg = error?.message || data?.error;
+      // Detectar unique constraint violation (código 23505)
+      if (errorMsg.includes('23505') || errorMsg.toLowerCase().includes('duplicate') || errorMsg.toLowerCase().includes('unique')) {
+        throw new Error(`Ya existe un servicio con el nombre "${service.name}"`);
+      }
+      throw new Error(errorMsg);
+    }
 
     return buildBusinessObject(businessId);
   },
@@ -805,27 +933,29 @@ export const supabaseBackend = {
     const businessId = cached?.businessId;
     if (!businessId) throw new Error('No business ID found');
 
-    // Validar que no tenga reservas futuras
+    // Validar que no tenga reservas futuras confirmadas o pendientes
     const today = new Date().toISOString().split('T')[0];
     const { data: futureBookings } = await supabase
       .from('booking_services')
-      .select('booking_id, bookings!inner(booking_date)')
+      .select('booking_id, bookings!inner(booking_date, status)')
       .eq('service_id', serviceId)
       .gte('bookings.booking_date', today)
+      .in('bookings.status', ['confirmed', 'pending'])
       .limit(1);
 
     if (futureBookings && futureBookings.length > 0) {
-      throw new Error('No se puede eliminar el servicio porque tiene reservas futuras.');
+      throw new Error('No se puede eliminar el servicio porque tiene reservas futuras confirmadas o pendientes.');
     }
 
-    // Eliminar service (CASCADE eliminará service_employees)
-    const { data, error } = await supabase.functions.invoke('admin-services', {
-      body: {
-        action: 'delete',
-        data: { id: serviceId },
-      },
-    });
-    if (error || data?.error) throw new Error(error?.message || data?.error);
+    // Soft delete: marcar como archived
+    const { error } = await supabase
+      .from('services')
+      .update({ archived: true })
+      .eq('id', serviceId);
+
+    if (error) {
+      throw new Error('Error al eliminar el servicio');
+    }
 
     return buildBusinessObject(businessId);
   },

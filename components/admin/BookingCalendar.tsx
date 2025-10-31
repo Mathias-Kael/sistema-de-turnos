@@ -35,6 +35,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ selectedDate, 
                         const dateStr = date.toISOString().split('T')[0];
                         const dayBookings = bookingsByDate[dateStr] || [];
                         const isSelected = isSameDay(date, selectedDate);
+                        
+                        // Verificar si la fecha es pasada
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const currentDate = new Date(date);
+                        currentDate.setHours(0, 0, 0, 0);
+                        const isPastDate = currentDate < today;
     
                         let priorityStatus: BookingStatus | null = null;
                         if (dayBookings.some(status => status === 'pending')) {
@@ -54,11 +61,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ selectedDate, 
                             <div key={dateStr} className="relative">
                                 <button
                                     onClick={() => onDateChange(date)}
-                                    className={`w-12 h-12 flex items-center justify-center rounded-full border-2 ${borderColorClass} ${isSelected ? 'bg-primary text-brand-text' : 'hover:bg-surface-hover'}`}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full border-2 ${borderColorClass} ${isSelected ? 'bg-primary text-brand-text' : 'hover:bg-surface-hover'} ${isPastDate ? 'opacity-50 cursor-default' : ''}`}
                                 >
                                     {date.getDate()}
                                 </button>
-                                <button onClick={() => onAddBooking(date)} className="absolute top-0 right-0 text-primary">+</button>
+                                {!isPastDate && (
+                                    <button onClick={() => onAddBooking(date)} className="absolute top-0 right-0 text-primary">+</button>
+                                )}
                             </div>
                         );
                     })}

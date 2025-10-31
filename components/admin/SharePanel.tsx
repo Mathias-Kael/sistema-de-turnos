@@ -31,14 +31,8 @@ export const SharePanel: React.FC = () => {
 
     // Derivar estado del token desde el business
     const hasToken = !!business.shareToken;
-    const tokenStatus = business.shareTokenStatus || 'active';
+    const tokenStatus = business.shareTokenStatus;
     const tokenExpiry = business.shareTokenExpiresAt;
-
-    console.log('🔍 SharePanel - business:', business);
-    console.log('🔍 SharePanel - shareToken:', business.shareToken);
-    console.log('🔍 SharePanel - hasToken:', hasToken);
-    console.log('🔍 SharePanel - tokenStatus:', tokenStatus);
-    console.log('🔍 SharePanel - tokenExpiry:', tokenExpiry);
 
     const derivedStatus: DerivedStatus | null = useMemo(() => {
         if (!hasToken) return null;
@@ -47,8 +41,6 @@ export const SharePanel: React.FC = () => {
         if (isExpired) return 'expired';
         return tokenStatus as LinkStatus;
     }, [hasToken, tokenStatus, tokenExpiry]);
-
-    console.log('🔍 SharePanel - derivedStatus:', derivedStatus);
 
     const shareableLink = hasToken ? `${window.location.origin}/?token=${business.shareToken}` : null;
 

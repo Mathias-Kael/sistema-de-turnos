@@ -145,6 +145,17 @@ export const ReservationsManager: React.FC = () => {
     };
 
     const openCreateModal = (date: Date) => {
+        // Validar que la fecha no sea pasada
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDateNormalized = new Date(date);
+        selectedDateNormalized.setHours(0, 0, 0, 0);
+        
+        if (selectedDateNormalized < today) {
+            setError('⚠️ No se pueden crear reservas en fechas pasadas');
+            return;
+        }
+        
         setDateForNewBooking(date);
         setIsCreating(true);
     };
@@ -162,6 +173,16 @@ export const ReservationsManager: React.FC = () => {
                     </button>
                     <button 
                         onClick={() => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const selectedDateNormalized = new Date(selectedDate);
+                            selectedDateNormalized.setHours(0, 0, 0, 0);
+                            
+                            if (selectedDateNormalized < today) {
+                                setError('⚠️ No se pueden crear reservas en fechas pasadas');
+                                return;
+                            }
+                            
                             setDateForNewBooking(selectedDate);
                             setIsCreatingSpecial(true);
                         }} 
@@ -171,6 +192,16 @@ export const ReservationsManager: React.FC = () => {
                     </button>
                     <button 
                         onClick={() => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const selectedDateNormalized = new Date(selectedDate);
+                            selectedDateNormalized.setHours(0, 0, 0, 0);
+                            
+                            if (selectedDateNormalized < today) {
+                                setError('⚠️ No se pueden crear breaks en fechas pasadas');
+                                return;
+                            }
+                            
                             setDateForNewBooking(selectedDate);
                             setIsCreatingBreak(true);
                         }} 
@@ -180,6 +211,14 @@ export const ReservationsManager: React.FC = () => {
                     </button>
                 </div>
             </div>
+            {error && (
+                <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span className="block sm:inline">{error}</span>
+                    <button onClick={() => setError(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3">
+                        <span className="text-2xl">&times;</span>
+                    </button>
+                </div>
+            )}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8">
                 <div className="md:col-span-1">
                      <BookingCalendar

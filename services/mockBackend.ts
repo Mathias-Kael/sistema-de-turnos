@@ -60,7 +60,12 @@ function saveState(data: Business) {
 export const mockBackend = {
     getBusinessData: async (): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
-        return state;
+        // Filtrar empleados y servicios archivados
+        return {
+            ...state,
+            employees: state.employees.filter(e => !e.archived),
+            services: state.services.filter(s => !s.archived)
+        };
     },
 
     /**
@@ -85,7 +90,12 @@ export const mockBackend = {
             if (isExpired) return null;
             if (link.status === 'revoked') return null;
             // status 'active' o 'paused' -> devolvemos el negocio actual
-            return state;
+            // Filtrar empleados y servicios archivados
+            return {
+                ...state,
+                employees: state.employees.filter(e => !e.archived),
+                services: state.services.filter(s => !s.archived)
+            };
         } catch (e) {
             console.error('[mockBackend.getBusinessByToken] Error parseando shareToken', e);
             return null;
@@ -123,6 +133,10 @@ export const mockBackend = {
 
             for (const day of changedDays) {
                 const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
+                // TODO: Bug conocido - validación de horarios con zona horaria
+                // La conversión de fecha puede fallar dependiendo de timezone
+                // Mejora sugerida: Mostrar warning al admin: 
+                // "Si cambia los horarios para el día [X], hay reservas que quedarán por fuera del nuevo horario. ¿Desea continuar de todas formas?"
                 const bookingsForDay = futureBookings.filter(b => new Date(b.date + 'T12:00:00Z').getDay() === dayIndex);
                 
                 if (bookingsForDay.length === 0) continue;
@@ -203,6 +217,31 @@ export const mockBackend = {
     addEmployee: async (employee: Employee): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         if (employee.businessId !== state.id) throw new Error('businessId del empleado no coincide');
+        
+        // Verificar si ya existe un empleado con el mismo nombre
+        const existing = state.employees.find(e => e.name.toLowerCase() === employee.name.toLowerCase());
+        
+        if (existing) {
+            if (existing.archived) {
+                // Si está archivado, desarchivarlo y actualizar
+                const updatedState = {
+                    ...state,
+                    employees: state.employees.map(e => 
+                        e.id === existing.id 
+                            ? { ...employee, id: existing.id, archived: false }
+                            : e
+                    )
+                };
+                state = updatedState;
+                saveState(state);
+                return state;
+            } else {
+                // Si ya existe y no está archivado, error
+                throw new Error(`Ya existe un empleado con el nombre "${employee.name}"`);
+            }
+        }
+        
+        // Si no existe, crear nuevo
         const updatedState = { ...state, employees: [...state.employees, employee] };
         state = updatedState;
         saveState(state);
@@ -220,17 +259,24 @@ export const mockBackend = {
     deleteEmployee: async (employeeId: string): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         const today = new Date().toISOString().split('T')[0];
-        const hasFutureBookings = state.bookings.some(b => b.employeeId === employeeId && b.date >= today);
-        if (hasFutureBookings) {
-            throw new Error(`No se puede eliminar el empleado porque tiene reservas futuras.`);
+        
+        // Validar que no tenga reservas futuras confirmadas o pendientes
+        const hasFutureActiveBookings = state.bookings.some(
+            b => b.employeeId === employeeId && 
+                 b.date >= today && 
+                 (b.status === 'confirmed' || b.status === 'pending')
+        );
+        
+        if (hasFutureActiveBookings) {
+            throw new Error('No se puede eliminar el empleado porque tiene reservas futuras confirmadas o pendientes.');
         }
+        
+        // Soft delete: marcar como archived
         const updatedState = {
             ...state,
-            employees: state.employees.filter(emp => emp.id !== employeeId),
-            services: state.services.map(service => ({
-                ...service,
-                employeeIds: service.employeeIds.filter(id => id !== employeeId)
-            }))
+            employees: state.employees.map(emp => 
+                emp.id === employeeId ? { ...emp, archived: true } : emp
+            )
         };
         state = updatedState;
         saveState(state);
@@ -240,6 +286,36 @@ export const mockBackend = {
     addService: async (service: Service): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         if (service.businessId !== state.id) throw new Error('businessId del servicio no coincide');
+        
+        // Validar que el servicio tenga al menos un empleado asignado
+        if (!service.employeeIds || service.employeeIds.length === 0) {
+            throw new Error('El servicio debe tener al menos un empleado asignado');
+        }
+        
+        // Verificar si ya existe un servicio con el mismo nombre
+        const existing = state.services.find(s => s.name.toLowerCase() === service.name.toLowerCase());
+        
+        if (existing) {
+            if (existing.archived) {
+                // Si está archivado, desarchivarlo y actualizar
+                const updatedState = {
+                    ...state,
+                    services: state.services.map(s => 
+                        s.id === existing.id 
+                            ? { ...service, id: existing.id, archived: false }
+                            : s
+                    )
+                };
+                state = updatedState;
+                saveState(state);
+                return state;
+            } else {
+                // Si ya existe y no está archivado, error
+                throw new Error(`Ya existe un servicio con el nombre "${service.name}"`);
+            }
+        }
+        
+        // Si no existe, crear nuevo
         const updatedState = { ...state, services: [...state.services, service] };
         state = updatedState;
         saveState(state);
@@ -257,11 +333,25 @@ export const mockBackend = {
     deleteService: async (serviceId: string): Promise<Business> => {
         await new Promise(resolve => setTimeout(resolve, 100));
         const today = new Date().toISOString().split('T')[0];
-        const hasFutureBookings = state.bookings.some(b => b.date >= today && b.services.some(s => s.id === serviceId));
-        if (hasFutureBookings) {
-            throw new Error(`No se puede eliminar el servicio porque tiene reservas futuras.`);
+        
+        // Validar que no tenga reservas futuras confirmadas o pendientes
+        const hasFutureActiveBookings = state.bookings.some(
+            b => b.date >= today && 
+                 (b.status === 'confirmed' || b.status === 'pending') &&
+                 b.services.some(s => s.id === serviceId)
+        );
+        
+        if (hasFutureActiveBookings) {
+            throw new Error('No se puede eliminar el servicio porque tiene reservas futuras confirmadas o pendientes.');
         }
-        const updatedState = { ...state, services: state.services.filter(s => s.id !== serviceId) };
+        
+        // Soft delete: marcar como archived
+        const updatedState = {
+            ...state,
+            services: state.services.map(s => 
+                s.id === serviceId ? { ...s, archived: true } : s
+            )
+        };
         state = updatedState;
         saveState(state);
         return state;

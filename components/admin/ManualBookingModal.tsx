@@ -58,6 +58,17 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
             return;
         }
 
+        // Validar que la fecha no sea pasada
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingDate = new Date(selectedDate);
+        bookingDate.setHours(0, 0, 0, 0);
+        
+        if (bookingDate < today) {
+            alert("⚠️ No se pueden crear reservas en fechas pasadas");
+            return;
+        }
+
         const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration + s.buffer, 0);
 
         let finalEmployeeId = selectedEmployeeId;

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
 import { Branding } from '../../types';
 import { adjustColorForDarkMode } from '../../utils/colors';
+import { logger } from '../../utils/logger';
 
 /**
  * A component that injects dynamic branding styles into the document head.
@@ -21,15 +22,15 @@ export const StyleInjector: React.FC<StyleInjectorProps> = ({ brandingOverride }
 
     // Defensive programming: validate branding structure
     useEffect(() => {
-        console.log('[StyleInjector] Branding received:', JSON.stringify(branding, null, 2));
+        logger.debug('[StyleInjector] Branding received:', branding);
         
         if (!branding) {
-            console.error('[StyleInjector] Branding is undefined!');
+            logger.error('[StyleInjector] Branding is undefined!');
         } else {
-            if (!branding.primaryColor) console.warn('[StyleInjector] Missing primaryColor');
-            if (!branding.secondaryColor) console.warn('[StyleInjector] Missing secondaryColor');
-            if (!branding.textColor) console.warn('[StyleInjector] Missing textColor');
-            if (!branding.font) console.warn('[StyleInjector] Missing font');
+            if (!branding.primaryColor) logger.warn('[StyleInjector] Missing primaryColor');
+            if (!branding.secondaryColor) logger.warn('[StyleInjector] Missing secondaryColor');
+            if (!branding.textColor) logger.warn('[StyleInjector] Missing textColor');
+            if (!branding.font) logger.warn('[StyleInjector] Missing font');
         }
     }, [branding]);
 

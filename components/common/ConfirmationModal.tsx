@@ -62,7 +62,6 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             let finalEmployeeId = employeeId;
             
             if (employeeId === 'any') {
-                console.log('[DEBUG] Business object in ConfirmationModal before finding employee:', JSON.stringify(business, null, 2));
                 const availableEmployee = findAvailableEmployeeForSlot(date, slot, totalDuration, selectedServices, business);
                 if (availableEmployee) {
                     finalEmployeeId = availableEmployee.id;
