@@ -309,11 +309,13 @@ serve(async (req) => {
       supabaseAdmin
         .from('employees')
         .select('id, business_id, name, avatar_url, whatsapp, hours')
-        .eq('business_id', business.id),
+        .eq('business_id', business.id)
+        .eq('archived', false),
       supabaseAdmin
         .from('services')
         .select('id, business_id, name, description, duration, buffer, price, requires_deposit')
-        .eq('business_id', business.id),
+        .eq('business_id', business.id)
+        .eq('archived', false),
       supabaseAdmin
         .from('bookings')
         .select('id, business_id, employee_id, client_name, client_email, client_phone, booking_date, start_time, end_time, status, notes, archived')
