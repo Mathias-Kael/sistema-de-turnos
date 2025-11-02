@@ -6,6 +6,7 @@ import { EmployeesEditor } from '../admin/EmployeesEditor';
 import { SharePanel } from '../admin/SharePanel';
 import { ReservationsManager } from '../admin/ReservationsManager';
 import { ClientList } from '../admin/ClientList';
+import { CategoryManager } from '../admin/CategoryManager';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { ClientView } from './ClientView';
 import { HeroSection } from '../common/HeroSection';
@@ -15,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'services' | 'equipo' | 'hours' | 'share' | 'reservations' | 'clients' | 'preview' | 'branding';
+type Tab = 'services' | 'categories' | 'equipo' | 'hours' | 'share' | 'reservations' | 'clients' | 'preview' | 'branding';
 
 export const AdminView: React.FC = () => {
     const navigate = useNavigate();
@@ -25,6 +26,7 @@ export const AdminView: React.FC = () => {
     const dispatch = useBusinessDispatch();
     const tabs: { id: Tab; label: string }[] = [
         { id: 'services', label: 'Servicios' },
+        { id: 'categories', label: 'Categorías' },
         { id: 'equipo', label: 'Equipo' },
         { id: 'hours', label: 'Horarios' },
         { id: 'reservations', label: 'Reservas' },
@@ -70,6 +72,8 @@ export const AdminView: React.FC = () => {
                 return <BrandingEditor />;
             case 'services':
                 return <ServicesEditor />;
+            case 'categories':
+                return <CategoryManager />;
             case 'equipo':
                 return <EmployeesEditor />;
             case 'hours':

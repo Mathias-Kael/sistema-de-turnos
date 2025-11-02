@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, useEffect, useState, useMemo, useRef } from 'react';
-import { Business, Service, Branding, Hours, Employee, Booking } from '../types';
+import { Business, Service, Branding, Hours, Employee, Booking, Category } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
 import { mockBackendTest } from '../services/mockBackend.e2e';
@@ -26,7 +26,11 @@ type Action =
     | { type: 'DELETE_BOOKING'; payload: string }
     | { type: 'SET_COVER_IMAGE'; payload: string }
     | { type: 'SET_PROFILE_IMAGE'; payload: string }
-    | { type: 'UPDATE_SHARE_TOKEN'; payload: { shareToken: string; shareTokenStatus: string; shareTokenExpiresAt: string | null } };
+    | { type: 'UPDATE_SHARE_TOKEN'; payload: { shareToken: string; shareTokenStatus: string; shareTokenExpiresAt: string | null } }
+    | { type: 'CREATE_CATEGORY'; payload: { name: string; icon: import('../types').CategoryIcon } }
+    | { type: 'UPDATE_CATEGORY'; payload: { categoryId: string; name: string; icon: import('../types').CategoryIcon } }
+    | { type: 'DELETE_CATEGORY'; payload: string }
+    | { type: 'UPDATE_SERVICE_CATEGORIES'; payload: { serviceId: string; categoryIds: string[] } };
 
 // --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -38,6 +42,17 @@ const businessReducer = (state: Business, action: Action): Business => {
         case 'HYDRATE_STATE':
         case 'UPDATE_BUSINESS':
             return action.payload;
+        
+        case 'UPDATE_SERVICE_CATEGORIES':
+            return {
+                ...state,
+                services: state.services.map(service =>
+                    service.id === action.payload.serviceId
+                        ? { ...service, categoryIds: action.payload.categoryIds }
+                        : service
+                ),
+            };
+
         default:
             return state;
     }
@@ -198,14 +213,39 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     break;
                 case 'UPDATE_SHARE_TOKEN':
                     {
-                        const updatedWithToken = { 
-                            ...currentState, 
+                        const updatedWithToken = {
+                            ...currentState,
                             shareToken: action.payload.shareToken,
-                            shareTokenStatus: action.payload.shareTokenStatus,
-                            shareTokenExpiresAt: action.payload.shareTokenExpiresAt
+                            shareTokenStatus: action.payload.shareTokenStatus as 'active' | 'paused' | 'revoked',
+                            shareTokenExpiresAt: action.payload.shareTokenExpiresAt,
                         };
                         const savedWithToken = await backend.updateBusinessData(updatedWithToken);
                         dispatch({ type: 'UPDATE_BUSINESS', payload: savedWithToken });
+                    }
+                    break;
+                case 'CREATE_CATEGORY':
+                    const updatedBusinessAfterCreateCategory = await backend.createCategory(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterCreateCategory });
+                    break;
+                case 'UPDATE_CATEGORY':
+                    const updatedBusinessAfterUpdateCategory = await backend.updateCategory(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterUpdateCategory });
+                    break;
+                case 'DELETE_CATEGORY':
+                    const updatedBusinessAfterDeleteCategory = await backend.deleteCategory(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterDeleteCategory });
+                    break;
+                case 'UPDATE_SERVICE_CATEGORIES':
+                    {
+                        const { serviceId, categoryIds } = action.payload;
+                        // Llamada a la nueva función del backend
+                        const updatedCategoryIds = await backend.updateServiceCategories(serviceId, categoryIds);
+                        
+                        // Actualización optimista del estado local usando el reducer
+                        dispatch({
+                            type: 'UPDATE_SERVICE_CATEGORIES',
+                            payload: { serviceId, categoryIds: updatedCategoryIds },
+                        });
                     }
                     break;
                 default:

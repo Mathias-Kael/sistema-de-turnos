@@ -227,7 +227,90 @@ export const mockBackendTest = {
       return INITIAL_BUSINESS_DATA;
     })();
     ensureBusinessIds();
-  }
+  },
+
+  // ===== CATEGORIES CRUD =====
+  createCategory: async (payload: { name: string; icon: import('../types').CategoryIcon }): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    // Validar que no exista una categoría con el mismo nombre
+    const exists = state.categories.some(c => c.name.toLowerCase() === payload.name.toLowerCase());
+    if (exists) {
+      throw new Error(`Ya existe una categoría con el nombre "${payload.name}"`);
+    }
+
+    const newCategory = {
+      id: `cat_${Date.now()}`,
+      businessId: state.id,
+      name: payload.name.trim(),
+      icon: payload.icon,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    state.categories.push(newCategory);
+    persist();
+    return state;
+  },
+
+  updateCategory: async (payload: { categoryId: string; name: string; icon: import('../types').CategoryIcon }): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    const index = state.categories.findIndex(c => c.id === payload.categoryId);
+    if (index === -1) {
+      throw new Error('Categoría no encontrada');
+    }
+
+    // Validar que no exista otra categoría con el mismo nombre
+    const exists = state.categories.some(c => c.id !== payload.categoryId && c.name.toLowerCase() === payload.name.toLowerCase());
+    if (exists) {
+      throw new Error(`Ya existe una categoría con el nombre "${payload.name}"`);
+    }
+
+    state.categories[index] = {
+      ...state.categories[index],
+      name: payload.name.trim(),
+      icon: payload.icon,
+      updatedAt: new Date().toISOString(),
+    };
+
+    persist();
+    return state;
+  },
+
+  deleteCategory: async (categoryId: string): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    state.categories = state.categories.filter(c => c.id !== categoryId);
+    
+    // Eliminar relaciones en servicios
+    state.services = state.services.map(s => ({
+      ...s,
+      categoryIds: s.categoryIds?.filter(id => id !== categoryId),
+    }));
+
+    persist();
+    return state;
+  },
+
+  updateServiceCategories: async (serviceId: string, categoryIds: string[]): Promise<string[]> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    const serviceIndex = state.services.findIndex(s => s.id === serviceId);
+    if (serviceIndex === -1) {
+      throw new Error('Servicio no encontrado');
+    }
+
+    // Simula la actualización de categorías para el servicio
+    state.services[serviceIndex] = {
+      ...state.services[serviceIndex],
+      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+    };
+
+    persist();
+    // Devuelve los IDs actualizados, tal como lo hace el backend real
+    return categoryIds;
+  },
 };
 
 // Utilidad para tests que necesiten resetear completamente el estado in-memory

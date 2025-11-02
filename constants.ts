@@ -30,6 +30,7 @@ export const INITIAL_BUSINESS_DATA: Business = {
     },
     employees: [],
     services: [],
+    categories: [], // Inicializar con array vacío de categorías
     hours: { ...DEFAULT_HOURS_TEMPLATE },
     bookings: MOCK_BOOKINGS, // Inicializar con las reservas mock
 };

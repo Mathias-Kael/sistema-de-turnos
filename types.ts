@@ -27,7 +27,38 @@ export interface Service {
   price: number;
   requiresDeposit?: boolean;
   employeeIds: string[];
+  categoryIds?: string[]; // Categorías a las que pertenece este servicio
   archived?: boolean; // Soft delete flag
+}
+
+// Category Icons - Iconos que se ven bien en SVG
+export type CategoryIcon = 
+  | 'none'            // Sin ícono (por defecto)
+  | 'star'            // ⭐ Premium/Destacado
+  | 'trophy'          // 🏆 Deportes/Competencias
+  | 'heart'           // 💆 Spa/Masajes/Favoritos
+  | 'home'            // � Salones/Espacios
+  | 'cake'            // 🎂 Eventos/Celebraciones
+  | 'calendar'        // 📅 Reservas/Agendamiento
+  | 'eye'             // 👁️ Pestañas/Cejas
+  | 'brush'           // � Maquillaje/Belleza
+  | 'academic'        // � Educación/Cursos
+  | 'briefcase'       // 💼 Profesional/Negocios
+  | 'music';          // � Música/Entretenimiento
+
+export interface Category {
+  id: string;
+  businessId: string;
+  name: string;
+  icon?: CategoryIcon; // Ícono visual para la categoría
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ServiceCategory {
+  serviceId: string;
+  categoryId: string;
+  createdAt?: string;
 }
 
 export interface Interval {
@@ -64,6 +95,7 @@ export interface Business {
   branding: Branding;
   employees: Employee[];
   services: Service[];
+  categories: Category[]; // Categorías del negocio
   hours: Hours;
   bookings: Booking[]; // Añadido para gestionar reservas en el contexto
   // Public share link fields (multi-tenant public access)

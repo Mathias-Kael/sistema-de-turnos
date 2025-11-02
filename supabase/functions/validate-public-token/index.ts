@@ -83,6 +83,20 @@ type ServiceEmployeeRow = {
   employee_id: string;
 };
 
+type CategoryRow = {
+  id: string;
+  business_id: string;
+  name: string;
+  icon: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ServiceCategoryRow = {
+  service_id: string;
+  category_id: string;
+};
+
 interface ValidateTokenRequest {
   token?: string;
 }
@@ -114,7 +128,9 @@ function transformBusiness(
   services: ServiceRow[] | null,
   serviceEmployees: ServiceEmployeeRow[] | null,
   bookings: BookingRow[] | null,
-  bookingServices: BookingServiceRow[] | null
+  bookingServices: BookingServiceRow[] | null,
+  categories: CategoryRow[] | null,
+  serviceCategories: ServiceCategoryRow[] | null
 ) {
   const employeesSafe = (employees ?? []).map((emp) => ({
     id: emp.id,
@@ -133,17 +149,30 @@ function transformBusiness(
     serviceEmployeeMap.get(rel.service_id)!.push(rel.employee_id);
   }
 
-  const servicesSafe = (services ?? []).map((svc) => ({
-    id: svc.id,
-    businessId: svc.business_id,
-    name: svc.name,
-    description: svc.description ?? '',
-    duration: svc.duration,
-    buffer: svc.buffer ?? 0,
-    price: Number(svc.price ?? 0),
-    requiresDeposit: Boolean(svc.requires_deposit ?? false),
-    employeeIds: serviceEmployeeMap.get(svc.id) ?? [],
-  }));
+  // Map de categoryIds por serviceId
+  const serviceCategoryMap = new Map<string, string[]>();
+  for (const rel of serviceCategories ?? []) {
+    if (!serviceCategoryMap.has(rel.service_id)) {
+      serviceCategoryMap.set(rel.service_id, []);
+    }
+    serviceCategoryMap.get(rel.service_id)!.push(rel.category_id);
+  }
+
+  const servicesSafe = (services ?? []).map((svc) => {
+    const categoryIds = serviceCategoryMap.get(svc.id) ?? [];
+    return {
+      id: svc.id,
+      businessId: svc.business_id,
+      name: svc.name,
+      description: svc.description ?? '',
+      duration: svc.duration,
+      buffer: svc.buffer ?? 0,
+      price: Number(svc.price ?? 0),
+      requiresDeposit: Boolean(svc.requires_deposit ?? false),
+      employeeIds: serviceEmployeeMap.get(svc.id) ?? [],
+      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+    };
+  });
 
   const serviceMeta = new Map(
     servicesSafe.map((svc) => [svc.id, { name: svc.name, price: svc.price }])
@@ -191,6 +220,15 @@ function transformBusiness(
       };
     });
 
+  const categoriesSafe = (categories ?? []).map((cat) => ({
+    id: cat.id,
+    businessId: cat.business_id,
+    name: cat.name,
+    icon: cat.icon ?? undefined,
+    createdAt: cat.created_at,
+    updatedAt: cat.updated_at,
+  }));
+
   return {
     id: business.id,
     name: business.name,
@@ -208,6 +246,7 @@ function transformBusiness(
     shareTokenExpiresAt: business.share_token_expires_at,
     employees: employeesSafe,
     services: servicesSafe,
+    categories: categoriesSafe,
     bookings: bookingsSafe,
   };
 }
@@ -305,7 +344,7 @@ serve(async (req) => {
       }
     }
 
-    const [employeesRes, servicesRes, bookingsRes] = await Promise.all([
+    const [employeesRes, servicesRes, bookingsRes, categoriesRes] = await Promise.all([
       supabaseAdmin
         .from('employees')
         .select('id, business_id, name, avatar_url, whatsapp, hours')
@@ -320,15 +359,27 @@ serve(async (req) => {
         .from('bookings')
         .select('id, business_id, employee_id, client_name, client_email, client_phone, booking_date, start_time, end_time, status, notes, archived')
         .eq('business_id', business.id),
+      supabaseAdmin
+        .from('categories')
+        .select('id, business_id, name, icon, created_at, updated_at')
+        .eq('business_id', business.id),
     ]);
 
     const serviceIds = (servicesRes.data ?? []).map((svc: { id: string }) => svc.id);
-    const serviceEmployeesRes = serviceIds.length
-      ? await supabaseAdmin
-          .from('service_employees')
-          .select('service_id, employee_id')
-          .in('service_id', serviceIds)
-      : { data: [] };
+    const [serviceEmployeesRes, serviceCategoriesRes] = await Promise.all([
+      serviceIds.length
+        ? supabaseAdmin
+            .from('service_employees')
+            .select('service_id, employee_id')
+            .in('service_id', serviceIds)
+        : { data: [] },
+      serviceIds.length
+        ? supabaseAdmin
+            .from('service_categories')
+            .select('service_id, category_id')
+            .in('service_id', serviceIds)
+        : { data: [] },
+    ]);
 
     const bookingIds = (bookingsRes.data ?? [])
       .filter((b) => !b.archived)
@@ -347,7 +398,9 @@ serve(async (req) => {
       servicesRes.data ?? [],
       serviceEmployeesRes.data ?? [],
       bookingsRes.data ?? [],
-      bookingServicesRes.data ?? []
+      bookingServicesRes.data ?? [],
+      categoriesRes.data ?? [],
+      serviceCategoriesRes.data ?? []
     );
 
     return success({ business: businessPayload });

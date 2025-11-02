@@ -74,6 +74,25 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
     return { data: res.data, error: res.error };
   }, { operationName: 'get-services', userMessage: 'No se pudieron cargar servicios.' })) || [];
 
+  // 3.5. Obtener categorías y relaciones service_categories
+  const categoriesData = (await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('categories')
+      .select('*')
+      .eq('business_id', businessId);
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-categories', userMessage: 'No se pudieron cargar categorías.' })) || [];
+
+  // Obtener solo service_categories de servicios de este negocio
+  const serviceIds = (servicesData || []).map((s: any) => s.id);
+  const serviceCategoriesData = serviceIds.length > 0 ? (await withRetryOrThrow(async () => {
+    const res = await supabase
+      .from('service_categories')
+      .select('*')
+      .in('service_id', serviceIds);
+    return { data: res.data, error: res.error };
+  }, { operationName: 'get-service-categories', userMessage: 'No se pudieron cargar relaciones de categorías.' })) || [] : [];
+
   // 4. Obtener bookings con sus services
   // IMPORTANTE: Usar LEFT JOIN (!left) para incluir breaks sin servicios
   const bookingsData = (await withRetryOrThrow(async () => {
@@ -87,6 +106,17 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
       .eq('archived', false);
     return { data: res.data, error: res.error };
   }, { operationName: 'get-bookings', userMessage: 'No se pudieron cargar reservas.' })) || [];
+
+  // OPTIMIZACIÓN: Pre-calcular mapa de categorías por servicio para lookup O(1)
+  const serviceCategoryMap = new Map<string, string[]>();
+  if (serviceCategoriesData.length > 0) {
+    serviceCategoriesData.forEach((sc: any) => {
+      if (!serviceCategoryMap.has(sc.service_id)) {
+        serviceCategoryMap.set(sc.service_id, []);
+      }
+      serviceCategoryMap.get(sc.service_id)!.push(sc.category_id);
+    });
+  }
 
   // Construir objeto Business
   const business: Business = {
@@ -112,16 +142,28 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
       whatsapp: e.whatsapp,
       hours: e.hours as Hours,
     })),
-    services: (servicesData || []).map(s => ({
-      id: s.id,
-      businessId: s.business_id,
-      name: s.name,
-      description: s.description || '',
-      duration: s.duration,
-      buffer: s.buffer || 0,
-      price: parseFloat(s.price),
-      requiresDeposit: s.requires_deposit || false,
-      employeeIds: s.service_employees.map((se: any) => se.employee_id),
+    services: (servicesData || []).map(s => {
+      const categoryIds = serviceCategoryMap.get(s.id);
+      return {
+        id: s.id,
+        businessId: s.business_id,
+        name: s.name,
+        description: s.description || '',
+        duration: s.duration,
+        buffer: s.buffer || 0,
+        price: parseFloat(s.price),
+        requiresDeposit: s.requires_deposit || false,
+        employeeIds: s.service_employees.map((se: any) => se.employee_id),
+        categoryIds: categoryIds && categoryIds.length > 0 ? categoryIds : undefined,
+      };
+    }),
+    categories: (categoriesData || []).map(c => ({
+      id: c.id,
+      businessId: c.business_id,
+      name: c.name,
+      icon: c.icon as import('../types').CategoryIcon | undefined,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
     })),
     bookings: (bookingsData || []).map(b => ({
       id: b.id,
@@ -1224,5 +1266,155 @@ export const supabaseBackend = {
   loadDataForTests: () => {
     // No-op para compatibilidad con tests
   logger.debug('loadDataForTests: Not needed with Supabase');
+  },
+
+  // ===== CATEGORIES CRUD =====
+
+  /**
+   * Crear una nueva categoría
+   */
+  createCategory: async (payload: { name: string; icon: import('../types').CategoryIcon }): Promise<Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
+    if (!businessId) throw new Error('No business ID found');
+
+    // Validar que no exista una categoría con el mismo nombre
+    const { data: existingCategories } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('business_id', businessId)
+      .ilike('name', payload.name)
+      .limit(1);
+
+    if (existingCategories && existingCategories.length > 0) {
+      throw new Error(`Ya existe una categoría con el nombre "${payload.name}"`);
+    }
+
+    // Crear categoría
+    const { error } = await supabase
+      .from('categories')
+      .insert({
+        business_id: businessId,
+        name: payload.name.trim(),
+        icon: payload.icon,
+      });
+
+    if (error) {
+      logger.error('Error creating category:', error);
+      throw new Error('Error al crear la categoría');
+    }
+
+    return buildBusinessObject(businessId);
+  },
+
+  /**
+   * Actualizar una categoría
+   */
+  updateCategory: async (payload: { categoryId: string; name: string; icon: import('../types').CategoryIcon }): Promise<Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
+    if (!businessId) throw new Error('No business ID found');
+
+    // Validar que no exista otra categoría con el mismo nombre
+    const { data: existingCategories } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('business_id', businessId)
+      .ilike('name', payload.name)
+      .neq('id', payload.categoryId)
+      .limit(1);
+
+    if (existingCategories && existingCategories.length > 0) {
+      throw new Error(`Ya existe una categoría con el nombre "${payload.name}"`);
+    }
+
+    // Actualizar categoría
+    const { error } = await supabase
+      .from('categories')
+      .update({
+        name: payload.name.trim(),
+        icon: payload.icon,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payload.categoryId);
+
+    if (error) {
+      logger.error('Error updating category:', error);
+      throw new Error('Error al actualizar la categoría');
+    }
+
+    return buildBusinessObject(businessId);
+  },
+
+  /**
+   * Eliminar una categoría
+   * Las relaciones en service_categories se eliminan automáticamente por cascada
+   */
+  deleteCategory: async (categoryId: string): Promise<Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
+    if (!businessId) throw new Error('No business ID found');
+
+    // Eliminar categoría (las relaciones se eliminan por cascada)
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) {
+      logger.error('Error deleting category:', error);
+      throw new Error('Error al eliminar la categoría');
+    }
+
+    return buildBusinessObject(businessId);
+  },
+
+  /**
+   * Actualiza en lote las categorías de un servicio específico.
+   * Elimina todas las relaciones existentes y crea las nuevas.
+   * Retorna los categoryIds actualizados para ese servicio.
+   */
+  updateServiceCategories: async (serviceId: string, categoryIds: string[]): Promise<string[]> => {
+    // 1. Eliminar todas las categorías existentes para este servicio
+    const { error: deleteError } = await supabase
+      .from('service_categories')
+      .delete()
+      .eq('service_id', serviceId);
+
+    if (deleteError) {
+      logger.error('Error deleting existing service categories:', deleteError);
+      throw new Error('Error al actualizar las categorías del servicio.');
+    }
+
+    // 2. Insertar las nuevas relaciones si hay alguna
+    if (categoryIds.length > 0) {
+      const newRelations = categoryIds.map(categoryId => ({
+        service_id: serviceId,
+        category_id: categoryId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('service_categories')
+        .insert(newRelations);
+
+      if (insertError) {
+        logger.error('Error inserting new service categories:', insertError);
+        // NOTA: En un escenario real, aquí se debería implementar un rollback de la eliminación.
+        // Por simplicidad, lanzamos el error. El servicio quedará sin categorías.
+        throw new Error('Error al asignar las nuevas categorías al servicio.');
+      }
+    }
+
+    // 3. Retornar el nuevo array de IDs para la actualización de estado local
+    return categoryIds;
   },
 };

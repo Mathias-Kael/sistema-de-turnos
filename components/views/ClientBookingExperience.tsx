@@ -63,6 +63,7 @@ export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = (
             selectedServices={selectedServices}
             onServiceChange={handleServiceChange}
             services={business.services}
+            categories={business.categories}
           />
         </section>
         {selectedServices.length > 0 && (
