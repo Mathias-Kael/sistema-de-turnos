@@ -237,7 +237,14 @@ export const ServicesEditor: React.FC = () => {
                 {business.services.map(service => (
                     <div key={service.id} className="p-4 border border-default rounded-md space-y-3 bg-surface">
                         <div className="flex justify-between items-start">
-                            <input type="text" defaultValue={service.name} onBlur={(e) => handleServiceChange(service.id, 'name', e.target.value)} className="text-md font-semibold border-b border-transparent focus:border-b-primary w-full focus:outline-none bg-surface text-primary" />
+                            <div className="flex-1 flex items-center gap-2">
+                                <input type="text" defaultValue={service.name} onBlur={(e) => handleServiceChange(service.id, 'name', e.target.value)} className="text-md font-semibold border-b border-transparent focus:border-b-primary w-full focus:outline-none bg-surface text-primary" />
+                                {pendingCategoryChanges[service.id] && (
+                                    <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                        Sin guardar
+                                    </span>
+                                )}
+                            </div>
                             <button onClick={() => handleDeleteService(service.id)} className="text-state-danger-text hover:text-state-danger-strong ml-4 p-1 rounded-full hover:bg-state-danger-bg transition-colors" aria-label="Eliminar servicio">&#x1F5D1;</button>
                         </div>
                         <textarea defaultValue={service.description} onBlur={(e) => handleServiceChange(service.id, 'description', e.target.value)} className="w-full text-sm text-secondary border border-default rounded-md p-2 focus:ring-primary focus:border-primary bg-surface" rows={2}></textarea>
@@ -297,14 +304,36 @@ export const ServicesEditor: React.FC = () => {
                                     })}
                                 </div>
                                 {pendingCategoryChanges[service.id] && (
-                                    <div className="mt-3">
-                                        <Button
-                                            onClick={() => handleSaveChanges(service.id)}
-                                            variant="primary"
-                                            size="sm"
-                                        >
-                                            Guardar Cambios de Categoría
-                                        </Button>
+                                    <div className="mt-3 flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-yellow-800">
+                                                ⚠️ Cambios sin guardar
+                                            </p>
+                                            <p className="text-xs text-yellow-600 mt-0.5">
+                                                Haz clic en "Guardar" para aplicar los cambios de categoría
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                onClick={() => {
+                                                    setPendingCategoryChanges(prev => {
+                                                        const { [service.id]: _, ...rest } = prev;
+                                                        return rest;
+                                                    });
+                                                }}
+                                                variant="ghost"
+                                                size="sm"
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleSaveChanges(service.id)}
+                                                variant="primary"
+                                                size="sm"
+                                            >
+                                                Guardar
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
