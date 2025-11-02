@@ -25,9 +25,12 @@ export const ServicesEditor: React.FC = () => {
     const [isAdding, setIsAdding] = useState(false);
     const [newService, setNewService] = useState(newServiceTemplate);
     const [newServiceAssignedEmployeeIds, setNewServiceAssignedEmployeeIds] = useState<string[]>([]); // Nuevo estado
-    const [newServiceCategoryIds, setNewServiceCategoryIds] = useState<string[]>([]); // Estado para categorías
-    const [editingServiceAssignment, setEditingServiceAssignment] = useState<Service | null>(null);
+    // Para alta de nuevo servicio: solo una categoría activa
+    const [newServiceCategoryId, setNewServiceCategoryId] = useState<string | null>(null);
+    // Estado de error local
     const [error, setError] = useState<string | null>(null);
+    const [editingServiceAssignment, setEditingServiceAssignment] = useState<Service | null>(null);
+    // (Eliminado: declaración duplicada)
 
     // Estado para cambios de categoría pendientes
     const [pendingCategoryChanges, setPendingCategoryChanges] = useState<Record<string, string[]>>({});
@@ -44,24 +47,25 @@ export const ServicesEditor: React.FC = () => {
         }
     };
 
+    // Solo una categoría activa por servicio (radio/toggle)
     const handleToggleCategory = (serviceId: string, categoryId: string) => {
         setPendingCategoryChanges(prev => {
             const currentAssigned = business.services.find(s => s.id === serviceId)?.categoryIds || [];
             const currentChanges = prev[serviceId] ?? currentAssigned;
-            
-            const newChanges = currentChanges.includes(categoryId)
-                ? currentChanges.filter(id => id !== categoryId)
-                : [...currentChanges, categoryId];
-
-            return { ...prev, [serviceId]: newChanges };
+            const isSelected = currentChanges.length === 1 && currentChanges[0] === categoryId;
+            // Si ya está seleccionada, deselecciona todas
+            if (isSelected) {
+                return { ...prev, [serviceId]: [] };
+            }
+            // Si no, selecciona solo esa
+            return { ...prev, [serviceId]: [categoryId] };
         });
     };
 
     const handleSaveChanges = async (serviceId: string) => {
         setError(null);
         const newCategoryIds = pendingCategoryChanges[serviceId];
-        if (!newCategoryIds) return;
-
+    if (!newCategoryIds) return;
         try {
             await dispatch({
                 type: 'UPDATE_SERVICE_CATEGORIES',
@@ -92,14 +96,14 @@ export const ServicesEditor: React.FC = () => {
             businessId: business.id,
             ...newService,
             employeeIds: newServiceAssignedEmployeeIds,
-            categoryIds: newServiceCategoryIds.length > 0 ? newServiceCategoryIds : undefined,
+            categoryIds: newServiceCategoryId ? [newServiceCategoryId] : undefined,
         };
         try {
             await dispatch({ type: 'ADD_SERVICE', payload: serviceToAdd });
             setIsAdding(false);
             setNewService(newServiceTemplate);
             setNewServiceAssignedEmployeeIds([]); // Reiniciar el estado
-            setNewServiceCategoryIds([]); // Reiniciar categorías
+            setNewServiceCategoryId(null); // Reiniciar categoría
         } catch (e: any) {
             setError(e.message);
         }
@@ -124,7 +128,7 @@ export const ServicesEditor: React.FC = () => {
                     setIsAdding(!isAdding);
                     setNewService(newServiceTemplate); // Resetear el formulario al cancelar
                     setNewServiceAssignedEmployeeIds([]); // Resetear los empleados asignados
-                    setNewServiceCategoryIds([]); // Resetear categorías
+                    setNewServiceCategoryId(null); // Resetear categoría
                 }} variant={isAdding ? 'secondary' : 'primary'} className="w-full sm:w-auto">
                     {isAdding ? 'Cancelar' : 'Añadir Servicio'}
                 </Button>
@@ -200,25 +204,19 @@ export const ServicesEditor: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Sección de asignación de categorías para nuevo servicio */}
+                    {/* Sección de asignación de categorías para nuevo servicio (radio/toggle) */}
                     {business.categories.length > 0 && (
                         <div className="border border-default p-4 rounded-md bg-background">
-                            <h5 className="font-semibold text-primary mb-2">Asignar a Categorías (opcional)</h5>
+                            <h5 className="font-semibold text-primary mb-2">Asignar a Categoría (solo una)</h5>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {business.categories.map(category => (
                                     <div key={category.id} className="flex items-center p-2 border border-default rounded-md bg-surface">
                                         <input
-                                            type="checkbox"
+                                            type="radio"
                                             id={`new-service-category-${category.id}`}
-                                            checked={newServiceCategoryIds.includes(category.id)}
+                                            checked={newServiceCategoryId === category.id}
                                             onChange={() => {
-                                                setNewServiceCategoryIds(prevIds => {
-                                                    if (prevIds.includes(category.id)) {
-                                                        return prevIds.filter(id => id !== category.id);
-                                                    } else {
-                                                        return [...prevIds, category.id];
-                                                    }
-                                                });
+                                                setNewServiceCategoryId(prevId => prevId === category.id ? null : category.id);
                                             }}
                                             className="rounded accent-primary mr-2"
                                         />
@@ -286,24 +284,24 @@ export const ServicesEditor: React.FC = () => {
                                 <h6 className="text-sm font-medium text-secondary mb-2">Categorías:</h6>
                                 <div className="flex flex-wrap gap-2">
                                     {business.categories.map(category => {
-                                        const currentCategoryIds = pendingCategoryChanges[service.id] ?? service.categoryIds ?? [];
-                                        const isAssigned = currentCategoryIds.includes(category.id);
-                                        return (
-                                            <button
-                                                key={category.id}
-                                                onClick={() => handleToggleCategory(service.id, category.id)}
-                                                className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                                                    isAssigned
-                                                        ? 'bg-primary text-brand-text border-primary'
-                                                        : 'bg-surface text-secondary border-default hover:border-primary'
-                                                }`}
-                                                aria-label={`${isAssigned ? 'Remover' : 'Asignar'} servicio ${service.name} ${isAssigned ? 'de' : 'a'} categoría ${category.name}`}
-                                                aria-pressed={isAssigned}
-                                            >
-                                                {category.name}
-                                            </button>
-                                        );
-                                    })}
+                                            const currentCategoryIds = pendingCategoryChanges[service.id] ?? service.categoryIds ?? [];
+                                            const isAssigned = currentCategoryIds.length === 1 && currentCategoryIds[0] === category.id;
+                                            return (
+                                                <button
+                                                    key={category.id}
+                                                    onClick={() => handleToggleCategory(service.id, category.id)}
+                                                    className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                                                        isAssigned
+                                                            ? 'bg-primary text-brand-text border-primary'
+                                                            : 'bg-surface text-secondary border-default hover:border-primary'
+                                                    }`}
+                                                    aria-label={isAssigned ? `Remover categoría ${category.name} de servicio ${service.name}` : `Asignar categoría ${category.name} a servicio ${service.name}`}
+                                                    aria-pressed={isAssigned}
+                                                >
+                                                    {category.name}
+                                                </button>
+                                            );
+                                        })}
                                 </div>
                                 {pendingCategoryChanges[service.id] && (
                                     <div className="mt-3 flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
