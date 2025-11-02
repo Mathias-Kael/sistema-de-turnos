@@ -85,7 +85,12 @@ export const CategoryManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h3 className="text-lg font-medium text-primary">Gestión de Categorías</h3>
-        <Button onClick={() => handleOpenModal()} variant="primary" className="w-full sm:w-auto">
+        <Button 
+          onClick={() => handleOpenModal()} 
+          variant="primary" 
+          className="w-full sm:w-auto"
+          aria-label="Agregar nueva categoría"
+        >
           Agregar Categoría
         </Button>
       </div>
@@ -120,6 +125,7 @@ export const CategoryManager: React.FC = () => {
                       onClick={() => handleOpenModal(category)}
                       className="p-1.5 hover:bg-background rounded transition-colors"
                       title="Editar categoría"
+                      aria-label={`Editar categoría ${category.name}`}
                     >
                       <PencilIcon className="w-4 h-4 text-secondary" />
                     </button>
@@ -127,6 +133,7 @@ export const CategoryManager: React.FC = () => {
                       onClick={() => handleDeleteCategory(category.id)}
                       className="p-1.5 hover:bg-background rounded transition-colors"
                       title="Eliminar categoría"
+                      aria-label={`Eliminar categoría ${category.name}`}
                     >
                       <TrashIcon className="w-4 h-4 text-red-500" />
                     </button>

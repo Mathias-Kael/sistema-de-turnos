@@ -297,6 +297,8 @@ export const ServicesEditor: React.FC = () => {
                                                         ? 'bg-primary text-brand-text border-primary'
                                                         : 'bg-surface text-secondary border-default hover:border-primary'
                                                 }`}
+                                                aria-label={`${isAssigned ? 'Remover' : 'Asignar'} servicio ${service.name} ${isAssigned ? 'de' : 'a'} categoría ${category.name}`}
+                                                aria-pressed={isAssigned}
                                             >
                                                 {category.name}
                                             </button>
@@ -323,6 +325,7 @@ export const ServicesEditor: React.FC = () => {
                                                 }}
                                                 variant="ghost"
                                                 size="sm"
+                                                aria-label={`Cancelar cambios de categoría para ${service.name}`}
                                             >
                                                 Cancelar
                                             </Button>
@@ -330,6 +333,7 @@ export const ServicesEditor: React.FC = () => {
                                                 onClick={() => handleSaveChanges(service.id)}
                                                 variant="primary"
                                                 size="sm"
+                                                aria-label={`Guardar cambios de categoría para ${service.name}`}
                                             >
                                                 Guardar
                                             </Button>

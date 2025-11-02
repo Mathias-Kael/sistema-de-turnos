@@ -169,9 +169,12 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="category-modal-title"
     >
       <div className="bg-background rounded-lg shadow-xl max-w-md w-full p-6 border border-default">
-        <h2 className="text-xl font-semibold text-primary mb-4">
+        <h2 id="category-modal-title" className="text-xl font-semibold text-primary mb-4">
           {category ? 'Editar Categoría' : 'Nueva Categoría'}
         </h2>
 
@@ -191,11 +194,12 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
           {/* Icon Picker */}
           <div>
-            <label className="block text-sm font-medium text-primary mb-2">
+            <label htmlFor="category-icon-select" className="block text-sm font-medium text-primary mb-2">
               Ícono
             </label>
             <div className="relative">
               <select
+                id="category-icon-select"
                 value={selectedIcon}
                 onChange={(e) => setSelectedIcon(e.target.value as CategoryIcon)}
                 disabled={isSubmitting}
@@ -203,6 +207,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                            focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
                            disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer
                            hover:border-primary/50 transition-colors"
+                aria-label="Seleccionar ícono para la categoría"
               >
                 {ICON_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -225,6 +230,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               variant="secondary"
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label="Cancelar y cerrar modal"
             >
               Cancelar
             </Button>
@@ -232,6 +238,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               type="submit"
               variant="primary"
               disabled={isSubmitting || !name.trim()}
+              aria-label={category ? 'Guardar cambios en la categoría' : 'Crear nueva categoría'}
             >
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
