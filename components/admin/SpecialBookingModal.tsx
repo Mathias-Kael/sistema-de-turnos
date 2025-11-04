@@ -18,14 +18,15 @@ const timeToMinutes = (time: string): number => {
 export interface SpecialBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedDate: Date;
+  defaultDate?: Date;
 }
 
 const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   isOpen,
   onClose,
-  selectedDate,
+  defaultDate,
 }) => {
+  const [selectedDate, setSelectedDate] = useState(defaultDate || new Date());
   const business = useBusinessState();
   const dispatch = useBusinessDispatch();
 
@@ -312,15 +313,24 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
         {/* Header fijo */}
         <div className="p-6 border-b border-default">
           <h2 className="text-2xl font-bold text-primary">★ Nueva Reserva Especial</h2>
-          <p className="text-sm text-secondary mt-1">📅 {formatDate(selectedDate)}</p>
         </div>
 
         {/* Contenido scrolleable */}
         <div className="overflow-y-auto flex-1 p-6">
           <form onSubmit={handleSubmit} id="special-booking-form">
+            {/* Date Picker */}
+            <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Fecha</h3>
+                <Input
+                    type="date"
+                    value={selectedDate.toISOString().split('T')[0]}
+                    onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                    required
+                />
+            </div>
             {/* Step 1: Booking Details */}
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Servicios</h3>
+              <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Servicios</h3>
               
               {/* Service Selection - Botones multi-select */}
               <div className="border border-default p-4 rounded-md bg-surface">

@@ -7,15 +7,17 @@ import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 
 interface ManualBookingModalProps {
-    selectedDate: Date;
-    existingBookings: Booking[];
+    defaultDate?: Date;
     onClose: () => void;
     onSave: (newBooking: Omit<Booking, 'id'>) => void;
 }
 
-export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selectedDate, existingBookings, onClose, onSave }) => {
+export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultDate, onClose, onSave }) => {
     const business = useBusinessState();
     
+    // Internal date state
+    const [bookingDate, setBookingDate] = useState(defaultDate || new Date());
+
     // Client state
     const [useExistingClient, setUseExistingClient] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -33,18 +35,18 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
 
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = bookingDate.toISOString().split('T')[0];
 
     useEffect(() => {
         if (selectedServices.length > 0 && selectedEmployeeId) {
             setLoadingSlots(true);
-            getAvailableSlots(selectedDate, selectedServices, business, selectedEmployeeId)
+            getAvailableSlots(bookingDate, selectedServices, business, selectedEmployeeId)
                 .then(setAvailableSlots)
                 .finally(() => setLoadingSlots(false));
         } else {
             setAvailableSlots([]);
         }
-    }, [selectedDate, selectedServices, selectedEmployeeId, business]);
+    }, [bookingDate, selectedServices, selectedEmployeeId, business]);
     
     const handleServiceToggle = (service: Service) => {
         setSelectedServices(prev => {
@@ -116,10 +118,10 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
         // Validate date
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const bookingDate = new Date(selectedDate);
-        bookingDate.setHours(0, 0, 0, 0);
+        const selectedDateNormalized = new Date(bookingDate);
+        selectedDateNormalized.setHours(0, 0, 0, 0);
         
-        if (bookingDate < today) {
+        if (selectedDateNormalized < today) {
             alert("⚠️ No se pueden crear reservas en fechas pasadas");
             return;
         }
@@ -138,7 +140,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
 
             let finalEmployeeId = selectedEmployeeId;
             if (selectedEmployeeId === 'any') {
-                const availableEmployee = findAvailableEmployeeForSlot(selectedDate, slot, totalDuration, selectedServices, business);
+                const availableEmployee = findAvailableEmployeeForSlot(bookingDate, slot, totalDuration, selectedServices, business);
                 if (availableEmployee) {
                     finalEmployeeId = availableEmployee.id;
                 } else {
@@ -185,10 +187,10 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
         // Validar que la fecha no sea pasada
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const bookingDate = new Date(selectedDate);
-        bookingDate.setHours(0, 0, 0, 0);
+        const selectedDateNormalized = new Date(bookingDate);
+        selectedDateNormalized.setHours(0, 0, 0, 0);
         
-        if (bookingDate < today) {
+        if (selectedDateNormalized < today) {
             alert("⚠️ No se pueden crear reservas en fechas pasadas");
             return;
         }
@@ -197,7 +199,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
 
         let finalEmployeeId = selectedEmployeeId;
         if (selectedEmployeeId === 'any') {
-            const availableEmployee = findAvailableEmployeeForSlot(selectedDate, slot, totalDuration, selectedServices, business);
+            const availableEmployee = findAvailableEmployeeForSlot(bookingDate, slot, totalDuration, selectedServices, business);
             if (availableEmployee) {
                 finalEmployeeId = availableEmployee.id;
             } else {
@@ -236,9 +238,20 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ selected
             <div className="min-h-full flex items-start md:items-center justify-center p-4">
             <form onSubmit={handleSubmit} className="bg-surface rounded-lg shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto text-primary focus:outline-none" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
                 <h2 className="text-2xl font-bold text-primary mb-4">Nueva Reserva Manual</h2>
-                <p className="mb-4 text-primary">Fecha: <strong>{selectedDate.toLocaleDateString('es-AR')}</strong></p>
-
+                
                 <div className="space-y-4">
+                    {/* Date Picker */}
+                    <fieldset className="border border-default p-4 rounded-md bg-surface">
+                        <legend className="font-semibold px-2 text-primary">Fecha de la Reserva</legend>
+                        <input
+                            type="date"
+                            value={dateStr}
+                            onChange={(e) => setBookingDate(new Date(e.target.value + 'T00:00:00'))}
+                            className="p-2 w-full border border-default rounded-md bg-background text-primary"
+                            required
+                        />
+                    </fieldset>
+
                     {/* Client Info */}
                     <fieldset className="border border-default p-4 rounded-md bg-surface">
                         <legend className="font-semibold px-2 text-primary">Datos del Cliente</legend>

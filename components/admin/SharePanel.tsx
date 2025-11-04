@@ -29,6 +29,21 @@ export const SharePanel: React.FC = () => {
     const [success, setSuccess] = useState<string>('');
     const [error, setError] = useState<string>('');
 
+    // Estado local para inputs de redes sociales
+    const [localWhatsapp, setLocalWhatsapp] = useState(business.whatsapp || '');
+    const [localInstagram, setLocalInstagram] = useState(business.instagram || '');
+    const [localFacebook, setLocalFacebook] = useState(business.facebook || '');
+    const [hasUnsavedSocialChanges, setHasUnsavedSocialChanges] = useState(false);
+    const [isSavingSocial, setIsSavingSocial] = useState(false);
+
+    // Sincronizar estado local
+    useEffect(() => {
+        setLocalWhatsapp(business.whatsapp || '');
+        setLocalInstagram(business.instagram || '');
+        setLocalFacebook(business.facebook || '');
+        setHasUnsavedSocialChanges(false);
+    }, [business.whatsapp, business.instagram, business.facebook]);
+
     // Derivar estado del token desde el business
     const hasToken = !!business.shareToken;
     const tokenStatus = business.shareTokenStatus;
@@ -165,16 +180,50 @@ export const SharePanel: React.FC = () => {
         }
     };
 
+    const handleSocialMediaChange = (field: 'whatsapp' | 'instagram' | 'facebook', value: string) => {
+        switch (field) {
+            case 'whatsapp': setLocalWhatsapp(value); break;
+            case 'instagram': setLocalInstagram(value); break;
+            case 'facebook': setLocalFacebook(value); break;
+        }
+        setHasUnsavedSocialChanges(true);
+    };
+
+    const handleSaveSocialMedia = async () => {
+        setIsSavingSocial(true);
+        setError('');
+        setSuccess('');
+        try {
+            const updatedBusiness = {
+                ...business,
+                whatsapp: localWhatsapp || undefined,
+                instagram: localInstagram || undefined,
+                facebook: localFacebook || undefined,
+            };
+            await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
+            setSuccess('Redes sociales guardadas');
+            setHasUnsavedSocialChanges(false);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (e: any) {
+            setError(e.message || 'Error al guardar redes sociales');
+        } finally {
+            setIsSavingSocial(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-bold text-primary mb-2">Compartir Sistema de Reservas</h3>
+                <h3 className="text-xl font-bold text-primary mb-2">Compartir y Redes Sociales</h3>
                 <p className="text-secondary text-sm">
-                    Genera un enlace para que tus clientes puedan hacer reservas online.
+                    Genera enlaces de reserva y configura tus redes para que los clientes te encuentren.
                 </p>
             </div>
 
-            {/* Configuración de expiración */}
+            {/* Enlace Compartible */}
+            <div className="border border-default p-6 rounded-lg">
+                <h4 className="text-lg font-semibold text-primary mb-3">Enlace de Reservas</h4>
+                {/* Configuración de expiración */}
             {(!hasToken || derivedStatus === 'revoked' || derivedStatus === 'expired') && (
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-primary">
@@ -280,17 +329,45 @@ export const SharePanel: React.FC = () => {
                     )}
                 </div>
             )}
+            </div>
+
+            {/* Redes Sociales */}
+            <div className="border border-default p-6 rounded-lg">
+                <h4 className="text-lg font-semibold text-primary mb-3">Redes Sociales</h4>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="businessWhatsapp" className="block text-sm font-medium text-secondary">WhatsApp del Negocio</label>
+                        <input type="text" id="businessWhatsapp" value={localWhatsapp} onChange={(e) => handleSocialMediaChange('whatsapp', e.target.value)} placeholder="+54911234567890" className="mt-1 block w-full px-3 py-2 border border-default rounded-md bg-surface text-primary"/>
+                    </div>
+                    <div>
+                        <label htmlFor="instagram" className="block text-sm font-medium text-secondary">Instagram</label>
+                        <div className="mt-1 flex">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-default bg-surface text-secondary text-sm">@</span>
+                            <input type="text" id="instagram" value={localInstagram} onChange={(e) => handleSocialMediaChange('instagram', e.target.value)} placeholder="mi_negocio" className="flex-1 px-3 py-2 border border-default rounded-r-md bg-surface text-primary"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="facebook" className="block text-sm font-medium text-secondary">Facebook</label>
+                        <input type="text" id="facebook" value={localFacebook} onChange={(e) => handleSocialMediaChange('facebook', e.target.value)} placeholder="mi.negocio" className="mt-1 block w-full px-3 py-2 border border-default rounded-md bg-surface text-primary"/>
+                    </div>
+                </div>
+                <div className="mt-6">
+                    <button onClick={handleSaveSocialMedia} disabled={!hasUnsavedSocialChanges || isSavingSocial} className={`px-6 py-2.5 rounded-md font-medium transition-colors ${hasUnsavedSocialChanges && !isSavingSocial ? 'bg-primary text-brand-text' : 'bg-surface text-secondary cursor-not-allowed'}`}>
+                        {isSavingSocial ? 'Guardando...' : 'Guardar Redes Sociales'}
+                    </button>
+                </div>
+            </div>
 
             {/* Mensajes de éxito/error */}
             {(success || error) && (
-                <div className="space-y-2">
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
                     {success && (
-                        <div className="p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+                        <div className="px-4 py-2 rounded-md bg-green-100 text-green-800 text-sm shadow border border-green-300">
                             {success}
                         </div>
                     )}
                     {error && (
-                        <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                        <div className="px-4 py-2 rounded-md bg-red-100 text-red-700 text-sm shadow border border-red-300">
                             {error}
                         </div>
                     )}
