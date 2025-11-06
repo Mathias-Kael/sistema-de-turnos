@@ -28,6 +28,7 @@ export const SharePanel: React.FC = () => {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [success, setSuccess] = useState<string>('');
     const [error, setError] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
 
     // Estado local para inputs de redes sociales
     const [localWhatsapp, setLocalWhatsapp] = useState(business.whatsapp || '');
@@ -71,6 +72,7 @@ export const SharePanel: React.FC = () => {
     }, [shareableLink, derivedStatus]);
 
     const handleGenerateLink = async () => {
+        setIsLoading(true);
         try {
             setError('');
             
@@ -113,10 +115,13 @@ export const SharePanel: React.FC = () => {
             setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
             setError(err.message || 'Error al generar enlace');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleTogglePause = async () => {
+        setIsLoading(true);
         try {
             setError('');
             const newStatus = tokenStatus === 'active' ? 'paused' : 'active';
@@ -134,6 +139,8 @@ export const SharePanel: React.FC = () => {
             setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
             setError(err.message || 'Error al pausar/reactivar enlace');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -142,6 +149,7 @@ export const SharePanel: React.FC = () => {
             return;
         }
 
+        setIsLoading(true);
         try {
             setError('');
             
@@ -158,6 +166,8 @@ export const SharePanel: React.FC = () => {
             setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
             setError(err.message || 'Error al revocar enlace');
+        } finally {
+            setIsLoading(false);
         }
     };
 

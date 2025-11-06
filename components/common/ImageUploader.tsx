@@ -30,6 +30,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 }) => {
   const [preview, setPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [croppingImage, setCroppingImage] = useState<string | null>(null);
@@ -100,10 +101,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleDelete = async () => {
     if (currentImageUrl) {
-      await imageStorage.deleteImage(currentImageUrl);
+      setIsDeleting(true);
+      try {
+        await imageStorage.deleteImage(currentImageUrl);
+        setPreview('');
+        onImageChange('');
+      } catch (error) {
+        onError?.('Error al eliminar la imagen');
+      } finally {
+        setIsDeleting(false);
+      }
     }
-    setPreview('');
-    onImageChange('');
   };
 
   const handleEdit = () => {
@@ -129,7 +137,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     >
       <Button
         onClick={handleEdit}
-        disabled={isUploading}
+        disabled={isUploading || isDeleting}
         variant="outline"
         className="flex items-center gap-2"
       >
@@ -137,11 +145,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       </Button>
       <Button
         onClick={handleDelete}
-        disabled={isUploading}
+        disabled={isUploading || isDeleting}
         variant="danger"
         className="flex items-center gap-2"
       >
-        🗑️<span>Eliminar</span>
+        {isDeleting ? 'Eliminando...' : '🗑️ Eliminar'}
       </Button>
     </div>
   );

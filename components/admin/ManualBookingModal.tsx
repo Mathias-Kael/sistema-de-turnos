@@ -34,6 +34,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
     const [slot, setSlot] = useState<string | null>(null);
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const dateStr = bookingDate.toISOString().split('T')[0];
 
@@ -126,6 +127,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
             return;
         }
 
+        setIsSaving(true);
         try {
             // 1. Create the client first
             const newClient = await supabaseBackend.createClient({
@@ -174,10 +176,12 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
             onSave(newBooking);
         } catch (error: any) {
             alert(`Error: ${error.message || 'No se pudo guardar'}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!slot || !selectedEmployeeId) {
             alert("Por favor completa todos los campos.");
@@ -230,7 +234,14 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
             status: 'confirmed',
             notes: 'Reserva manual',
         };
-        onSave(newBooking);
+        setIsSaving(true);
+        try {
+            await onSave(newBooking);
+        } catch (error) {
+            alert('Error al guardar la reserva.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -378,19 +389,19 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                             type="button"
                             onClick={handleSaveAndAddToClients}
                             className="w-full sm:flex-1 bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover border border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!slot || !isClientDataValid()}
+                            disabled={isSaving || !slot || !isClientDataValid()}
                             title={!isClientDataValid() ? "Completa nombre y teléfono válidos" : "Guardar reserva y añadir cliente a la base de datos"}
                         >
-                            📋 Añadir a Clientes
+                            {isSaving ? 'Guardando...' : '📋 Añadir a Clientes'}
                         </button>
                     )}
                     
-                    <button 
-                        type="submit" 
-                        className="w-full sm:flex-1 bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary disabled:opacity-50" 
-                        disabled={!slot}
+                    <button
+                        type="submit"
+                        className="w-full sm:flex-1 bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary disabled:opacity-50"
+                        disabled={isSaving || !slot}
                     >
-                        Guardar Reserva
+                        {isSaving ? 'Guardando...' : 'Guardar Reserva'}
                     </button>
                 </div>
             </form>

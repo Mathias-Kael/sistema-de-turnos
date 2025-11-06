@@ -82,14 +82,14 @@ export const AdminView: React.FC = () => {
                 {/* Paneles flotantes que se abren desde el Header */}
                 {isPreviewPanelOpen && (
                     <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
-                        <button onClick={() => setIsPreviewPanelOpen(false)} className="absolute top-4 right-4 text-2xl">&times;</button>
+                        <button onClick={() => setIsPreviewPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
                         <ClientView />
                     </div>
                 )}
 
                 {isSharePanelOpen && (
                     <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
-                        <button onClick={() => setIsSharePanelOpen(false)} className="absolute top-4 right-4 text-2xl">&times;</button>
+                        <button onClick={() => setIsSharePanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
                         <SharePanel />
                     </div>
                 )}

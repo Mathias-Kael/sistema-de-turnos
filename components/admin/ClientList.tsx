@@ -24,6 +24,7 @@ export const ClientList: React.FC = () => {
   // Modal state
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Load initial clients
   useEffect(() => {
@@ -74,11 +75,14 @@ export const ClientList: React.FC = () => {
       return;
     }
 
+    setIsDeleting(client.id);
     try {
       await supabaseBackend.deleteClient(client.id);
       loadClients(); // Refresh list
     } catch (err: any) {
       alert(err.message || 'Error al eliminar cliente');
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -208,9 +212,10 @@ export const ClientList: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleDeleteClient(client)}
-                          className="text-sm text-red-600 hover:text-red-700 font-medium"
+                          className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                          disabled={isDeleting === client.id}
                         >
-                          Eliminar
+                          {isDeleting === client.id ? 'Eliminando...' : 'Eliminar'}
                         </button>
                       </div>
                     </td>

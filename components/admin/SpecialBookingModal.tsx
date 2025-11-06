@@ -552,14 +552,14 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             
             {/* Show "Add to Clients" button only when NOT using existing client */}
             {!useExistingClient && (
-              <Button 
+              <Button
                 type="button"
                 variant="ghost"
                 onClick={handleSaveAndAddToClients}
                 disabled={isLoading || !selectedTime || !isClientDataValid()}
                 className="border border-primary"
               >
-                📋 Añadir a Clientes
+                {isLoading ? 'Guardando...' : '📋 Añadir a Clientes'}
               </Button>
             )}
             

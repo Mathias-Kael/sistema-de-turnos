@@ -46,13 +46,17 @@ export const ManagementView: React.FC = () => {
     if (activeSection) {
         const currentSection = sections.find(s => s.id === activeSection);
         return (
-            <div className="p-4 sm:p-6">
-                <button onClick={() => setActiveSection(null)} className="text-primary font-bold mb-4">
-                    &larr; Volver a Gestión
-                </button>
+            <div className="p-4 sm:p-6 pb-20"> {/* Padding bottom para el footer fijo */}
                 <h2 className="text-2xl font-bold text-primary mb-4">{currentSection?.title}</h2>
                 <div className="bg-surface p-6 rounded-lg shadow border border-default">
                     {renderActiveSection()}
+                </div>
+
+                {/* Back button in footer for all screen sizes */}
+                <div className="fixed bottom-16 left-0 right-0 bg-background border-t border-default p-4">
+                    <button onClick={() => setActiveSection(null)} className="w-full text-center text-primary font-bold">
+                        &larr; Volver a Gestión
+                    </button>
                 </div>
             </div>
         );
