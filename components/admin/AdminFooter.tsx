@@ -10,8 +10,8 @@ interface AdminFooterProps {
 
 const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'DASHBOARD', label: 'Inicio', icon: Home },
-  { id: 'MANAGEMENT', label: 'Gestión', icon: Wrench },
   { id: 'RESERVATIONS', label: 'Reservas', icon: Calendar },
+  { id: 'MANAGEMENT', label: 'Gestión', icon: Wrench },
 ];
 
 export const AdminFooter: React.FC<AdminFooterProps> = ({ activeTab, onTabChange }) => {
