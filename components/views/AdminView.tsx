@@ -13,10 +13,13 @@ import { ClientView } from './ClientView';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useBusinessDispatch } from '../../context/BusinessContext';
+import { Booking } from '../../types';
 
 
 export const AdminView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<AdminTab>('DASHBOARD');
+    const dispatch = useBusinessDispatch();
     
     // Estados para controlar la visibilidad de los modales/paneles del Header
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -35,6 +38,15 @@ export const AdminView: React.FC = () => {
         }
     };
 
+    const handleAddBooking = async (newBooking: Omit<Booking, 'id'>) => {
+        try {
+            await dispatch({ type: 'CREATE_BOOKING', payload: newBooking });
+            setIsBookingModalOpen(false);
+        } catch (e) {
+            console.error("Error creating booking from header:", e);
+            // Opcional: mostrar un toast/alerta de error al usuario
+        }
+    };
 
     const renderContent = () => {
         // Oculta la vista activa si un panel del header está abierto
@@ -90,10 +102,7 @@ export const AdminView: React.FC = () => {
                 <ManualBookingModal
                     // defaultDate no se pasa, el modal usará la fecha actual como se especifica
                     onClose={() => setIsBookingModalOpen(false)}
-                    onSave={(booking) => {
-                        console.log('Booking to save:', booking); // Lógica de guardado a implementar
-                        setIsBookingModalOpen(false);
-                    }}
+                    onSave={handleAddBooking}
                 />
             )}
             
