@@ -103,21 +103,17 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 });
                 if (error || data?.error) throw new Error(error?.message || data?.error);
             }
-            // Datos dinámicos para WhatsApp (se calculan en confirmed view también por si cambia assignedEmployee)
-            const whatsappConfig = (() => {
-                const finalEmp = assignedEmployee || (employeeId !== 'any' ? business.employees.find(e => e.id === employeeId) || null : null);
-                const usingEmployee = !!finalEmp && canUseEmployeeWhatsapp(finalEmp.whatsapp);
-                const targetName = usingEmployee ? finalEmp!.name : business.name;
-                const serviceNames = selectedServices.map(s => s.name).join(', ');
-                const dateString = date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                const msg = usingEmployee
-                    ? `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${normName}.`
-                    : `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${normName}. ¡Gracias!`;
-                const url = buildWhatsappUrl(usingEmployee ? (finalEmp!.whatsapp || '') : business.phone, msg);
-                return { url, usingEmployee, finalEmp };
-            })();
+            const finalEmp = assignedEmployee || (employeeId !== 'any' ? business.employees.find(e => e.id === employeeId) || null : null);
+            const usingEmployee = !!finalEmp && canUseEmployeeWhatsapp(finalEmp.whatsapp);
+            const targetName = usingEmployee ? finalEmp!.name : business.name;
+            const serviceNames = selectedServices.map(s => s.name).join(', ');
+            const dateString = date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const msg = usingEmployee
+                ? `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Soy ${normName}.`
+                : `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${normName}. ¡Gracias!`;
+            const whatsappUrl = buildWhatsappUrl(usingEmployee ? (finalEmp!.whatsapp || '') : business.phone, msg);
 
-            window.open(whatsappConfig.url, '_blank');
+            window.open(whatsappUrl, '_blank');
             onClose(); // Cerrar el modal después de la redirección
 
         } catch (err: any) {

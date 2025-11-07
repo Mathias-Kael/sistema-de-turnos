@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(() => {
   return {
     plugins: [
-      react(),
+      react(), // Asegurarse de que el plugin de React esté presente
       visualizer({
         filename: 'bundle-report.html',
         template: 'treemap',
@@ -16,7 +16,7 @@ export default defineConfig(() => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+        includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'assets/web-app-manifest-192x192.png', 'assets/web-app-manifest-512x512.png'],
         manifest: {
           name: 'ASTRA',
           short_name: 'ASTRA',
