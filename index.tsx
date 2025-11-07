@@ -20,17 +20,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   // Aquí podrías actualizar un estado global o un contexto para mostrar el botón de instalación
 });
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('SW registered: ', registration);
-      })
-      .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError);
-      });
-  });
-}
+// El registro del Service Worker ahora es manejado por vite-plugin-pwa
 
 root.render(
   <React.StrictMode>
