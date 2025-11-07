@@ -135,3 +135,18 @@ El componente `InstallPWAButton` detecta si el navegador soporta el prompt de in
 Esta implementación mejora significativamente la experiencia de usuario al proporcionar una forma clara y consistente de instalar la aplicación, independientemente del dispositivo o navegador.
 
 **Estado:** Completado
+
+---
+
+## 4. Incidencias y Soluciones (Debug)
+
+### 4.1. Incidencia: Pantalla en Blanco en PWA Instalada
+*   **Síntoma:** Al instalar la PWA y abrirla desde la pantalla de inicio, la aplicación se quedaba en blanco.
+*   **Diagnóstico:** El problema fue causado por un `service-worker.js` manual y estático que no era compatible con la forma en que Vite genera los archivos de producción con nombres dinámicos (hashing). El Service Worker intentaba cachear recursos con nombres incorrectos y no podía manejar el enrutamiento de la SPA, resultando en errores `Failed to load module script` y `Failed to fetch`.
+*   **Solución:** Se migró la gestión del Service Worker al plugin `vite-plugin-pwa`. Esta solución automatiza la generación del Service Worker, asegurando que todos los archivos de producción se cacheen correctamente y que el enrutamiento funcione offline.
+*   **Archivos Afectados:**
+    *   `vite.config.ts`: Se añadió y configuró `vite-plugin-pwa`.
+    *   `public/service-worker.js`: Eliminado.
+    *   `index.tsx`: Se eliminó el código de registro manual del Service Worker.
+
+**Estado:** Solucionado
