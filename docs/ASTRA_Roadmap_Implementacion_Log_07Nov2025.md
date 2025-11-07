@@ -69,48 +69,69 @@ Esta implementación es un "quick win" de la Fase 1 del [`ASTRA_Roadmap_Prioriza
 
 ### 2.4. Archivos Modificados
 
-#### [`public/manifest.json`](public/manifest.json)
-Se creó este archivo para definir la PWA, incluyendo:
-*   `short_name` y `name`: Nombres de la aplicación.
-*   `icons`: Definición de varios tamaños de iconos para diferentes dispositivos y propósitos (incluyendo `apple touch icon` y `maskable`).
-*   `start_url`: URL de inicio de la aplicación.
-*   `display`: Modo de visualización (`standalone`).
-*   `theme_color` y `background_color`: Colores para la interfaz de usuario.
+#### [`public/site.webmanifest`](public/site.webmanifest) (anteriormente `manifest.json`)
+Se generó un nuevo manifest utilizando [RealFaviconGenerator](https://realfavicongenerator.net/), que incluye:
+*   Nombres correctos de la aplicación ("ASTRA").
+*   Iconos en múltiples tamaños y propósitos (`any maskable`).
+*   Configuración de `theme_color`, `background_color`, `display` y `start_url`.
 
 #### [`index.html`](index.html)
 Se realizaron las siguientes adiciones para integrar la PWA y mejorar el SEO:
-*   **Meta tags de SEO:** Se añadieron meta tags para `description`, `og:title`, `og:description`, `og:image`, `og:image:width`, `og:image:height`, `og:url`, `og:type`, `twitter:card`, `twitter:title`, `twitter:description`, y `twitter:image` para optimizar la apariencia en motores de búsqueda y redes sociales.
-*   **Enlace al manifest:** Se incluyó `<link rel="manifest" href="/manifest.json">` para vincular el archivo manifest de la PWA.
-*   **Meta tags de PWA:** Se añadieron meta tags como `theme-color`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, y `apple-mobile-web-app-title` para una mejor experiencia en dispositivos iOS.
+*   **Meta tags de SEO:** Se añadieron meta tags para `description`, `og:title`, `og:description`, `og:image`, etc.
+*   **Links de Favicon y Manifest:** Se reemplazaron los links antiguos con el bloque de HTML proporcionado por RealFaviconGenerator, que incluye `favicon.ico`, `favicon.svg`, `apple-touch-icon.png` y el `site.webmanifest`.
 
 #### [`public/service-worker.js`](public/service-worker.js)
-Se creó este archivo para implementar el Service Worker, que permite la funcionalidad offline y el almacenamiento en caché de recursos:
-*   `CACHE_NAME`: Define el nombre de la caché.
-*   `urlsToCache`: Lista de URLs que deben ser precargadas en la caché.
-*   **Evento `install`:** Abre la caché y añade todos los recursos definidos en `urlsToCache`.
-*   **Evento `fetch`:** Intercepta las solicitudes de red y sirve los recursos desde la caché si están disponibles, o los obtiene de la red si no lo están.
-*   **Evento `activate`:** Gestiona la limpieza de cachés antiguas para asegurar que solo la versión actual de la PWA esté en uso.
+Se creó este archivo para implementar el Service Worker, permitiendo la funcionalidad offline y el almacenamiento en caché de recursos.
 
 #### [`index.tsx`](index.tsx)
-Se añadió el registro del Service Worker:
-*   Se incluyó un bloque de código para registrar el `service-worker.js` cuando la aplicación se carga, asegurando que la funcionalidad PWA esté activa.
+Se añadió el registro del Service Worker.
 
 ### 2.5. Archivos Analizados (y su Relevancia)
-No se analizaron archivos adicionales específicos para esta implementación, ya que los cambios se centraron en la configuración del proyecto y el punto de entrada principal.
+No se analizaron archivos adicionales específicos para esta implementación.
 
 ### 2.6. Detalles de Implementación
 
+#### Generación de Iconos
+Los iconos y el manifest fueron generados utilizando [RealFaviconGenerator](https://realfavicongenerator.net/), una herramienta recomendada para asegurar la compatibilidad con múltiples dispositivos y navegadores.
+
 #### Registro del Service Worker
-El Service Worker se registra en [`index.tsx`](index.tsx) utilizando `navigator.serviceWorker.register('/service-worker.js')`. Esto asegura que el navegador instale y active el Service Worker, permitiendo que la aplicación funcione offline y cargue recursos desde la caché.
+El Service Worker se registra en [`index.tsx`](index.tsx) para permitir que la aplicación funcione offline.
 
-#### Optimización de Fuentes
-Se redujo el número de familias de fuentes importadas en [`index.html`](index.html) de cinco a dos (Poppins y Roboto) para optimizar el rendimiento de carga.
+---
 
-#### Consideraciones de Error
-La implementación del Service Worker incluye manejo básico de errores para el registro, lo que ayuda a diagnosticar problemas si el Service Worker no se instala correctamente.
+## 3. Implementación: Funcionalidad de Instalación como PWA
 
-#### Dependencias
-La implementación de PWA y SEO metadata se basa en estándares web y no introduce nuevas dependencias de librerías externas más allá de las ya existentes en el proyecto.
+### 3.1. Nombre de la Característica
+Funcionalidad de Instalación como PWA
 
-#### Escalabilidad y Deuda Técnica
-Esta implementación sigue las mejores prácticas para PWA y SEO, minimizando la deuda técnica y proporcionando una base sólida para futuras mejoras en la experiencia del usuario y la visibilidad de la aplicación.
+### 3.2. Objetivo
+Proporcionar un botón de instalación persistente y visible en el header de la vista de administración, con una guía clara para todos los usuarios, independientemente de su dispositivo.
+
+### 3.3. Contexto y Razón de Ser
+La implementación inicial del botón de instalación de PWA no era visible en todos los dispositivos, especialmente en móviles donde el navegador a menudo maneja la instalación a través de su propio menú. Para mejorar la UX y hacer la opción de instalación más intuitiva, se decidió crear un botón persistente con lógica condicional.
+
+### 3.4. Archivos Modificados
+
+#### [`components/common/InstallPWAButton.tsx`](components/common/InstallPWAButton.tsx)
+Se creó este componente para manejar la lógica de instalación de la PWA:
+*   **Botón Persistente:** El componente ahora muestra un ícono de descarga que siempre está visible.
+*   **Lógica Condicional:**
+    *   Si el evento `beforeinstallprompt` se dispara, el botón llama a `deferredPrompt.prompt()` para mostrar el diálogo de instalación nativo.
+    *   Si el evento no se dispara (como en iOS), el botón abre un modal con instrucciones claras para que el usuario instale la PWA manualmente desde el menú del navegador.
+*   **Modal de Instrucciones:** Se añadió un modal que explica cómo usar la opción "Agregar a la pantalla de inicio" en el menú del navegador.
+
+#### [`components/admin/AdminHeader.tsx`](components/admin/AdminHeader.tsx)
+Se integró el componente `InstallPWAButton` en el header de la vista de administración, asegurando que sea fácilmente accesible para el usuario.
+
+### 3.5. Archivos Analizados (y su Relevancia)
+No se analizaron archivos adicionales para esta implementación.
+
+### 3.6. Detalles de Implementación
+
+#### Detección de Soporte del Prompt
+El componente `InstallPWAButton` detecta si el navegador soporta el prompt de instalación nativo a través del evento `beforeinstallprompt`. Si no lo soporta, asume que el usuario está en un dispositivo como iOS y muestra las instrucciones manuales.
+
+#### Experiencia de Usuario
+Esta implementación mejora significativamente la experiencia de usuario al proporcionar una forma clara y consistente de instalar la aplicación, independientemente del dispositivo o navegador.
+
+**Estado:** Completado

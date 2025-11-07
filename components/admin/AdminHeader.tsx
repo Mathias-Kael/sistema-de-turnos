@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Plus, Eye, Link, User } from 'lucide-react';
+import InstallPWAButton from '../common/InstallPWAButton';
 
 interface AdminHeaderProps {
   onNewBooking: () => void;
@@ -28,6 +29,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           <Plus className="mr-2 h-4 w-4" />
           Reserva
         </Button>
+        <InstallPWAButton />
         <Button variant="ghost" size="icon" aria-label="Vista Previa" onClick={onPreview} className="rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
           <Eye className="h-5 w-5" />
         </Button>
