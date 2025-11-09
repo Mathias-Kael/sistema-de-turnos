@@ -494,6 +494,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                   setExtendedStart(newHours.start);
                   setExtendedEnd(newHours.end);
                 }}
+                midnightModeEnabled={business.midnightModeEnabled || false}
               />
             </div>
           )}

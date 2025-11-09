@@ -134,6 +134,7 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
     shareToken: bizData.share_token,
     shareTokenStatus: bizData.share_token_status,
     shareTokenExpiresAt: bizData.share_token_expires_at,
+    midnightModeEnabled: bizData.midnight_mode_enabled || false, // Feature: Horarios Medianoche
     employees: (employeesData || []).map(e => ({
       id: e.id,
       businessId: e.business_id,
@@ -537,6 +538,7 @@ export const supabaseBackend = {
           share_token: newData.shareToken,
           share_token_status: newData.shareTokenStatus,
           share_token_expires_at: newData.shareTokenExpiresAt,
+          midnight_mode_enabled: newData.midnightModeEnabled || false, // Feature: Horarios Medianoche
         },
       },
     });

@@ -57,6 +57,7 @@ export const getAvailableSlots = async (
                 duracionTotal: totalDuration,
                 horarioDelDia: effectiveHours,
                 reservasOcupadas: occupiedSlots,
+                midnightModeEnabled: business.midnightModeEnabled || false,
             });
             slotsForEmployee.forEach(slot => finalAvailableSlots.add(slot));
         }
@@ -90,6 +91,7 @@ export const getAvailableSlots = async (
             duracionTotal: totalDuration,
             horarioDelDia: effectiveHours,
             reservasOcupadas: occupiedSlots,
+            midnightModeEnabled: business.midnightModeEnabled || false,
         });
         slots.forEach(slot => finalAvailableSlots.add(slot));
     }

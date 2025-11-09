@@ -17,6 +17,7 @@ export interface TimelinePickerProps {
   snapInterval?: number;
   extendedHours?: TimeSlot;
   viewportRange?: TimeSlot;
+  midnightModeEnabled?: boolean; // Feature: Horarios Medianoche
 }
 
 const timeToMinutes = (time: string): number => {
@@ -46,23 +47,46 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
   onTimeClear,
   snapInterval = 10,
   extendedHours,
+  midnightModeEnabled = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [hoverMinutes, setHoverMinutes] = useState<number | null>(null);
 
   const effectiveRange = useMemo(() => {
+    const businessStart = timeToMinutes(businessHours.start);
+    let businessEnd = timeToMinutes(businessHours.end);
+
+    // Feature: Horarios Medianoche
+    // Si midnight mode está ON y businessEnd < businessStart, significa que cruza medianoche
+    const crossesMidnight = midnightModeEnabled && businessEnd < businessStart && businessHours.end !== '00:00';
+
+    if (crossesMidnight) {
+      // Horario cruza medianoche (ej: 13:00-02:00)
+      // Convertir end a minutos "después de medianoche" para que sea > start
+      businessEnd = businessEnd + (24 * 60); // ej: 120 + 1440 = 1560 (02:00 del día siguiente)
+    }
+
     if (extendedHours) {
+      const extStart = timeToMinutes(extendedHours.start);
+      let extEnd = timeToMinutes(extendedHours.end);
+
+      // Si extended hours también cruza medianoche
+      if (crossesMidnight && extEnd < extStart) {
+        extEnd = extEnd + (24 * 60);
+      }
+
       return {
-        start: Math.min(timeToMinutes(businessHours.start), timeToMinutes(extendedHours.start)),
-        end: Math.max(timeToMinutes(businessHours.end), timeToMinutes(extendedHours.end)),
+        start: Math.min(businessStart, extStart),
+        end: Math.max(businessEnd, extEnd),
       };
     }
+
     return {
-      start: timeToMinutes(businessHours.start),
-      end: timeToMinutes(businessHours.end),
+      start: businessStart,
+      end: businessEnd,
     };
-  }, [businessHours, extendedHours]);
+  }, [businessHours, extendedHours, midnightModeEnabled]);
 
   const totalMinutes = effectiveRange.end - effectiveRange.start;
   const pixelsPerMinute = 2;
@@ -71,7 +95,9 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
   const timeMarkers = useMemo(() => {
     const markers: { time: string; minutes: number }[] = [];
     for (let m = effectiveRange.start; m <= effectiveRange.end; m += 30) {
-      markers.push({ time: minutesToTime(m), minutes: m });
+      // Normalizar minutos si cruza medianoche (m > 1440 → wrap to 0-1440)
+      const normalizedMinutes = m >= 24 * 60 ? m - (24 * 60) : m;
+      markers.push({ time: minutesToTime(normalizedMinutes), minutes: m });
     }
     return markers;
   }, [effectiveRange]);
