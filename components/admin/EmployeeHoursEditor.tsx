@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Employee, Hours, DayHours, Interval } from '../../types';
 import { INITIAL_BUSINESS_DATA } from '../../constants';
-import { validarIntervalos } from '../../utils/availability';
+import { MidnightConfirmationModal } from '../ui/MidnightConfirmationModal';
+import { validarIntervalos, detectsCrossesMidnight } from '../../utils/availability';
 
 interface EmployeeHoursEditorProps {
     employee: Employee;
@@ -15,6 +16,12 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
     const [employeeHours, setEmployeeHours] = useState<Hours>(employee.hours || INITIAL_BUSINESS_DATA.hours);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [midnightConfirmation, setMidnightConfirmation] = useState<{
+        isOpen: boolean;
+        interval: Interval | null;
+        day: keyof Hours | null;
+        index: number | null;
+    }>({ isOpen: false, interval: null, day: null, index: null });
 
     useEffect(() => {
         setEmployeeHours(employee.hours || INITIAL_BUSINESS_DATA.hours);
@@ -31,17 +38,57 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
     };
 
     const handleIntervalChange = (day: keyof Hours, index: number, field: 'open' | 'close', value: string) => {
-        setEmployeeHours(prevHours => {
-            const newIntervals = [...prevHours[day].intervals];
-            newIntervals[index] = { ...newIntervals[index], [field]: value };
-            return {
+        const newIntervals = [...employeeHours[day].intervals];
+        newIntervals[index] = { ...newIntervals[index], [field]: value };
+        const updatedInterval = newIntervals[index];
+
+        // Detectar si el intervalo cruza medianoche y ambos campos están completos
+        if (updatedInterval.open && updatedInterval.close && detectsCrossesMidnight(updatedInterval)) {
+            // Mostrar modal de confirmación
+            setMidnightConfirmation({
+                isOpen: true,
+                interval: updatedInterval,
+                day,
+                index
+            });
+            // No actualizar aún, esperar confirmación
+        } else {
+            // Horario normal o incompleto, actualizar directamente
+            setEmployeeHours(prevHours => ({
                 ...prevHours,
                 [day]: {
                     ...prevHours[day],
                     intervals: newIntervals,
                 },
-            };
-        });
+            }));
+        }
+    };
+
+    const handleMidnightConfirm = () => {
+        if (midnightConfirmation.day && midnightConfirmation.index !== null && midnightConfirmation.interval) {
+            const day = midnightConfirmation.day;
+            const index = midnightConfirmation.index;
+            const interval = midnightConfirmation.interval;
+
+            setEmployeeHours(prevHours => {
+                const newIntervals = [...prevHours[day].intervals];
+                newIntervals[index] = interval;
+                return {
+                    ...prevHours,
+                    [day]: {
+                        ...prevHours[day],
+                        intervals: newIntervals,
+                    },
+                };
+            });
+        }
+
+        setMidnightConfirmation({ isOpen: false, interval: null, day: null, index: null });
+    };
+
+    const handleMidnightCancel = () => {
+        // No aplicar cambios
+        setMidnightConfirmation({ isOpen: false, interval: null, day: null, index: null });
     };
 
     const addInterval = (day: keyof Hours) => {
@@ -77,8 +124,9 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                         setIsSaving(false);
                         return;
                     }
-                    if (interval.open >= interval.close) {
-                        setError(`Error: La hora de cierre debe ser posterior a la hora de inicio en todos los intervalos para el día ${dayNames[day]}.`);
+                    // Permitir horarios que cruzan medianoche (open > close es válido)
+                    if (interval.open === interval.close) {
+                        setError(`Error: Las horas de inicio y fin no pueden ser iguales en el día ${dayNames[day]}.`);
                         setIsSaving(false);
                         return;
                     }
@@ -163,6 +211,13 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                         {isSaving ? 'Guardando...' : 'Guardar Horarios'}
                     </button>
                 </div>
+
+                <MidnightConfirmationModal
+                    isOpen={midnightConfirmation.isOpen}
+                    interval={midnightConfirmation.interval || { open: '00:00', close: '00:00' }}
+                    onConfirm={handleMidnightConfirm}
+                    onCancel={handleMidnightCancel}
+                />
             </div>
         </div>
     );

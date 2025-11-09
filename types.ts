@@ -102,6 +102,8 @@ export interface Business {
   shareToken?: string;
   shareTokenStatus?: 'active' | 'paused' | 'revoked';
   shareTokenExpiresAt?: string | null;
+  // Midnight mode toggle (Feature: Horarios que cruzan medianoche)
+  midnightModeEnabled?: boolean; // Default: false - Solo negocios con toggle ON usan lógica medianoche
 }
 
 // Types related to bookings/reservations
