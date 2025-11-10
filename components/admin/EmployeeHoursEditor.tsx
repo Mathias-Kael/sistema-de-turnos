@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Employee, Hours, DayHours, Interval } from '../../types';
 import { INITIAL_BUSINESS_DATA } from '../../constants';
-import { validarIntervalos } from '../../utils/availability';
+import { validarIntervalos, timeToMinutes } from '../../utils/availability';
 
 interface EmployeeHoursEditorProps {
     employee: Employee;
@@ -77,7 +77,10 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                         setIsSaving(false);
                         return;
                     }
-                    if (interval.open >= interval.close) {
+                    // Usar timeToMinutes con contexto para validar correctamente horarios nocturnos
+                    const openMinutes = timeToMinutes(interval.open, 'open');
+                    const closeMinutes = timeToMinutes(interval.close, 'close');
+                    if (openMinutes >= closeMinutes) {
                         setError(`Error: La hora de cierre debe ser posterior a la hora de inicio en todos los intervalos para el día ${dayNames[day]}.`);
                         setIsSaving(false);
                         return;

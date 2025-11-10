@@ -110,7 +110,7 @@ export const findAvailableEmployeeForSlot = (
 ): Employee | null => {
     const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()] as keyof Business['hours'];
     const dateString = date.toISOString().split('T')[0];
-    const slotStartMinutes = timeToMinutes(slot);
+    const slotStartMinutes = timeToMinutes(slot, 'open');
     const slotEndMinutes = slotStartMinutes + totalDuration;
     const businessHoursForDay = business.hours[dayOfWeek];
 
@@ -128,8 +128,8 @@ export const findAvailableEmployeeForSlot = (
         }
 
         const isWithinWorkingHours = effectiveHours.intervals.some(interval => {
-            const intervalStartMinutes = timeToMinutes(interval.open);
-            const intervalEndMinutes = timeToMinutes(interval.close);
+            const intervalStartMinutes = timeToMinutes(interval.open, 'open');
+            const intervalEndMinutes = timeToMinutes(interval.close, 'close');
             return slotStartMinutes >= intervalStartMinutes && slotEndMinutes <= intervalEndMinutes;
         });
 
@@ -143,8 +143,8 @@ export const findAvailableEmployeeForSlot = (
         );
 
         const isOverlapping = employeeBookings.some(booking => {
-            const bookingStartMinutes = timeToMinutes(booking.start);
-            const bookingEndMinutes = timeToMinutes(booking.end);
+            const bookingStartMinutes = timeToMinutes(booking.start, 'open');
+            const bookingEndMinutes = timeToMinutes(booking.end, 'close');
             return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes;
         });
 

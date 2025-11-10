@@ -8,12 +8,7 @@ import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 import { Client } from '../../types';
-
-// Helper para convertir tiempo a minutos
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
+import { timeToMinutes } from '../../utils/availability';
 
 export interface SpecialBookingModalProps {
   isOpen: boolean;
@@ -244,16 +239,16 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
     // Validar extensión de horario si está activa
     if (allowExtension) {
-      const extStart = timeToMinutes(extendedStart);
-      const extEnd = timeToMinutes(extendedEnd);
-      const bizStart = timeToMinutes(businessHoursForDay.start);
-      const bizEnd = timeToMinutes(businessHoursForDay.end);
-      
+      const extStart = timeToMinutes(extendedStart, 'open');
+      const extEnd = timeToMinutes(extendedEnd, 'close');
+      const bizStart = timeToMinutes(businessHoursForDay.start, 'open');
+      const bizEnd = timeToMinutes(businessHoursForDay.end, 'close');
+
       if (extStart >= extEnd) {
         setError('El horario de cierre debe ser posterior al de apertura');
         return;
       }
-      
+
       if (extStart > bizStart || extEnd < bizEnd) {
         setError('No puedes reducir el horario base del negocio');
         return;

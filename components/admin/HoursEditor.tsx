@@ -3,7 +3,7 @@ import { useBusinessState, useBusinessDispatch } from '../../context/BusinessCon
 import { Hours, DayHours, Interval } from '../../types';
 import { Button } from '../ui/Button';
 import { ErrorMessage } from '../ui/ErrorMessage';
-import { validarIntervalos } from '../../utils/availability';
+import { validarIntervalos, timeToMinutes } from '../../utils/availability';
 
 const daysOfWeek: { key: keyof Hours; label: string }[] = [
     { key: 'monday', label: 'Lunes' },
@@ -75,7 +75,14 @@ export const HoursEditor: React.FC = () => {
 
             if (dayHours.enabled) {
                 for (const interval of dayHours.intervals) {
-                    if (!interval.open || !interval.close || interval.open >= interval.close) {
+                    // Usar timeToMinutes con contexto para validar correctamente horarios nocturnos
+                    if (!interval.open || !interval.close) {
+                        setError(`Intervalo inválido para el ${dayLabel}. Debe especificar hora de inicio y fin.`);
+                        return false;
+                    }
+                    const openMinutes = timeToMinutes(interval.open, 'open');
+                    const closeMinutes = timeToMinutes(interval.close, 'close');
+                    if (openMinutes >= closeMinutes) {
                         setError(`Intervalo inválido para el ${dayLabel}. La hora de inicio debe ser menor que la de fin.`);
                         return false;
                     }
@@ -137,7 +144,10 @@ export const HoursEditor: React.FC = () => {
                                                                                     <span></span>
                                                         </div>
                                                                                 {draftHours[dayKey].intervals.map((interval, index) => {
-                                                            const invalid = !interval.open || !interval.close || interval.open >= interval.close;
+                                                            // Validar usando timeToMinutes con contexto para horarios nocturnos
+                                                            const openMinutes = interval.open ? timeToMinutes(interval.open, 'open') : -1;
+                                                            const closeMinutes = interval.close ? timeToMinutes(interval.close, 'close') : -1;
+                                                            const invalid = !interval.open || !interval.close || openMinutes >= closeMinutes;
                                                             const baseInput = "w-full px-3 py-2 border rounded-md shadow-sm bg-surface text-primary focus:outline-none focus:ring-1";
                                                             const validBorder = "border-default focus:ring-primary";
                                                             const invalidBorder = "border-red-400 focus:ring-red-400";

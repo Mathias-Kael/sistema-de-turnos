@@ -49,20 +49,45 @@ interface CalcularTurnosParams {
 
 /**
  * Convierte una hora en formato "HH:mm" a minutos desde la medianoche.
- * @param timeStr La hora en formato "HH:mm".
+ * IMPORTANTE: Maneja 12 AM contextualmente:
+ * - Como apertura (context='open'): 12 AM = 00:00 (medianoche inicio del día)
+ * - Como cierre (context='close'): 12 AM = 24:00 = 1440 minutos (medianoche fin del día)
+ * - Sin contexto: 12 AM = 00:00 por defecto
+ *
+ * @param timeStr La hora en formato "HH:mm" (puede ser "00:00" o "24:00").
+ * @param context Contexto: 'open' para apertura, 'close' para cierre.
  * @returns El número de minutos desde la medianoche.
  */
-export const timeToMinutes = (timeStr: string): number => {
+export const timeToMinutes = (timeStr: string, context?: 'open' | 'close'): number => {
     const [hours, minutes] = timeStr.split(':').map(Number);
+
+    // Regla contextual para 12 AM (00:00):
+    // - Si es hora de cierre y es medianoche (00:00), interpretar como 24:00 (fin del día)
+    // - Si es hora de apertura o sin contexto, interpretar como 00:00 (inicio del día)
+    if (hours === 0 && minutes === 0 && context === 'close') {
+        return 24 * 60; // 1440 minutos = 24:00 (medianoche del día siguiente)
+    }
+
+    // Manejo explícito de 24:00 (medianoche como fin de día)
+    if (hours === 24 && minutes === 0) {
+        return 24 * 60; // 1440 minutos
+    }
+
     return hours * 60 + minutes;
 };
 
 /**
  * Convierte minutos desde la medianoche a una hora en formato "HH:mm".
- * @param totalMinutes Los minutos desde la medianoche.
+ * Soporta 1440 minutos (24:00) para representar medianoche como fin de día.
+ * @param totalMinutes Los minutos desde la medianoche (0-1440).
  * @returns La hora formateada como "HH:mm".
  */
 export const minutesToTime = (totalMinutes: number): string => {
+    // Manejo especial para 1440 minutos (24:00 / medianoche como cierre)
+    if (totalMinutes === 1440) {
+        return '00:00'; // Normalizar 24:00 a 00:00 para formato de salida
+    }
+
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -121,16 +146,16 @@ export const calcularTurnosDisponibles = ({
     }
 
     const reservasEnMinutos = reservasOcupadas.map(r => ({
-        start: timeToMinutes(r.start),
-        end: timeToMinutes(r.end)
+        start: timeToMinutes(r.start, 'open'),
+        end: timeToMinutes(r.end, 'close')
     }));
 
     const turnosDisponibles: string[] = [];
 
     // Iterar sobre cada intervalo de trabajo del día (ej: mañana y tarde)
     horarioDelDia.intervals.forEach(intervalo => {
-        const inicioIntervalo = timeToMinutes(intervalo.open);
-        const finIntervalo = timeToMinutes(intervalo.close);
+        const inicioIntervalo = timeToMinutes(intervalo.open, 'open');
+        const finIntervalo = timeToMinutes(intervalo.close, 'close');
 
         const huecos = calcularHuecosLibres(
             { start: inicioIntervalo, end: finIntervalo },
@@ -175,8 +200,8 @@ export const validarIntervalos = (intervals: { open: string; close: string }[]):
 
     // Convertir a minutos y ordenar por hora de inicio
     const intervalosEnMinutos = intervals.map(interval => ({
-        start: timeToMinutes(interval.open),
-        end: timeToMinutes(interval.close),
+        start: timeToMinutes(interval.open, 'open'),
+        end: timeToMinutes(interval.close, 'close'),
     })).sort((a, b) => a.start - b.start);
 
     // Verificar solapamientos

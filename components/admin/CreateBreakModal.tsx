@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { createBookingSafe } from '../../services/api';
+import { timeToMinutes, minutesToTime } from '../../utils/availability';
 
 export interface CreateBreakModalProps {
   isOpen: boolean;
@@ -13,31 +14,20 @@ export interface CreateBreakModalProps {
 
 const mergeIntervals = (intervals: TimeSlot[]): TimeSlot[] => {
   if (intervals.length <= 1) return intervals;
-  const sorted = [...intervals].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+  const sorted = [...intervals].sort((a, b) => timeToMinutes(a.start, 'open') - timeToMinutes(b.start, 'open'));
   const merged: TimeSlot[] = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
     const last = merged[merged.length - 1];
     const current = sorted[i];
-    if (timeToMinutes(current.start) <= timeToMinutes(last.end)) {
-      const lastEnd = timeToMinutes(last.end);
-      const currentEnd = timeToMinutes(current.end);
+    if (timeToMinutes(current.start, 'open') <= timeToMinutes(last.end, 'close')) {
+      const lastEnd = timeToMinutes(last.end, 'close');
+      const currentEnd = timeToMinutes(current.end, 'close');
       last.end = minutesToTime(Math.max(lastEnd, currentEnd));
     } else {
       merged.push(current);
     }
   }
   return merged;
-};
-
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
-
-const minutesToTime = (minutes: number): string => {
-  const h = Math.floor(minutes / 60).toString().padStart(2, '0');
-  const m = (minutes % 60).toString().padStart(2, '0');
-  return h + ':' + m;
 };
 
 
