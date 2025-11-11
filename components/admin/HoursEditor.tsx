@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Hours, DayHours, Interval } from '../../types';
 import { Button } from '../ui/Button';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { validarIntervalos, timeToMinutes } from '../../utils/availability';
+import { getServerDateSync, parseDateString } from '../../utils/dateHelpers';
 
 const daysOfWeek: { key: keyof Hours; label: string }[] = [
     { key: 'monday', label: 'Lunes' },
@@ -21,6 +22,10 @@ export const HoursEditor: React.FC = () => {
 
     const [draftHours, setDraftHours] = useState<Hours>(business.hours);
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [affectedBookings, setAffectedBookings] = useState<Array<{date: string, time: string, client: string}>>([]);
 
     useEffect(() => {
         setDraftHours(business.hours);
@@ -97,15 +102,116 @@ export const HoursEditor: React.FC = () => {
         return true;
     };
 
+    // Detectar reservas futuras que quedarían fuera del nuevo horario
+    // Optimizado: O(N) en lugar de O(N*M) con pre-cálculo de intervalos
+    const checkAffectedFutureBookings = (newHours: Hours) => {
+        // Usar fecha del servidor para evitar discrepancias de timezone
+        const today = getServerDateSync();
+        const dayMap: {[key: number]: keyof Hours} = {
+            0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
+            4: 'thursday', 5: 'friday', 6: 'saturday'
+        };
+
+        // Pre-calcular intervalos en minutos por día (O(7*M) = O(1) para 7 días)
+        const dayIntervalsMap = new Map<keyof Hours, Array<{start: number, end: number}>>();
+
+        (Object.keys(newHours) as Array<keyof Hours>).forEach(dayKey => {
+            const dayHours = newHours[dayKey];
+            if (dayHours.enabled && dayHours.intervals.length > 0) {
+                const intervalsInMinutes = dayHours.intervals.map(interval => ({
+                    start: timeToMinutes(interval.open, 'open'),
+                    end: timeToMinutes(interval.close, 'close')
+                }));
+                dayIntervalsMap.set(dayKey, intervalsInMinutes);
+            }
+        });
+
+        const affected: Array<{date: string, time: string, client: string}> = [];
+
+        // Iterar sobre reservas una sola vez: O(N)
+        business.bookings.forEach(booking => {
+            if (booking.status === 'cancelled') return;
+
+            const bookingDate = parseDateString(booking.date);
+            if (bookingDate < today) return; // Solo futuras
+
+            const dayOfWeek = dayMap[bookingDate.getDay()];
+            const newDayHours = newHours[dayOfWeek];
+
+            // Si el día está cerrado, la reserva queda afectada
+            if (!newDayHours.enabled) {
+                affected.push({
+                    date: booking.date,
+                    time: `${booking.start} - ${booking.end}`,
+                    client: booking.client.name
+                });
+                return;
+            }
+
+            // Buscar en Map pre-calculado (O(1) lookup + O(M) check intervals)
+            const intervals = dayIntervalsMap.get(dayOfWeek);
+            if (!intervals || intervals.length === 0) {
+                // Día sin intervalos = reserva afectada
+                affected.push({
+                    date: booking.date,
+                    time: `${booking.start} - ${booking.end}`,
+                    client: booking.client.name
+                });
+                return;
+            }
+
+            // Verificar si la reserva cae dentro de algún intervalo (ya pre-calculados)
+            const bookingStart = timeToMinutes(booking.start, 'open');
+            const bookingEnd = timeToMinutes(booking.end, 'close');
+
+            const isWithinNewHours = intervals.some(interval =>
+                bookingStart >= interval.start && bookingEnd <= interval.end
+            );
+
+            if (!isWithinNewHours) {
+                affected.push({
+                    date: booking.date,
+                    time: `${booking.start} - ${booking.end}`,
+                    client: booking.client.name
+                });
+            }
+        });
+
+        return affected;
+    };
+
     const handleSave = async () => {
         if (!validateHours(draftHours)) return;
+
+        // Verificar si hay reservas futuras afectadas
+        const affected = checkAffectedFutureBookings(draftHours);
+        if (affected.length > 0) {
+            setAffectedBookings(affected);
+            setShowConfirmModal(true);
+            return;
+        }
+
+        // Si no hay reservas afectadas, guardar directamente
+        await saveChanges();
+    };
+
+    const saveChanges = async () => {
+        setIsSaving(true);
+        setError(null);
+        setSuccessMessage(null);
+
         try {
-            // Creamos el payload completo para la actualización
             const updatedBusiness = { ...business, hours: draftHours };
             await dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
-            // Aquí podrías mostrar una notificación de éxito
+            setSuccessMessage('✓ Horarios actualizados correctamente');
+
+            // Limpiar mensaje de éxito después de 3 segundos
+            setTimeout(() => setSuccessMessage(null), 3000);
         } catch (e: any) {
             setError(e.message);
+        } finally {
+            setIsSaving(false);
+            setShowConfirmModal(false);
         }
     };
 
@@ -114,7 +220,10 @@ export const HoursEditor: React.FC = () => {
         setError(null);
     };
 
-    const hasChanges = JSON.stringify(draftHours) !== JSON.stringify(business.hours);
+    // Memoize hasChanges calculation to avoid expensive JSON.stringify on every render
+    const hasChanges = useMemo(() => {
+        return JSON.stringify(draftHours) !== JSON.stringify(business.hours);
+    }, [draftHours, business.hours]);
 
     return (
         <div className="space-y-4">
@@ -208,10 +317,133 @@ export const HoursEditor: React.FC = () => {
                 </div>
             ))}
             {error && <ErrorMessage message={error} />}
+            {successMessage && (
+                <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-md flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    <span>{successMessage}</span>
+                </div>
+            )}
             {hasChanges && (
                 <div className="flex justify-end gap-4 mt-6">
-                    <Button variant="secondary" onClick={handleCancel}>Cancelar</Button>
-                    <Button onClick={handleSave} disabled={!!error}>Guardar Cambios</Button>
+                    <Button variant="secondary" onClick={handleCancel} disabled={isSaving}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleSave} disabled={!!error || isSaving}>
+                        {isSaving ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Guardando...
+                            </>
+                        ) : (
+                            'Guardar Cambios'
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            {/* Modal de confirmación para reservas afectadas */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="p-6 border-b border-default">
+                            <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-primary">⚠️ Atención: Reservas Futuras Afectadas</h3>
+                                    <p className="mt-1 text-sm text-secondary">
+                                        Los cambios en el horario de atención afectarán {affectedBookings.length} reserva{affectedBookings.length > 1 ? 's' : ''} futura{affectedBookings.length > 1 ? 's' : ''} que quedaría{affectedBookings.length > 1 ? 'n' : ''} fuera del nuevo horario.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Body - Lista de reservas afectadas */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="mb-4">
+                                <h4 className="font-medium text-primary mb-3">Reservas que quedarán fuera del horario:</h4>
+                                <div className="space-y-2">
+                                    {affectedBookings.map((booking, idx) => (
+                                        <div key={idx} className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-gray-900">{booking.client}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            {new Date(booking.date).toLocaleDateString('es-AR', {
+                                                                weekday: 'long',
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </span>
+                                                        <span className="mx-2">•</span>
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            {booking.time}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Nota importante:</strong> Si continuás, estas reservas seguirán activas en el sistema, pero quedarán fuera del horario de atención configurado. Te recomendamos contactar a los clientes afectados para reprogramar o cancelar las reservas.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-default bg-gray-50">
+                            <div className="flex justify-end gap-3">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setShowConfirmModal(false);
+                                        setAffectedBookings([]);
+                                    }}
+                                    disabled={isSaving}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={saveChanges}
+                                    disabled={isSaving}
+                                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Guardando...
+                                        </>
+                                    ) : (
+                                        'Continuar y Guardar'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

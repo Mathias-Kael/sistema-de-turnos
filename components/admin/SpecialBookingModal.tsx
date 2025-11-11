@@ -9,19 +9,7 @@ import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 import { Client } from '../../types';
 import { timeToMinutes } from '../../utils/availability';
-
-// Helper: Convertir Date a string local YYYY-MM-DD
-const getLocalDateString = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// Helper: Obtener fecha mínima (hoy) en formato YYYY-MM-DD
-const getTodayString = (): string => {
-  return getLocalDateString(new Date());
-};
+import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 export interface SpecialBookingModalProps {
   isOpen: boolean;
@@ -332,7 +320,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                 <input
                     type="date"
                     value={getLocalDateString(selectedDate)}
-                    onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                    onChange={(e) => setSelectedDate(parseDateString(e.target.value))}
                     min={getTodayString()}
                     className="p-2 w-full border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                     required

@@ -5,19 +5,7 @@ import { getAvailableSlots, findAvailableEmployeeForSlot } from '../../services/
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
-
-// Helper: Convertir Date a string local YYYY-MM-DD
-const getLocalDateString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
-// Helper: Obtener fecha mínima (hoy) en formato YYYY-MM-DD
-const getTodayString = (): string => {
-    return getLocalDateString(new Date());
-};
+import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 interface ManualBookingModalProps {
     defaultDate?: Date;
@@ -270,7 +258,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                         <input
                             type="date"
                             value={dateStr}
-                            onChange={(e) => setBookingDate(new Date(e.target.value + 'T00:00:00'))}
+                            onChange={(e) => setBookingDate(parseDateString(e.target.value))}
                             min={getTodayString()}
                             className="p-2 w-full border border-default rounded-md bg-background text-primary"
                             required

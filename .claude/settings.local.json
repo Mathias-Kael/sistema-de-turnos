@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(\"c:\\Users\\mathi\\Desktop\\sistema-de-turnos\\docs\\ASTRA_Roadmap_Implementacion_Log_07Nov2025.md\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
