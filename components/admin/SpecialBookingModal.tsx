@@ -10,6 +10,19 @@ import { ClientFormModal } from '../common/ClientFormModal';
 import { Client } from '../../types';
 import { timeToMinutes } from '../../utils/availability';
 
+// Helper: Convertir Date a string local YYYY-MM-DD
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper: Obtener fecha mínima (hoy) en formato YYYY-MM-DD
+const getTodayString = (): string => {
+  return getLocalDateString(new Date());
+};
+
 export interface SpecialBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -316,10 +329,12 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             {/* Date Picker */}
             <div className="mb-4">
                 <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Fecha</h3>
-                <Input
+                <input
                     type="date"
-                    value={selectedDate.toISOString().split('T')[0]}
+                    value={getLocalDateString(selectedDate)}
                     onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                    min={getTodayString()}
+                    className="p-2 w-full border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                     required
                 />
             </div>

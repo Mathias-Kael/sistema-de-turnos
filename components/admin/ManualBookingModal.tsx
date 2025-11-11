@@ -6,6 +6,19 @@ import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 
+// Helper: Convertir Date a string local YYYY-MM-DD
+const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+// Helper: Obtener fecha mínima (hoy) en formato YYYY-MM-DD
+const getTodayString = (): string => {
+    return getLocalDateString(new Date());
+};
+
 interface ManualBookingModalProps {
     defaultDate?: Date;
     onClose: () => void;
@@ -14,7 +27,7 @@ interface ManualBookingModalProps {
 
 export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultDate, onClose, onSave }) => {
     const business = useBusinessState();
-    
+
     // Internal date state
     const [bookingDate, setBookingDate] = useState(defaultDate || new Date());
 
@@ -22,12 +35,12 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
     const [useExistingClient, setUseExistingClient] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [showClientForm, setShowClientForm] = useState(false);
-    
+
     // Manual client fields (backward compatible)
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
-    
+
     // Booking state
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | 'any' | null>(null);
@@ -36,7 +49,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const dateStr = bookingDate.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(bookingDate);
 
     useEffect(() => {
         if (selectedServices.length > 0 && selectedEmployeeId) {
@@ -258,6 +271,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                             type="date"
                             value={dateStr}
                             onChange={(e) => setBookingDate(new Date(e.target.value + 'T00:00:00'))}
+                            min={getTodayString()}
                             className="p-2 w-full border border-default rounded-md bg-background text-primary"
                             required
                         />
