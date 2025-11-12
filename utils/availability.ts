@@ -1,6 +1,29 @@
 import { DayHours, Employee } from '../types';
 
 /**
+ * Normaliza un string de tiempo para convertirlo al formato estándar "HH:mm".
+ *
+ * La base de datos puede devolver tiempos en formato SQL TIME (`HH:mm:ss`) con segundos,
+ * pero la aplicación trabaja internamente con formato simplificado (`HH:mm`).
+ * Esta función realiza la conversión en la capa de datos para mantener consistencia.
+ *
+ * @param timeStr - String de tiempo en formato "HH:mm" o "HH:mm:ss"
+ * @returns String de tiempo normalizado en formato "HH:mm"
+ *
+ * @example
+ * normalizeTimeString("09:00")    // "09:00" (sin cambios)
+ * normalizeTimeString("09:00:00") // "09:00" (extrae HH:mm)
+ * normalizeTimeString("23:59:59") // "23:59" (extrae HH:mm)
+ */
+export const normalizeTimeString = (timeStr: string): string => {
+    // Si el formato incluye segundos (HH:mm:ss), extraer solo HH:mm
+    if (timeStr && timeStr.length === 8 && timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+        return timeStr.substring(0, 5);
+    }
+    return timeStr;
+};
+
+/**
  * Determina el horario laboral efectivo para un empleado en un día específico.
  * Devuelve el horario personal del empleado si está activado; de lo contrario,
  * devuelve el horario general del negocio.
@@ -348,6 +371,8 @@ export const calcularTurnosDisponibles = ({
         return [];
     }
 
+    // Convertir reservas a minutos para comparación numérica
+    // Nota: Los datos ya vienen normalizados desde services/api.ts (formato "HH:mm")
     const reservasEnMinutos = reservasOcupadas.map(r => ({
         start: timeToMinutes(r.start, 'open'),
         end: timeToMinutes(r.end, 'close')
@@ -381,9 +406,11 @@ export const calcularTurnosDisponibles = ({
     if (esFechaHoy) {
         const ahora = new Date();
         const minutoActual = ahora.getHours() * 60 + ahora.getMinutes();
-        
+
         return turnosDisponibles.filter(turno => {
-            const minutoTurno = timeToMinutes(turno);
+            // CRÍTICO: Usar context 'open' para parsear slots de inicio
+            // Los slots retornados son siempre horas de inicio de turno
+            const minutoTurno = timeToMinutes(turno, 'open');
             return minutoTurno >= minutoActual;
         });
     }

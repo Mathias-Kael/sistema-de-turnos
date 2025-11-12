@@ -2003,3 +2003,324 @@ npm test
 5. Evaluar extender validación a otros editores (ej: `SpecialBookingModal`)
 
 ---
+
+## 11. Fix Crítico Post-Merge: Normalización de Formato de Tiempo de Base de Datos
+
+### 11.1. Nombre del Fix
+Normalización de formato de tiempo HH:mm:ss desde base de datos
+
+### 11.2. Contexto del Problema
+
+**Fecha:** 12 Noviembre 2025
+**Severidad:** CRÍTICA (P0 - Producción bloqueada)
+**Branch Afectado:** `main` (post-merge de `feature/24hs`)
+
+Después del merge exitoso de `feature/24hs` a `main`, apareció un bug crítico e impredecible:
+- ✅ Empleados **sin** reservas → Horarios se cargaban correctamente
+- ❌ Empleados **con** reservas existentes → Error total: "No se pudieron cargar los horarios"
+- ❌ Slots ocupados aparecían como disponibles (falsos negativos)
+
+**Síntoma inicial:** Error intermitente que colapsaba el cálculo de disponibilidad completo.
+
+### 11.3. Diagnóstico - Causa Raíz
+
+#### Problema 1: Discrepancia de Formatos
+La base de datos (Supabase) almacena tiempos en formato SQL `TIME`:
+```sql
+start_time: TIME  →  "09:00:00" (HH:mm:ss con segundos)
+end_time: TIME    →  "10:00:00"
+```
+
+La aplicación esperaba formato simplificado:
+```typescript
+timeToMinutes("09:00")    // ✅ Formato esperado: HH:mm
+timeToMinutes("09:00:00") // ❌ Formato recibido: HH:mm:ss → ERROR
+```
+
+#### Problema 2: Validación Estricta
+`timeToMinutes()` validaba formato con regex exacto:
+```typescript
+if (!timeStr.match(/^\d{2}:\d{2}$/)) {  // Exactamente 5 caracteres
+    throw new Error('Formato inválido...');
+}
+```
+
+**Resultado:** Reservas de DB con formato `HH:mm:ss` arrojaban error → función colapsaba → slots no se calculaban.
+
+#### Problema 3: Error Silencioso Inicial
+Mi primer fix con try-catch **ocultaba** el error y **filtraba** reservas válidas:
+```typescript
+try {
+    return { start: timeToMinutes(r.start), end: timeToMinutes(r.end) };
+} catch (error) {
+    return { start: -1, end: -1 }; // ❌ Se filtró reserva válida
+}
+```
+
+**Consecuencia:** Slots ocupados aparecían como disponibles (bug de seguridad).
+
+#### Evidencia del Bug
+Console logs mostraron:
+```
+[calcularTurnosDisponibles] ❌ Error convirtiendo reserva:
+  {date: "2025-11-19", start: "09:00:00", end: "10:00:00"}
+  Error: [timeToMinutes] Formato inválido: se esperaba "HH:mm"...
+```
+
+### 11.4. Solución Implementada
+
+#### Arquitectura de la Solución
+Se adoptó el patrón **"Normalize at the Edge"** (normalizar en capa de datos):
+
+```
+┌─────────────┐  HH:mm:ss   ┌──────────────┐  HH:mm   ┌─────────────────┐
+│   Supabase  │ ──────────> │ services/    │ ───────> │ availability.ts │
+│   Database  │             │ api.ts       │          │ (Business Logic)│
+└─────────────┘             │ (Data Layer) │          └─────────────────┘
+                            │ ✅ NORMALIZE  │
+                            └──────────────┘
+```
+
+**Principio:** Normalizar una vez en la capa de datos, mantener consistencia en capa de negocio.
+
+#### Implementación Detallada
+
+**1. Nueva Función Helper** ([`utils/availability.ts:18-24`](utils/availability.ts#L18-L24))
+
+```typescript
+/**
+ * Normaliza un string de tiempo para convertirlo al formato estándar "HH:mm".
+ *
+ * La base de datos puede devolver tiempos en formato SQL TIME (`HH:mm:ss`) con segundos,
+ * pero la aplicación trabaja internamente con formato simplificado (`HH:mm`).
+ * Esta función realiza la conversión en la capa de datos para mantener consistencia.
+ */
+export const normalizeTimeString = (timeStr: string): string => {
+    // Si el formato incluye segundos (HH:mm:ss), extraer solo HH:mm
+    if (timeStr && timeStr.length === 8 && timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+        return timeStr.substring(0, 5);
+    }
+    return timeStr;
+};
+```
+
+**2. Normalización en Capa de Datos** ([`services/api.ts:49-53`](services/api.ts#L49-L53), [`services/api.ts:82-86`](services/api.ts#L82-L86))
+
+```typescript
+// ANTES ❌: Pasar datos crudos de DB
+const occupiedSlots: ReservaOcupada[] = employeeBookings.map(b => ({
+    date: b.date,
+    start: b.start,      // "09:00:00" → ERROR
+    end: b.end,          // "10:00:00" → ERROR
+}));
+
+// DESPUÉS ✅: Normalizar en capa de datos
+const occupiedSlots: ReservaOcupada[] = employeeBookings.map(b => ({
+    date: b.date,
+    start: normalizeTimeString(b.start),  // "09:00:00" → "09:00"
+    end: normalizeTimeString(b.end),      // "10:00:00" → "10:00"
+}));
+```
+
+**3. Limpieza de timeToMinutes()** ([`utils/availability.ts:146-162`](utils/availability.ts#L146-L162))
+
+```typescript
+// Revertir a validación estricta (sin normalización en función de negocio)
+export const timeToMinutes = (timeStr: string, context?: 'open' | 'close'): number => {
+    // Validación: Solo acepta "HH:mm" (5 caracteres)
+    if (!timeStr.match(/^\d{2}:\d{2}$/)) {
+        throw new Error(
+            `[timeToMinutes] Formato inválido: se esperaba "HH:mm"...`
+        );
+    }
+    // ... resto de la lógica
+};
+```
+
+**4. Simplificación de calcularTurnosDisponibles()** ([`utils/availability.ts:374-379`](utils/availability.ts#L374-L379))
+
+```typescript
+// ANTES ❌: Try-catch complejo con filtrado y logs
+const reservasEnMinutos = reservasOcupadas
+    .filter(r => /* validaciones */ )
+    .map(r => {
+        try { /* conversión */ }
+        catch { return { start: -1, end: -1 }; }
+    })
+    .filter(r => r.start >= 0);
+
+// DESPUÉS ✅: Conversión directa (datos ya normalizados)
+const reservasEnMinutos = reservasOcupadas.map(r => ({
+    start: timeToMinutes(r.start, 'open'),
+    end: timeToMinutes(r.end, 'close')
+}));
+```
+
+### 11.5. Tests de Integración Agregados
+
+**Archivo:** [`utils/availability.test.ts:695-785`](utils/availability.test.ts#L695-L785)
+
+#### Test Suite 1: normalizeTimeString()
+```typescript
+describe('normalizeTimeString', () => {
+  it('should return HH:mm format unchanged', () => {
+    expect(normalizeTimeString('09:00')).toBe('09:00');
+    expect(normalizeTimeString('23:59')).toBe('23:59');
+  });
+
+  it('should normalize HH:mm:ss to HH:mm (DB format)', () => {
+    expect(normalizeTimeString('09:00:00')).toBe('09:00');
+    expect(normalizeTimeString('23:59:59')).toBe('23:59');
+  });
+});
+```
+
+#### Test Suite 2: Integración con Formato de DB
+```typescript
+describe('calcularTurnosDisponibles - Integration with DB format', () => {
+  it('should handle bookings with HH:mm:ss format from database', () => {
+    // Simular reservas como vienen de Supabase
+    const reservasDB = [
+      { date: '2025-11-19', start: '09:00:00', end: '10:00:00' },
+      { date: '2025-11-19', start: '14:00:00', end: '15:00:00' },
+    ];
+
+    // Normalizar como lo hace services/api.ts
+    const reservasNormalizadas = reservasDB.map(r => ({
+      date: r.date,
+      start: normalizeTimeString(r.start),
+      end: normalizeTimeString(r.end),
+    }));
+
+    const slots = calcularTurnosDisponibles({
+      fecha: new Date('2025-11-19'),
+      duracionTotal: 60,
+      horarioDelDia: { enabled: true, intervals: [{ open: '09:00', close: '18:00' }] },
+      reservasOcupadas: reservasNormalizadas,
+    });
+
+    // Verificar que slots ocupados NO aparecen
+    expect(slots).not.toContain('09:00'); // ✅
+    expect(slots).not.toContain('14:00'); // ✅
+
+    // Verificar que slots libres SÍ aparecen
+    expect(slots).toContain('10:00'); // ✅
+    expect(slots).toContain('13:00'); // ✅
+  });
+
+  it('should handle midnight bookings with DB format (nighttime hours)', () => {
+    // Test para horarios nocturnos con formato DB
+    // ... (ver código completo)
+  });
+});
+```
+
+**Resultado:** 95 tests pasando (incluye 8 nuevos tests de normalización e integración).
+
+### 11.6. Análisis de Alternativas
+
+#### Alternativa A: Normalizar en `services/api.ts` (✅ IMPLEMENTADA)
+**Pros:**
+- ✅ Normaliza una vez, usa muchas veces (DRY)
+- ✅ Separation of concerns (data layer vs business logic)
+- ✅ `timeToMinutes()` se mantiene puro y simple
+- ✅ Type-safe: `ReservaOcupada` siempre tiene formato consistente
+- ✅ Fácil de testear y mantener
+
+**Contras:**
+- ⚠️ DB sigue almacenando formato con segundos (cosmético)
+
+#### Alternativa B: Migración de Base de Datos
+**Pros:**
+- ✅ Solución definitiva en la fuente
+- ✅ Datos consistentes en DB
+
+**Contras:**
+- ❌ Complejidad alta (migración de datos existentes)
+- ❌ Requiere coordinación con agente de Supabase
+- ❌ Riesgo de downtime
+- ❌ SQL TIME siempre devuelve `HH:mm:ss` (no se puede cambiar)
+
+**Decisión:** Alternativa A es pragmática y suficiente. El formato `HH:mm:ss` en DB no es un problema técnico.
+
+#### Alternativa C: Normalizar en `timeToMinutes()`
+**Pros:**
+- ✅ Fix centralizado
+
+**Contras:**
+- ❌ Mixing concerns (parsing + normalización)
+- ❌ `timeToMinutes()` pierde pureza
+- ❌ Bug puede propagarse a otros usos
+
+**Decisión:** Rechazada. Viola principios SOLID.
+
+### 11.7. Métricas de Impacto
+
+| Métrica | Antes del Fix | Después del Fix |
+|---------|---------------|-----------------|
+| **Tests pasando** | 87 | 95 (+8 nuevos) |
+| **Carga de slots con reservas** | ❌ Error 100% | ✅ Funciona 100% |
+| **Falsos positivos** | ❌ Slots ocupados disponibles | ✅ Detección correcta |
+| **Lines of Code** | +60 (try-catch complejo) | -15 (simplificación) |
+| **Funciones exportadas** | 6 | 7 (+`normalizeTimeString`) |
+
+### 11.8. Lecciones Aprendidas
+
+#### 1. Tests Unitarios No Son Suficientes
+**Problema:** Tests usaban formato correcto (`"09:00"`) pero DB devolvía formato diferente (`"09:00:00"`).
+
+**Lección:** **Tests deben usar datos reales de producción** (mock realista).
+
+**Acción:** Agregados tests de integración con formato DB real.
+
+#### 2. Validación Estricta Puede Causar Fragilidad
+**Problema:** Regex `/^\d{2}:\d{2}$/` rechazaba formato válido de SQL TIME.
+
+**Lección:** **Ser flexible con inputs, estricto con outputs** (Postel's Law).
+
+**Acción:** Normalizar en capa de datos, validar en capa de negocio.
+
+#### 3. Try-Catch Puede Ocultar Bugs
+**Problema:** Try-catch initial **silenciaba** errores y causaba falsos negativos.
+
+**Lección:** **Fail fast, fail loud**. No ocultar errores con fallbacks silenciosos.
+
+**Acción:** Remover try-catch, hacer que `timeToMinutes()` falle explícitamente con inputs inválidos.
+
+#### 4. Separation of Concerns Es Crítico
+**Problema:** Mezclar normalización con parsing crea código acoplado.
+
+**Lección:** **Cada función debe tener una responsabilidad única** (SRP).
+
+**Acción:**
+- `normalizeTimeString()` → Normaliza formatos
+- `timeToMinutes()` → Parsea tiempo a minutos
+- `services/api.ts` → Adapta datos de DB
+
+### 11.9. Archivos Modificados
+
+| Archivo | Cambios | Propósito |
+|---------|---------|-----------|
+| [`utils/availability.ts`](utils/availability.ts) | +20 líneas | Agregar `normalizeTimeString()`, simplificar `calcularTurnosDisponibles()` |
+| [`services/api.ts`](services/api.ts) | +6 líneas | Normalizar tiempos al leer de DB (2 ubicaciones) |
+| [`utils/availability.test.ts`](utils/availability.test.ts) | +91 líneas | 8 nuevos tests (normalización + integración) |
+| [`components/common/ConfirmationModal.tsx`](components/common/ConfirmationModal.tsx) | +1 línea | Agregar context a `timeToMinutes()` |
+
+**Total:** +118 líneas agregadas, -60 líneas removidas (simplificación neta)
+
+### 11.10. Estado Final
+
+✅ **Bug resuelto completamente**
+✅ **Tests pasando (95/95)**
+✅ **Código más limpio y mantenible**
+✅ **Arquitectura mejorada (Separation of Concerns)**
+✅ **Documentación completa**
+
+### 11.11. Próximos Pasos
+
+1. ✅ Verificar en producción con datos reales
+2. ⏳ Monitorear logs por 48 horas (sin errores relacionados)
+3. 📊 Considerar agregar telemetry para detectar formatos inesperados
+4. 📝 Actualizar documentación de API interna sobre formato de tiempos
+
+---

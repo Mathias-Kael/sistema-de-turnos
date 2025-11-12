@@ -54,7 +54,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 return;
             }
             const { name: normName, phone: normPhone, email: normEmail } = v.normalized;
-            const startTimeInMinutes = timeToMinutes(slot);
+            const startTimeInMinutes = timeToMinutes(slot, 'open');
             const endTimeInMinutes = startTimeInMinutes + totalDuration;
             const endTime = minutesToTime(endTimeInMinutes);
 
