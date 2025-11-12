@@ -5,6 +5,7 @@ import { getAvailableSlots, findAvailableEmployeeForSlot } from '../../services/
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
+import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 interface ManualBookingModalProps {
     defaultDate?: Date;
@@ -14,7 +15,7 @@ interface ManualBookingModalProps {
 
 export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultDate, onClose, onSave }) => {
     const business = useBusinessState();
-    
+
     // Internal date state
     const [bookingDate, setBookingDate] = useState(defaultDate || new Date());
 
@@ -22,12 +23,12 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
     const [useExistingClient, setUseExistingClient] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [showClientForm, setShowClientForm] = useState(false);
-    
+
     // Manual client fields (backward compatible)
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
-    
+
     // Booking state
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | 'any' | null>(null);
@@ -36,7 +37,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const dateStr = bookingDate.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(bookingDate);
 
     useEffect(() => {
         if (selectedServices.length > 0 && selectedEmployeeId) {
@@ -257,7 +258,8 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                         <input
                             type="date"
                             value={dateStr}
-                            onChange={(e) => setBookingDate(new Date(e.target.value + 'T00:00:00'))}
+                            onChange={(e) => setBookingDate(parseDateString(e.target.value))}
+                            min={getTodayString()}
                             className="p-2 w-full border border-default rounded-md bg-background text-primary"
                             required
                         />

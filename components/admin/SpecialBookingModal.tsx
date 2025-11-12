@@ -8,12 +8,8 @@ import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 import { Client } from '../../types';
-
-// Helper para convertir tiempo a minutos
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
+import { timeToMinutes } from '../../utils/availability';
+import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 export interface SpecialBookingModalProps {
   isOpen: boolean;
@@ -244,16 +240,16 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
     // Validar extensión de horario si está activa
     if (allowExtension) {
-      const extStart = timeToMinutes(extendedStart);
-      const extEnd = timeToMinutes(extendedEnd);
-      const bizStart = timeToMinutes(businessHoursForDay.start);
-      const bizEnd = timeToMinutes(businessHoursForDay.end);
-      
+      const extStart = timeToMinutes(extendedStart, 'open');
+      const extEnd = timeToMinutes(extendedEnd, 'close');
+      const bizStart = timeToMinutes(businessHoursForDay.start, 'open');
+      const bizEnd = timeToMinutes(businessHoursForDay.end, 'close');
+
       if (extStart >= extEnd) {
         setError('El horario de cierre debe ser posterior al de apertura');
         return;
       }
-      
+
       if (extStart > bizStart || extEnd < bizEnd) {
         setError('No puedes reducir el horario base del negocio');
         return;
@@ -321,10 +317,12 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             {/* Date Picker */}
             <div className="mb-4">
                 <h3 className="text-lg font-semibold mb-2 text-primary">Paso 1: Seleccionar Fecha</h3>
-                <Input
+                <input
                     type="date"
-                    value={selectedDate.toISOString().split('T')[0]}
-                    onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                    value={getLocalDateString(selectedDate)}
+                    onChange={(e) => setSelectedDate(parseDateString(e.target.value))}
+                    min={getTodayString()}
+                    className="p-2 w-full border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                     required
                 />
             </div>

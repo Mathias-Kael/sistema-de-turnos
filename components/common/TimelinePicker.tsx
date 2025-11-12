@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { timeToMinutes, minutesToTime } from '../../utils/availability';
 
 export interface TimeSlot {
   start: string;
@@ -19,22 +20,11 @@ export interface TimelinePickerProps {
   viewportRange?: TimeSlot;
 }
 
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
-
-const minutesToTime = (minutes: number): string => {
-  const h = Math.floor(minutes / 60).toString().padStart(2, '0');
-  const m = (minutes % 60).toString().padStart(2, '0');
-  return h + ':' + m;
-};
-
 const hasOverlap = (slot1: TimeSlot, slot2: TimeSlot): boolean => {
-  const start1 = timeToMinutes(slot1.start);
-  const end1 = timeToMinutes(slot1.end);
-  const start2 = timeToMinutes(slot2.start);
-  const end2 = timeToMinutes(slot2.end);
+  const start1 = timeToMinutes(slot1.start, 'open');
+  const end1 = timeToMinutes(slot1.end, 'close');
+  const start2 = timeToMinutes(slot2.start, 'open');
+  const end2 = timeToMinutes(slot2.end, 'close');
   return (start1 < end2) && (end1 > start2);
 };
 
@@ -54,13 +44,13 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
   const effectiveRange = useMemo(() => {
     if (extendedHours) {
       return {
-        start: Math.min(timeToMinutes(businessHours.start), timeToMinutes(extendedHours.start)),
-        end: Math.max(timeToMinutes(businessHours.end), timeToMinutes(extendedHours.end)),
+        start: Math.min(timeToMinutes(businessHours.start, 'open'), timeToMinutes(extendedHours.start, 'open')),
+        end: Math.max(timeToMinutes(businessHours.end, 'close'), timeToMinutes(extendedHours.end, 'close')),
       };
     }
     return {
-      start: timeToMinutes(businessHours.start),
-      end: timeToMinutes(businessHours.end),
+      start: timeToMinutes(businessHours.start, 'open'),
+      end: timeToMinutes(businessHours.end, 'close'),
     };
   }, [businessHours, extendedHours]);
 
@@ -81,10 +71,10 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
   };
 
   const isWithinBusinessHours = (proposedSlot: TimeSlot): boolean => {
-    const start = timeToMinutes(proposedSlot.start);
-    const end = timeToMinutes(proposedSlot.end);
-    const bizStart = timeToMinutes(businessHours.start);
-    const bizEnd = timeToMinutes(businessHours.end);
+    const start = timeToMinutes(proposedSlot.start, 'open');
+    const end = timeToMinutes(proposedSlot.end, 'close');
+    const bizStart = timeToMinutes(businessHours.start, 'open');
+    const bizEnd = timeToMinutes(businessHours.end, 'close');
     return start >= bizStart && end <= bizEnd;
   };
 
@@ -128,8 +118,8 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
 
   const renderBookings = () => {
     return existingBookings.map((booking, idx) => {
-      const start = timeToMinutes(booking.start);
-      const end = timeToMinutes(booking.end);
+      const start = timeToMinutes(booking.start, 'open');
+      const end = timeToMinutes(booking.end, 'close');
       const x = minutesToX(start);
       const width = (end - start) * pixelsPerMinute;
       return (
@@ -162,8 +152,8 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
 
   const renderSelectedSlot = () => {
     if (!selectedSlot) return null;
-    const start = timeToMinutes(selectedSlot.start);
-    const end = timeToMinutes(selectedSlot.end);
+    const start = timeToMinutes(selectedSlot.start, 'open');
+    const end = timeToMinutes(selectedSlot.end, 'close');
     const x = minutesToX(start);
     const width = (end - start) * pixelsPerMinute;
     const hasConflict = checkOverlap(selectedSlot);
@@ -182,11 +172,11 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
 
   const renderExtendedHoursBackground = () => {
     if (!extendedHours) return null;
-    
-    const bizStart = timeToMinutes(businessHours.start);
-    const bizEnd = timeToMinutes(businessHours.end);
-    const extStart = timeToMinutes(extendedHours.start);
-    const extEnd = timeToMinutes(extendedHours.end);
+
+    const bizStart = timeToMinutes(businessHours.start, 'open');
+    const bizEnd = timeToMinutes(businessHours.end, 'close');
+    const extStart = timeToMinutes(extendedHours.start, 'open');
+    const extEnd = timeToMinutes(extendedHours.end, 'close');
     
     const beforeExtension = extStart < bizStart;
     const afterExtension = extEnd > bizEnd;
