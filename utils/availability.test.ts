@@ -691,3 +691,95 @@ describe('Developer Experience: IDE Autocomplete & Error Messages', () => {
     }
   });
 });
+
+describe('normalizeTimeString', () => {
+  const { normalizeTimeString } = require('./availability');
+
+  it('should return HH:mm format unchanged', () => {
+    expect(normalizeTimeString('09:00')).toBe('09:00');
+    expect(normalizeTimeString('18:30')).toBe('18:30');
+    expect(normalizeTimeString('23:59')).toBe('23:59');
+    expect(normalizeTimeString('00:00')).toBe('00:00');
+  });
+
+  it('should normalize HH:mm:ss to HH:mm (DB format)', () => {
+    expect(normalizeTimeString('09:00:00')).toBe('09:00');
+    expect(normalizeTimeString('18:30:45')).toBe('18:30');
+    expect(normalizeTimeString('23:59:59')).toBe('23:59');
+    expect(normalizeTimeString('00:00:00')).toBe('00:00');
+  });
+
+  it('should handle edge cases safely', () => {
+    expect(normalizeTimeString('12:00:00')).toBe('12:00');
+    expect(normalizeTimeString('24:00:00')).toBe('24:00');
+  });
+});
+
+describe('calcularTurnosDisponibles - Integration with DB format', () => {
+  const { calcularTurnosDisponibles, normalizeTimeString } = require('./availability');
+
+  it('should handle bookings with HH:mm:ss format from database', () => {
+    // Simular reservas como vienen de Supabase (con segundos)
+    const reservasDB = [
+      { date: '2025-11-19', start: '09:00:00', end: '10:00:00' },
+      { date: '2025-11-19', start: '14:00:00', end: '15:00:00' },
+    ];
+
+    // Normalizar como lo hace services/api.ts
+    const reservasNormalizadas = reservasDB.map(r => ({
+      date: r.date,
+      start: normalizeTimeString(r.start),
+      end: normalizeTimeString(r.end),
+    }));
+
+    const slots = calcularTurnosDisponibles({
+      fecha: new Date('2025-11-19'),
+      duracionTotal: 60,
+      horarioDelDia: {
+        enabled: true,
+        intervals: [{ open: '09:00', close: '18:00' }],
+      },
+      reservasOcupadas: reservasNormalizadas,
+    });
+
+    // Verificar que slots ocupados NO aparecen
+    expect(slots).not.toContain('09:00'); // Ocupado 09:00-10:00
+    expect(slots).not.toContain('14:00'); // Ocupado 14:00-15:00
+
+    // Verificar que slots libres SÍ aparecen
+    expect(slots).toContain('10:00'); // Libre después de primera reserva
+    expect(slots).toContain('11:00'); // Libre
+    expect(slots).toContain('13:00'); // Libre antes de segunda reserva
+    expect(slots).toContain('15:00'); // Libre después de segunda reserva
+  });
+
+  it('should handle midnight bookings with DB format (nighttime hours)', () => {
+    const reservasDB = [
+      { date: '2025-11-19', start: '22:00:00', end: '23:00:00' },
+    ];
+
+    const reservasNormalizadas = reservasDB.map(r => ({
+      date: r.date,
+      start: normalizeTimeString(r.start),
+      end: normalizeTimeString(r.end),
+    }));
+
+    const slots = calcularTurnosDisponibles({
+      fecha: new Date('2025-11-19'),
+      duracionTotal: 60,
+      horarioDelDia: {
+        enabled: true,
+        intervals: [{ open: '18:00', close: '00:00' }], // Horario nocturno
+      },
+      reservasOcupadas: reservasNormalizadas,
+    });
+
+    // Verificar que slot ocupado NO aparece
+    expect(slots).not.toContain('22:00');
+
+    // Verificar que slots libres SÍ aparecen
+    expect(slots).toContain('18:00');
+    expect(slots).toContain('19:00');
+    expect(slots).toContain('23:00'); // Libre después de reserva
+  });
+});
