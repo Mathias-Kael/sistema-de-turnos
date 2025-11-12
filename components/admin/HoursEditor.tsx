@@ -107,6 +107,8 @@ export const HoursEditor: React.FC = () => {
     const checkAffectedFutureBookings = (newHours: Hours) => {
         // Usar fecha del servidor para evitar discrepancias de timezone
         const today = getServerDateSync();
+
+
         const dayMap: {[key: number]: keyof Hours} = {
             0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
             4: 'thursday', 5: 'friday', 6: 'saturday'
@@ -132,43 +134,64 @@ export const HoursEditor: React.FC = () => {
         business.bookings.forEach(booking => {
             if (booking.status === 'cancelled') return;
 
-            const bookingDate = parseDateString(booking.date);
-            if (bookingDate < today) return; // Solo futuras
+            try {
+                const bookingDate = parseDateString(booking.date);
 
-            const dayOfWeek = dayMap[bookingDate.getDay()];
-            const newDayHours = newHours[dayOfWeek];
+                // Excluir reservas pasadas (< today, no <=, porque today a las 00:00 es inicio del día actual)
+                if (bookingDate < today) return;
 
-            // Si el día está cerrado, la reserva queda afectada
-            if (!newDayHours.enabled) {
-                affected.push({
-                    date: booking.date,
-                    time: `${booking.start} - ${booking.end}`,
-                    client: booking.client.name
-                });
-                return;
-            }
+                const dayOfWeek = dayMap[bookingDate.getDay()];
+                const newDayHours = newHours[dayOfWeek];
 
-            // Buscar en Map pre-calculado (O(1) lookup + O(M) check intervals)
-            const intervals = dayIntervalsMap.get(dayOfWeek);
-            if (!intervals || intervals.length === 0) {
-                // Día sin intervalos = reserva afectada
-                affected.push({
-                    date: booking.date,
-                    time: `${booking.start} - ${booking.end}`,
-                    client: booking.client.name
-                });
-                return;
-            }
+                // Obtener horarios actuales del negocio para este día
+                const currentDayHours = business.hours[dayOfWeek];
 
-            // Verificar si la reserva cae dentro de algún intervalo (ya pre-calculados)
-            const bookingStart = timeToMinutes(booking.start, 'open');
-            const bookingEnd = timeToMinutes(booking.end, 'close');
+                // SOLO verificar si los horarios de ESTE día específico cambiaron
+                // Si no cambiaron, no hay conflicto posible
+                const hoursChanged = JSON.stringify(currentDayHours) !== JSON.stringify(newDayHours);
+                if (!hoursChanged) return; // No hay cambios en este día, skip
 
-            const isWithinNewHours = intervals.some(interval =>
-                bookingStart >= interval.start && bookingEnd <= interval.end
-            );
+                // Si el día está cerrado en el nuevo horario, la reserva queda afectada
+                if (!newDayHours.enabled) {
+                    affected.push({
+                        date: booking.date,
+                        time: `${booking.start} - ${booking.end}`,
+                        client: booking.client.name
+                    });
+                    return;
+                }
 
-            if (!isWithinNewHours) {
+                // Buscar en Map pre-calculado (O(1) lookup + O(M) check intervals)
+                const intervals = dayIntervalsMap.get(dayOfWeek);
+                if (!intervals || intervals.length === 0) {
+                    // Día sin intervalos = reserva afectada
+                    affected.push({
+                        date: booking.date,
+                        time: `${booking.start} - ${booking.end}`,
+                        client: booking.client.name
+                    });
+                    return;
+                }
+
+                // Verificar si la reserva cae dentro de algún intervalo (ya pre-calculados)
+                const bookingStart = timeToMinutes(booking.start, 'open');
+                const bookingEnd = timeToMinutes(booking.end, 'close');
+
+                const isWithinNewHours = intervals.some(interval =>
+                    bookingStart >= interval.start && bookingEnd <= interval.end
+                );
+
+                if (!isWithinNewHours) {
+                    affected.push({
+                        date: booking.date,
+                        time: `${booking.start} - ${booking.end}`,
+                        client: booking.client.name
+                    });
+                }
+            } catch (error) {
+                // Si hay error de validación en los datos de la reserva (formato inválido),
+                // marcarla como afectada por seguridad
+                console.warn(`Reserva con datos inválidos detectada (ID: ${booking.id}):`, error);
                 affected.push({
                     date: booking.date,
                     time: `${booking.start} - ${booking.end}`,
@@ -382,7 +405,7 @@ export const HoursEditor: React.FC = () => {
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                             </svg>
-                                                            {new Date(booking.date).toLocaleDateString('es-AR', {
+                                                            {parseDateString(booking.date).toLocaleDateString('es-AR', {
                                                                 weekday: 'long',
                                                                 year: 'numeric',
                                                                 month: 'long',
