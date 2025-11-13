@@ -4,6 +4,7 @@ import { INITIAL_BUSINESS_DATA } from '../constants';
 import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
 import { mockBackendTest } from '../services/mockBackend.e2e';
 import { createBookingSafe } from '../services/api';
+import { normalizeTimeString } from '../utils/availability';
 
 // --- Tipos de Acción ---
 type Action =
@@ -36,13 +37,26 @@ type Action =
 const BusinessStateContext = createContext<Business | undefined>(undefined);
 const BusinessDispatchContext = createContext<((action: Action) => Promise<void>) | undefined>(undefined);
 
+// --- Helper: Normalizar bookings de datos de backend ---
+const normalizeBusinessData = (business: Business): Business => {
+    return {
+        ...business,
+        bookings: business.bookings.map(booking => ({
+            ...booking,
+            start: normalizeTimeString(booking.start),
+            end: normalizeTimeString(booking.end)
+        }))
+    };
+};
+
 // --- Reducer (sólo maneja el estado síncrono) ---
 const businessReducer = (state: Business, action: Action): Business => {
     switch (action.type) {
         case 'HYDRATE_STATE':
         case 'UPDATE_BUSINESS':
-            return action.payload;
-        
+            // Normalizar siempre antes de actualizar estado
+            return normalizeBusinessData(action.payload);
+
         case 'UPDATE_SERVICE_CATEGORIES':
             return {
                 ...state,
@@ -76,6 +90,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         (async () => {
             try {
                 const initialData = await backend.getBusinessData();
+                // El reducer normalizará automáticamente al despachar HYDRATE_STATE
                 dispatch({ type: 'HYDRATE_STATE', payload: initialData });
             } catch (error) {
                 console.error('Failed to load initial business data', error);

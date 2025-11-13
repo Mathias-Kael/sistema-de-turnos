@@ -1,5 +1,5 @@
 import { Business, Service, Booking, Employee } from '../types';
-import { calcularTurnosDisponibles, ReservaOcupada, timeToMinutes, getEffectiveDayHours, normalizeTimeString } from '../utils/availability';
+import { calcularTurnosDisponibles, ReservaOcupada, timeToMinutes, getEffectiveDayHours } from '../utils/availability';
 // import { mockBackend } from './mockBackend'; // No longer needed for getAvailableSlots
 
 /**
@@ -48,8 +48,8 @@ export const getAvailableSlots = async (
             const employeeBookings = allBookingsForDay.filter(b => b.employeeId === emp.id);
             const occupiedSlots: ReservaOcupada[] = employeeBookings.map(b => ({
                 date: b.date,
-                start: normalizeTimeString(b.start),
-                end: normalizeTimeString(b.end),
+                start: b.start,
+                end: b.end,
             }));
 
             const slotsForEmployee = calcularTurnosDisponibles({
@@ -81,8 +81,8 @@ export const getAvailableSlots = async (
         const relevantBookings = allBookingsForDay.filter(b => b.employeeId === employeeId);
         const occupiedSlots: ReservaOcupada[] = relevantBookings.map(b => ({
             date: b.date,
-            start: normalizeTimeString(b.start),
-            end: normalizeTimeString(b.end),
+            start: b.start,
+            end: b.end,
         }));
 
         const slots = calcularTurnosDisponibles({

@@ -88,11 +88,14 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
   // Obtener reservas existentes del empleado para la fecha seleccionada
   const existingBookings = useMemo((): TimeSlot[] => {
     if (!employeeId) return [];
-    
+
     const dateString = selectedDate.toISOString().split('T')[0];
     return business.bookings
       .filter(b => b.employeeId === employeeId && b.date === dateString && b.status !== 'cancelled')
-      .map(b => ({ start: b.start, end: b.end }));
+      .map(b => ({
+        start: b.start,
+        end: b.end
+      }));
   }, [employeeId, selectedDate, business.bookings]);
 
   // Inicializar horarios extendidos cuando se selecciona empleado
