@@ -73,7 +73,10 @@ const CreateBreakModal: React.FC<CreateBreakModalProps> = ({
     for (const empId of selectedEmployeeIds) {
       const empBookings = business.bookings
         .filter(b => b.employeeId === empId && b.date === dateString && b.status !== 'cancelled')
-        .map(b => ({ start: b.start, end: b.end }));
+        .map(b => ({
+          start: b.start,
+          end: b.end
+        }));
       allBookings.push(...empBookings);
     }
     
