@@ -5,6 +5,7 @@ import { Business } from '../../types';
 import { ClientBookingExperience } from './ClientBookingExperience';
 import { logger } from '../../utils/logger';
 import { Helmet } from 'react-helmet-async';
+import { normalizeBusinessData } from '../../utils/availability';
 
 type Status = 'validating' | 'valid' | 'paused' | 'invalid';
 
@@ -41,7 +42,9 @@ export const PublicClientLoader: React.FC = () => {
         }
 
         logger.debug('[PublicClientLoader] Business cargado', full.id);
-        setBusiness(full);
+        // Normalizar datos de DB antes de usar (HH:mm:ss → HH:mm)
+        const normalizedBusiness = normalizeBusinessData(full);
+        setBusiness(normalizedBusiness);
         setStatus('valid');
       } catch (e: any) {
         if (!cancelled) {

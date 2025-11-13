@@ -1,4 +1,4 @@
-import { DayHours, Employee } from '../types';
+import { DayHours, Employee, Hours, Business } from '../types';
 
 /**
  * Normaliza un string de tiempo para convertirlo al formato estándar "HH:mm".
@@ -21,6 +21,62 @@ export const normalizeTimeString = (timeStr: string): string => {
         return timeStr.substring(0, 5);
     }
     return timeStr;
+};
+
+/**
+ * Normaliza un objeto Hours (horarios semanales) convirtiendo todos los intervalos
+ * de formato DB (HH:mm:ss) a formato app (HH:mm).
+ *
+ * @param hours - Objeto Hours con horarios de la semana
+ * @returns Nuevo objeto Hours con todos los tiempos normalizados
+ */
+export const normalizeHours = (hours: Hours): Hours => {
+    const normalizedHours: Hours = {} as Hours;
+
+    for (const day in hours) {
+        const dayKey = day as keyof Hours;
+        normalizedHours[dayKey] = {
+            ...hours[dayKey],
+            intervals: hours[dayKey].intervals.map(interval => ({
+                open: normalizeTimeString(interval.open),
+                close: normalizeTimeString(interval.close)
+            }))
+        };
+    }
+
+    return normalizedHours;
+};
+
+/**
+ * Normaliza todos los datos de tiempo en un objeto Business.
+ * Convierte formato DB (HH:mm:ss) a formato app (HH:mm) para:
+ * - Horarios del negocio (business.hours)
+ * - Horarios de empleados (employees[].hours)
+ * - Horarios de bookings (bookings[].start/end)
+ *
+ * Esta función debe usarse en los entry points donde los datos
+ * entran desde la DB (BusinessContext, PublicClientLoader, etc.)
+ *
+ * @param business - Objeto Business con datos crudos de la DB
+ * @returns Nuevo objeto Business con todos los tiempos normalizados
+ */
+export const normalizeBusinessData = (business: Business): Business => {
+    return {
+        ...business,
+        // Normalizar horarios del negocio
+        hours: normalizeHours(business.hours),
+        // Normalizar horarios de empleados
+        employees: business.employees.map(employee => ({
+            ...employee,
+            hours: normalizeHours(employee.hours)
+        })),
+        // Normalizar bookings
+        bookings: business.bookings.map(booking => ({
+            ...booking,
+            start: normalizeTimeString(booking.start),
+            end: normalizeTimeString(booking.end)
+        }))
+    };
 };
 
 /**

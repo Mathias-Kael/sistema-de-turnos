@@ -4,7 +4,7 @@ import { INITIAL_BUSINESS_DATA } from '../constants';
 import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
 import { mockBackendTest } from '../services/mockBackend.e2e';
 import { createBookingSafe } from '../services/api';
-import { normalizeTimeString } from '../utils/availability';
+import { normalizeBusinessData } from '../utils/availability';
 
 // --- Tipos de Acción ---
 type Action =
@@ -36,18 +36,6 @@ type Action =
 // --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
 const BusinessDispatchContext = createContext<((action: Action) => Promise<void>) | undefined>(undefined);
-
-// --- Helper: Normalizar bookings de datos de backend ---
-const normalizeBusinessData = (business: Business): Business => {
-    return {
-        ...business,
-        bookings: business.bookings.map(booking => ({
-            ...booking,
-            start: normalizeTimeString(booking.start),
-            end: normalizeTimeString(booking.end)
-        }))
-    };
-};
 
 // --- Reducer (sólo maneja el estado síncrono) ---
 const businessReducer = (state: Business, action: Action): Business => {
