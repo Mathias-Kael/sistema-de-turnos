@@ -101,7 +101,7 @@ serve(async (req) => {
         client_name: body.client.name,
         client_email: body.client.email || null,
         client_phone: body.client.phone,
-        client_id: body.client.id || null, // ← NEW: Associate with registered client if provided
+        client_id: null,
         booking_date: body.date,
         start_time: body.start,
         end_time: body.end,

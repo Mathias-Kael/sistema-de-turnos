@@ -13,6 +13,27 @@
 **Fecha:** 31 Oct 2025  
 **Grade feature:** A- (Approved, minor issues)
 
+### **ASTRA-SEC-001: Uso de `service_role` en Función Pública**
+**Severity:** Critical (Security Vulnerability)
+**Reporter:** Claude (Arquitecto)
+**Date:** 14 Nov 2025
+**Effort:** 60-90 minutos
+
+**Description:**
+La Edge Function `public-bookings` utiliza la `SUPABASE_SERVICE_ROLE_KEY` para todas sus operaciones de base de datos. Esto bypassa todas las políticas de Row Level Security (RLS), creando una superficie de ataque innecesaria y eliminando una capa de seguridad fundamental. Si hubiera un error en la lógica de la función, podría permitir operaciones no deseadas en la base de datos.
+
+**Root cause:**
+La función fue creada con `service_role` para simplificar el desarrollo inicial, pero no fue refactorizada para usar permisos a nivel de usuario (`anon key`) una vez que las políticas RLS fueron implementadas.
+
+**Solución recomendada:**
+1.  **Restaurar Políticas RLS:** Crear una nueva migración para reintroducir las políticas de `INSERT` en las tablas `bookings` y `booking_services` para el rol `public` (o `anon`), asegurando que la inserción esté condicionada a un `share_token` de negocio válido.
+2.  **Refactorizar Edge Function:** Modificar `public-bookings/index.ts` para que utilice el cliente de Supabase con la `ANON_KEY` en lugar de la `SERVICE_ROLE_KEY`. Esto forzará a la función a operar bajo las restricciones de las políticas RLS.
+
+**Files affected:**
+- `supabase/functions/public-bookings/index.ts`
+- `supabase/migrations/` (requiere nuevo archivo de migración)
+
+---
 ---
 
 ## 📋 REFINAMIENTOS PENDIENTES

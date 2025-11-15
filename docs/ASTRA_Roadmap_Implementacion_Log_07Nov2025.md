@@ -2731,3 +2731,65 @@ Esta refactorización transforma una solución funcional (Sección 11) en una so
 **Resultado:** Sistema robusto, mantenible y libre de deuda técnica que establece un patrón reutilizable para futuros features.
 
 ---
+
+
+---
+
+## 13. Fix Crítico: Bug en Reservas Públicas con Email
+
+### 13.1. Nombre del Bug
+Error "Edge Function returned a non-2xx status code" al crear una reserva pública con el campo de email.
+
+### 13.2. Contexto del Problema
+
+**Fecha:** 14 Noviembre 2025
+**Severidad:** CRÍTICA (P0 - Flujo de reservas públicas bloqueado)
+**Reportado por:** Usuario final, vía administrador.
+
+**Síntomas:**
+- Las reservas desde el enlace público fallaban si el cliente introducía su dirección de correo electrónico.
+- Si el campo de email se dejaba en blanco, la reserva se creaba correctamente.
+- El panel de administrador no estaba afectado y podía crear reservas sin problemas.
+
+### 13.3. Diagnóstico - Causa Raíz
+
+El problema se originó por una discrepancia entre la regla de negocio y la implementación de la Edge Function `public-bookings`.
+
+1.  **Regla de Negocio Incorrecta:** Se asumió que la lógica de "clientes recurrentes" (buscar un cliente por email/teléfono y asociar la reserva) debía aplicarse también al flujo de reservas públicas.
+2.  **Implementación Defectuosa:** La versión de la función en producción contenía una lógica para buscar al cliente por su email. Esta lógica era defectuosa y no manejaba correctamente el caso en que un cliente no era encontrado, causando que la función fallara y devolviera un error 400 (Bad Request).
+3.  **Aclaración de Regla de Negocio:** El Product Owner (Matías) clarificó que la lógica de clientes recurrentes **solo debe aplicarse en el panel de administrador** para facilitar su trabajo, y **no en el flujo de reservas públicas**. El flujo público debe ser simple y directo, sin buscar ni asociar clientes existentes.
+
+### 13.4. Solución Implementada
+
+La solución fue alinear el código con la regla de negocio correcta, eliminando la lógica innecesaria y defectuosa del flujo público.
+
+**Archivo Modificado:** [`supabase/functions/public-bookings/index.ts`](supabase/functions/public-bookings/index.ts)
+
+**Cambio Realizado:**
+Se modificó el objeto de inserción de la reserva para forzar que el campo `client_id` sea siempre `null`, eliminando así cualquier dependencia con la tabla `clients` y la lógica de clientes recurrentes.
+
+```typescript
+// ANTES (❌): Intentaba usar un client.id que no existía en el flujo público
+client_id: body.client.id || null,
+
+// DESPUÉS (✅): Se fuerza a null, desacoplando la lógica de clientes recurrentes
+client_id: null,
+```
+
+### 13.5. Deuda Técnica Registrada
+
+Durante el análisis, se identificó una vulnerabilidad de seguridad: la función `public-bookings` utiliza la `SUPABASE_SERVICE_ROLE_KEY`, saltándose todas las políticas de RLS.
+
+- **Acción Tomada:** Se decidió posponer la corrección de seguridad para no retrasar la solución del bug crítico.
+- **Documentación:** La deuda técnica fue registrada formalmente en [`docs/ASTRA_Technical_Debt_Register.md`](docs/ASTRA_Technical_Debt_Register.md) bajo el identificador **ASTRA-SEC-001**.
+
+### 13.6. Verificación
+
+- **Despliegue:** La función actualizada fue desplegada a producción mediante el comando `supabase functions deploy public-bookings`.
+- **Resultado:** El bug fue solucionado. Las reservas públicas ahora se completan exitosamente, independientemente de si el campo de email es rellenado o no.
+
+### 13.7. Impacto
+
+- **Solución Inmediata:** Se restauró el flujo de reservas para todos los clientes finales, eliminando un bloqueador crítico.
+- **Alineación de Negocio:** El código ahora refleja la regla de negocio correcta para el flujo de reservas públicas.
+- **Seguridad:** La vulnerabilidad de seguridad, aunque no fue la causa del bug, quedó documentada para ser abordada en el futuro, asegurando que no se pierda.
