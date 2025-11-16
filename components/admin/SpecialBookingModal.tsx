@@ -8,7 +8,7 @@ import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
 import { Client } from '../../types';
-import { timeToMinutes } from '../../utils/availability';
+import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 export interface SpecialBookingModalProps {
@@ -124,6 +124,53 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
 
   const handleTimeClear = () => {
     setSelectedTime(null);
+  };
+
+  // Validar horarios extendidos en tiempo real
+  const handleExtendedStartChange = (newStart: string) => {
+    setExtendedStart(newStart);
+    setSelectedTime(null);
+
+    // Solo validar si el formato es completo (HH:mm) para evitar errores al escribir
+    if (newStart && extendedEnd && newStart.length === 5 && extendedEnd.length === 5) {
+      const startMin = timeToMinutes(newStart, 'open');
+      const endMin = timeToMinutes(extendedEnd, 'close');
+
+      // Si no es el caso especial de 24h (00:00 a 00:00)
+      if (!(startMin === 0 && endMin === 1440)) {
+        if (startMin >= endMin) {
+          // Ajustar end automáticamente para que sea válido
+          // Por ejemplo, si start es 20:00, poner end en 21:00
+          const newEndMin = Math.min(startMin + 60, 1440);
+          setExtendedEnd(minutesToTime(newEndMin));
+        }
+      }
+    }
+  };
+
+  const handleExtendedEndChange = (newEnd: string) => {
+    setSelectedTime(null);
+    setExtendedEnd(newEnd); // Siempre actualizar el valor para permitir escribir
+
+    // Solo validar si el formato es completo (HH:mm)
+    if (extendedStart && newEnd && newEnd.length === 5) {
+      const startMin = timeToMinutes(extendedStart, 'open');
+      const endMin = timeToMinutes(newEnd, 'close');
+
+      // Caso especial: 00:00 a 00:00 (24 horas) - permitir
+      if (startMin === 0 && endMin === 1440) {
+        setError(null);
+        return;
+      }
+
+      // Validar end <= start solo cuando el valor está completo
+      if (endMin <= startMin) {
+        setError('⚠️ El horario de cierre debe ser posterior al de apertura. Máximo: 00:00 a 00:00 (24h)');
+        return;
+      }
+    }
+
+    setError(null);
   };
 
   // Client handlers
@@ -248,8 +295,11 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
       const bizStart = timeToMinutes(businessHoursForDay.start, 'open');
       const bizEnd = timeToMinutes(businessHoursForDay.end, 'close');
 
-      if (extStart >= extEnd) {
-        setError('El horario de cierre debe ser posterior al de apertura');
+      // Máximo 24 horas (00:00 a 00:00 = 0 a 1440)
+      if (extStart === 0 && extEnd === 1440) {
+        // OK: 24 horas (00:00 a 00:00)
+      } else if (extStart >= extEnd) {
+        setError('El horario de cierre debe ser posterior al de apertura. Máximo permitido: 00:00 a 00:00 (24h)');
         return;
       }
 
@@ -446,10 +496,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                       <input
                         type="time"
                         value={extendedStart}
-                        onChange={(e) => {
-                          setExtendedStart(e.target.value);
-                          setSelectedTime(null);
-                        }}
+                        onChange={(e) => handleExtendedStartChange(e.target.value)}
                         className="w-full px-3 py-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -459,19 +506,27 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                       <input
                         type="time"
                         value={extendedEnd}
-                        onChange={(e) => {
-                          setExtendedEnd(e.target.value);
-                          setSelectedTime(null);
-                        }}
+                        onChange={(e) => handleExtendedEndChange(e.target.value)}
                         className="w-full px-3 py-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
                   </div>
+
+                  {/* Mensaje de error visible justo debajo de los inputs */}
+                  {error && error.includes('horario') && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-300 rounded-md">
+                      <p className="text-sm text-red-700 font-medium flex items-center gap-2">
+                        <span className="text-lg">🚫</span>
+                        {error}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="mt-3 p-2 bg-state-warning-bg/20 border border-state-warning-bg rounded">
                     <p className="text-xs text-state-warning-text flex items-start gap-2">
                       <span className="text-base">⚠️</span>
                       <span>
-                        <strong>Importante:</strong> Este cambio solo aplica para esta reserva específica. 
+                        <strong>Importante:</strong> Este cambio solo aplica para esta reserva específica.
                         No modifica el horario general del negocio.
                       </span>
                     </p>

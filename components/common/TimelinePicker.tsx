@@ -78,12 +78,26 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
     return start >= bizStart && end <= bizEnd;
   };
 
+  const isValidSlot = (startMinutes: number): boolean => {
+    const endMinutes = startMinutes + selectionDuration;
+    // Validar que el slot no exceda el rango efectivo Y no exceda 1440 (medianoche)
+    // Usar Math.min para ser defensivo en caso de datos inválidos
+    const maxAllowedEnd = Math.min(effectiveRange.end, 1440);
+    return endMinutes <= maxAllowedEnd;
+  };
+
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickedMinutes = Math.floor((clickX / pixelsPerMinute) + effectiveRange.start);
     const snappedMinutes = Math.round(clickedMinutes / snapInterval) * snapInterval;
+
+    // Validar que el slot no exceda el rango permitido
+    if (!isValidSlot(snappedMinutes)) {
+      return; // No permitir crear slots fuera de rango
+    }
+
     const proposedSlot: TimeSlot = {
       start: minutesToTime(snappedMinutes),
       end: minutesToTime(snappedMinutes + selectionDuration),
@@ -135,6 +149,23 @@ const TimelinePicker: React.FC<TimelinePickerProps> = ({
 
   const renderGhostSelector = () => {
     if (hoverMinutes === null) return null;
+
+    // Validar si el slot excede el rango permitido
+    const isValid = isValidSlot(hoverMinutes);
+
+    // Si es inválido, mostrar en rojo sin crear slot real
+    if (!isValid) {
+      const x = minutesToX(hoverMinutes);
+      const width = selectionDuration * pixelsPerMinute;
+      return (
+        <div
+          className="absolute h-full opacity-40 pointer-events-none bg-red-500"
+          style={{ left: x + 'px', width: width + 'px' }}
+          title="Este horario excede el límite permitido (24:00)"
+        />
+      );
+    }
+
     const proposedSlot: TimeSlot = {
       start: minutesToTime(hoverMinutes),
       end: minutesToTime(hoverMinutes + selectionDuration),

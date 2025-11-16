@@ -186,6 +186,20 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                     setError(`Error: Se encontraron intervalos de tiempo solapados para el día ${dayNames[day]}.`);
                     return;
                 }
+
+                // Validar orden cronológico de intervalos (para evitar problemas con horarios nocturnos)
+                if (dayConfig.intervals.length > 1) {
+                    for (let i = 1; i < dayConfig.intervals.length; i++) {
+                        const prevEnd = timeToMinutes(dayConfig.intervals[i - 1].close, 'close');
+                        const currStart = timeToMinutes(dayConfig.intervals[i].open, 'open');
+
+                        // El intervalo actual debe empezar después de que termine el anterior
+                        if (currStart <= prevEnd) {
+                            setError(`❌ ${dayNames[day]}: Los turnos deben estar en orden cronológico. El turno ${i + 1} (${dayConfig.intervals[i].open}-${dayConfig.intervals[i].close}) debe empezar después de que termine el turno ${i} (${dayConfig.intervals[i - 1].open}-${dayConfig.intervals[i - 1].close}).`);
+                            return;
+                        }
+                    }
+                }
             }
         }
 

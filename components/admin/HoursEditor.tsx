@@ -96,6 +96,20 @@ export const HoursEditor: React.FC = () => {
                     setError(`Los intervalos para el ${dayLabel} se solapan.`);
                     return false;
                 }
+
+                // Validar orden cronológico de intervalos (para evitar problemas con horarios nocturnos)
+                if (dayHours.intervals.length > 1) {
+                    for (let i = 1; i < dayHours.intervals.length; i++) {
+                        const prevEnd = timeToMinutes(dayHours.intervals[i - 1].close, 'close');
+                        const currStart = timeToMinutes(dayHours.intervals[i].open, 'open');
+
+                        // El intervalo actual debe empezar después de que termine el anterior
+                        if (currStart <= prevEnd) {
+                            setError(`❌ ${dayLabel}: Los turnos deben estar en orden cronológico. El turno ${i + 1} (${dayHours.intervals[i].open}-${dayHours.intervals[i].close}) debe empezar después de que termine el turno ${i} (${dayHours.intervals[i - 1].open}-${dayHours.intervals[i - 1].close}).`);
+                            return false;
+                        }
+                    }
+                }
             }
         }
         setError(null);
