@@ -46,7 +46,11 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
       try {
         const results = await supabaseBackend.searchClients(businessId, query);
         setClients(results);
-        setIsOpen(true);
+        // Solo abrir dropdown si NO hay un cliente ya seleccionado
+        // (evita reapertura después de seleccionar)
+        if (!selectedClient) {
+          setIsOpen(true);
+        }
       } catch (error) {
         console.error('Error searching clients:', error);
         setClients([]);
@@ -56,7 +60,7 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
     }, 300); // Debounce de 300ms
 
     return () => clearTimeout(timer);
-  }, [query, businessId]);
+  }, [query, businessId, selectedClient]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -144,11 +148,22 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
           type="text"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
-            setSelectedClient(null);
+            const newQuery = e.target.value;
+            setQuery(newQuery);
+
+            // Solo resetear si está editando DESPUÉS de haber seleccionado
+            if (selectedClient && newQuery !== selectedClient.name) {
+              setSelectedClient(null);
+            }
+
             setSelectedIndex(-1);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            // Solo abrir si no hay cliente seleccionado
+            if (!selectedClient) {
+              setIsOpen(true);
+            }
+          }}
           onKeyDown={handleKeyDown}
           disabled={disabled}
           placeholder={placeholder}

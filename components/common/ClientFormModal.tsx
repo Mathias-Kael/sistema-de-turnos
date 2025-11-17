@@ -85,7 +85,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       setError('El teléfono es obligatorio');
       return false;
     }
-    if (formData.email && !formData.email.includes('@')) {
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError('El email no es válido');
       return false;
     }

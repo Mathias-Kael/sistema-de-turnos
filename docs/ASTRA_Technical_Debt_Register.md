@@ -1,39 +1,9 @@
 # ASTRA - Technical Debt & Refinamientos Pendientes
 
-**Última actualización:** 31 Octubre 2025  
-**Responsable tracking:** Claude 4.5 (Arquitecto Estratégico)  
-**Estado:** ACTIVO - Requiere atención en próximo sprint de polish
+**Última actualización:** 17 Noviembre 2025
+**Responsable tracking:** Claude 4.5 (Arquitecto Estratégico)
+**Estado:** ACTIVO - 2 items completados, refinamientos pendientes para próximo sprint
 
----
-
-## 🔴 TECHNICAL DEBT IDENTIFICADO
-
-### **Origen: Code Review Post-Merge Clientes Recurrentes**
-**Reviewer:** Claude VS Code  
-**Fecha:** 31 Oct 2025  
-**Grade feature:** A- (Approved, minor issues)
-
-### **ASTRA-SEC-001: Uso de `service_role` en Función Pública**
-**Severity:** Critical (Security Vulnerability)
-**Reporter:** Claude (Arquitecto)
-**Date:** 14 Nov 2025
-**Effort:** 60-90 minutos
-
-**Description:**
-La Edge Function `public-bookings` utiliza la `SUPABASE_SERVICE_ROLE_KEY` para todas sus operaciones de base de datos. Esto bypassa todas las políticas de Row Level Security (RLS), creando una superficie de ataque innecesaria y eliminando una capa de seguridad fundamental. Si hubiera un error en la lógica de la función, podría permitir operaciones no deseadas en la base de datos.
-
-**Root cause:**
-La función fue creada con `service_role` para simplificar el desarrollo inicial, pero no fue refactorizada para usar permisos a nivel de usuario (`anon key`) una vez que las políticas RLS fueron implementadas.
-
-**Solución recomendada:**
-1.  **Restaurar Políticas RLS:** Crear una nueva migración para reintroducir las políticas de `INSERT` en las tablas `bookings` y `booking_services` para el rol `public` (o `anon`), asegurando que la inserción esté condicionada a un `share_token` de negocio válido.
-2.  **Refactorizar Edge Function:** Modificar `public-bookings/index.ts` para que utilice el cliente de Supabase con la `ANON_KEY` en lugar de la `SERVICE_ROLE_KEY`. Esto forzará a la función a operar bajo las restricciones de las políticas RLS.
-
-**Files affected:**
-- `supabase/functions/public-bookings/index.ts`
-- `supabase/migrations/` (requiere nuevo archivo de migración)
-
----
 ---
 
 ## 📋 REFINAMIENTOS PENDIENTES
@@ -60,21 +30,21 @@ showConfirmModal({
 - `components/admin/ClientList.tsx`
 - `components/common/ClientFormModal.tsx`
 
-### **2. Email Validation Enhancement**
-**Priority:** P3 (Low)  
-**Effort:** 15 minutos  
+### **2. Email Validation Enhancement** ✅ COMPLETED
+**Priority:** P3 (Low)
+**Effort:** 5 minutos (completado 17 Nov 2025)
 
 ```typescript
-// CURRENT: Basic validation
+// BEFORE: Basic validation
 const isValidEmail = (email: string) => email.includes('@');
 
-// TARGET: Robust regex
-const isValidEmail = (email: string) => 
+// AFTER: Robust regex (IMPLEMENTED)
+const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 ```
 
 **Files affected:**
-- `components/common/ClientFormModal.tsx`
+- ✅ `components/common/ClientFormModal.tsx`
 
 ### **3. Accessibility Pass**
 **Priority:** P2 (Medium)  
@@ -163,28 +133,51 @@ describe('ClientFormModal', () => {
 
 ## 🐛 BUGS CONOCIDOS
 
-### **ASTRA-CLIENT-001: Autocomplete Reset Behavior**
-**Severity:** Medium (UX degradation)  
-**Reporter:** Matías (Product Owner)  
-**Date:** 31 Oct 2025  
-**Effort:** 15-30 minutos  
+### **ASTRA-CLIENT-001: Autocomplete Reset Behavior** ✅ FIXED
+**Severity:** Medium (UX degradation)
+**Reporter:** Matías (Product Owner)
+**Date:** 31 Oct 2025
+**Fixed:** 17 Nov 2025
+**Effort:** 20 minutos (2 iteraciones para encontrar root cause correcto)
 
 **Description:**
-Al seleccionar cliente del autocomplete → se resetea → requiere re-selección
+Al seleccionar cliente del autocomplete → dropdown se reabre mostrando solo ese cliente → requiere re-selección
 
-**Root cause probable:**
+**Root cause REAL (confirmado con capturas):**
+El `useEffect` del debounced search y el `onFocus` reabrían automáticamente el dropdown después de seleccionar.
+
 ```typescript
-// State conflict entre query y selectedClient
-const handleClientSelect = (client) => {
-  setSelectedClient(client);
-  setQuery(client.name); // ← ADD: Persist in input
-  onClientSelect(client);
-  setIsOpen(false); // ← ADD: Close dropdown
-};
+// BEFORE: Abría siempre después de búsqueda
+useEffect(() => {
+  const results = await searchClients(businessId, query);
+  setClients(results);
+  setIsOpen(true);  // ← Problema: abría incluso después de seleccionar
+}, [query, businessId]);
+
+// AFTER: Solo abre si NO hay cliente seleccionado
+useEffect(() => {
+  const results = await searchClients(businessId, query);
+  setClients(results);
+  if (!selectedClient) {  // ← Fix: respetar selección
+    setIsOpen(true);
+  }
+}, [query, businessId, selectedClient]);
+
+// TAMBIÉN FIXED: onFocus
+// BEFORE:
+onFocus={() => setIsOpen(true)}
+
+// AFTER:
+onFocus={() => {
+  if (!selectedClient) {
+    setIsOpen(true);
+  }
+}}
 ```
 
 **Files affected:**
-- `components/common/ClientSearchInput.tsx`
+- ✅ `components/common/ClientSearchInput.tsx:41-63` (useEffect search)
+- ✅ `components/common/ClientSearchInput.tsx:161-166` (onFocus handler)
 
 ---
 
@@ -209,14 +202,14 @@ const handleClientSelect = (client) => {
 
 ## 📊 TRACKING METRICS
 
-| Item | Status | Assigned | ETA |
-|------|--------|----------|-----|
+| Item | Status | Assigned | Completed |
+|------|--------|----------|-----------|
+| Bug ASTRA-CLIENT-001 | ✅ Done | Claude | 17 Nov 2025 |
+| Email validation | ✅ Done | Claude | 17 Nov 2025 |
 | Unit tests | ⏳ Pending | TBD | TBD |
-| Bug ASTRA-CLIENT-001 | ⏳ Pending | TBD | TBD |
 | Accessibility | ⏳ Pending | TBD | TBD |
 | UX improvements | ⏳ Pending | TBD | TBD |
 | Code deduplication | ⏳ Pending | TBD | TBD |
-| Email validation | ⏳ Pending | TBD | TBD |
 
 ---
 
