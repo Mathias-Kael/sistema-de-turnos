@@ -70,7 +70,8 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
         service_employees!inner(employee_id)
       `)
       .eq('business_id', businessId)
-      .eq('archived', false);
+      .eq('archived', false)
+      .order('created_at', { ascending: true }); // Orden estable por fecha de creación
     return { data: res.data, error: res.error };
   }, { operationName: 'get-services', userMessage: 'No se pudieron cargar servicios.' })) || [];
 

@@ -10,9 +10,9 @@ import { ClientList } from '../admin/ClientList';
 type ManagementSection = 'services' | 'categories' | 'team' | 'hours' | 'branding' | 'clients';
 
 const sections: { id: ManagementSection; title: string; icon: React.ElementType; description: string }[] = [
-    { id: 'services', title: 'Servicios', icon: Wrench, description: 'Crea y edita tus servicios' },
-    { id: 'categories', title: 'Categorías', icon: Folder, description: 'Agrupa tus servicios' },
     { id: 'team', title: 'Equipo', icon: Users, description: 'Gestiona tus empleados' },
+    { id: 'categories', title: 'Categorías', icon: Folder, description: 'Agrupa tus servicios' },
+    { id: 'services', title: 'Servicios', icon: Wrench, description: 'Crea y edita tus servicios' },
     { id: 'hours', title: 'Horarios', icon: Clock, description: 'Define tu disponibilidad' },
     { id: 'branding', title: 'Branding', icon: Palette, description: 'Personaliza tu página' },
     { id: 'clients', title: 'Clientes', icon: User, description: 'Administra tus clientes' },
