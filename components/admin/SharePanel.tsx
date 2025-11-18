@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
+import { FlyerGenerator } from './flyer/FlyerGenerator';
 
 type ExpirationOption = 'permanent' | '7d' | '30d' | '1y';
 type LinkStatus = 'active' | 'paused' | 'revoked';
@@ -367,6 +368,11 @@ export const SharePanel: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Flyers Promocionales - Solo mostrar si hay token activo */}
+            {hasToken && derivedStatus === 'active' && (
+                <FlyerGenerator />
+            )}
 
             {/* Mensajes de éxito/error */}
             {(success || error) && (
