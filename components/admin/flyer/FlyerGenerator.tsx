@@ -13,9 +13,11 @@ export const FlyerGenerator: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
+  const [currentTemplate, setCurrentTemplate] = useState<'modern' | 'elegant' | 'minimalist' | null>(null);
 
-  const handleGenerateFlyer = async () => {
+  const handleGenerateFlyer = async (templateId: 'modern' | 'elegant' | 'minimalist') => {
     setIsGenerating(true);
+    setCurrentTemplate(templateId);
     setError('');
 
     try {
@@ -45,7 +47,7 @@ export const FlyerGenerator: React.FC = () => {
       };
 
       // 4. Generar flyer
-      const result = await Generator.generateFlyer(flyerData);
+      const result = await Generator.generateFlyer(flyerData, templateId);
 
       if (result.success && result.dataURL) {
         setFlyerPreview(result.dataURL);
@@ -58,6 +60,7 @@ export const FlyerGenerator: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Error desconocido al generar flyer');
     } finally {
       setIsGenerating(false);
+      setCurrentTemplate(null);
     }
   };
 
@@ -83,24 +86,33 @@ export const FlyerGenerator: React.FC = () => {
         🎨 Flyers Promocionales
       </h4>
       <p className="text-sm text-secondary mb-4">
-        Genera flyers profesionales para compartir en Instagram y WhatsApp. 
+        Genera flyers profesionales para compartir en Instagram y WhatsApp.
         Incluye tu branding, QR code y mensaje promocional.
       </p>
 
-      <Button
-        onClick={handleGenerateFlyer}
-        disabled={isGenerating}
-        className="w-full"
-      >
-        {isGenerating ? (
-          <span className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            Generando...
-          </span>
-        ) : (
-          '🎨 Generar Flyer'
-        )}
-      </Button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Button
+          onClick={() => handleGenerateFlyer('modern')}
+          disabled={isGenerating}
+          className="w-full"
+        >
+          {isGenerating && currentTemplate === 'modern' ? 'Generando...' : 'Moderno'}
+        </Button>
+        <Button
+          onClick={() => handleGenerateFlyer('elegant')}
+          disabled={isGenerating}
+          className="w-full"
+        >
+          {isGenerating && currentTemplate === 'elegant' ? 'Generando...' : 'Elegante'}
+        </Button>
+        <Button
+          onClick={() => handleGenerateFlyer('minimalist')}
+          disabled={isGenerating}
+          className="w-full"
+        >
+          {isGenerating && currentTemplate === 'minimalist' ? 'Generando...' : 'Minimalista'}
+        </Button>
+      </div>
 
       {error && (
         <div className="mt-3 p-3 bg-red-100 text-red-700 rounded-md text-sm border border-red-200">

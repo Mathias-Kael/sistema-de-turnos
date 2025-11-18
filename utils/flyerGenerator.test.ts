@@ -82,14 +82,14 @@ describe('FlyerGenerator', () => {
         linkPlaceholder: '________________'
       };
 
-      const result = await FlyerGenerator.generateFlyer(flyerData);
+      const result = await FlyerGenerator.generateFlyer(flyerData, 'modern');
 
       expect(result.success).toBe(true);
       expect(result.dataURL).toBe('data:image/png;base64,mocked-flyer');
       expect(result.metadata).toMatchObject({
         width: 1080,
         height: 1080,
-        template: 'basic'
+        template: 'modern'
       });
     });
 
@@ -102,7 +102,7 @@ describe('FlyerGenerator', () => {
         linkPlaceholder: '________________'
       };
 
-      const result = await FlyerGenerator.generateFlyer(flyerData);
+      const result = await FlyerGenerator.generateFlyer(flyerData, 'modern');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Nombre del negocio es requerido');
@@ -117,7 +117,7 @@ describe('FlyerGenerator', () => {
         linkPlaceholder: '________________'
       };
 
-      const result = await FlyerGenerator.generateFlyer(flyerData);
+      const result = await FlyerGenerator.generateFlyer(flyerData, 'modern');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('QR Code es requerido');
@@ -132,7 +132,7 @@ describe('FlyerGenerator', () => {
         linkPlaceholder: '________________'
       };
 
-      await FlyerGenerator.generateFlyer(flyerData);
+      await FlyerGenerator.generateFlyer(flyerData, 'modern');
 
       expect(mockCanvas.width).toBe(1080);
       expect(mockCanvas.height).toBe(1080);
