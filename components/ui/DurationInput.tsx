@@ -42,6 +42,10 @@ interface DurationInputProps {
      * @default 0
      */
     minMinutes?: number;
+    /**
+     * Si debe mostrar estado de error.
+     */
+    error?: boolean;
 }
 
 /**
@@ -75,6 +79,7 @@ export const DurationInput: React.FC<DurationInputProps> = ({
     disabled = false,
     maxMinutes = 480, // 8 horas por defecto
     minMinutes = 0,
+    error = false,
 }) => {
     const [hours, setHours] = useState(Math.floor(value / 60));
     const [minutes, setMinutes] = useState(value % 60);
@@ -124,6 +129,10 @@ export const DurationInput: React.FC<DurationInputProps> = ({
 
     const maxHours = Math.floor(maxMinutes / 60);
 
+    const inputClassName = error
+        ? "w-full p-2 border-2 border-red-500 rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-red-200"
+        : "w-full p-2 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed";
+
     return (
         <div className={`flex gap-2 ${className}`}>
             <div className="relative flex-1">
@@ -136,7 +145,7 @@ export const DurationInput: React.FC<DurationInputProps> = ({
                     onChange={(e) => handleHoursChange(Number(e.target.value) || 0)}
                     onBlur={handleBlur}
                     disabled={disabled}
-                    className="w-full p-2 pr-10 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${inputClassName} pr-10`}
                     title={`Horas (máx: ${maxHours})`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
@@ -152,7 +161,7 @@ export const DurationInput: React.FC<DurationInputProps> = ({
                     onChange={(e) => handleMinutesChange(Number(e.target.value) || 0)}
                     onBlur={handleBlur}
                     disabled={disabled}
-                    className="w-full p-2 pr-12 border border-default rounded bg-background text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${inputClassName} pr-12`}
                     title="Minutos (se normalizarán automáticamente)"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">
