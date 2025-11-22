@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -6,9 +6,15 @@ interface AuthState {
   loading: boolean;
   user: User | null;
   session: Session | null;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthState>({ loading: true, user: null, session: null });
+const AuthContext = createContext<AuthState>({
+  loading: true,
+  user: null,
+  session: null,
+  signOut: async () => {},
+});
 
 /**
  * Limpia sesión inválida del storage local.
@@ -90,9 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode } > = ({ childre
         await clearInvalidSession();
       }
 
-      if (event === 'SIGNED_OUT') {
-        await clearInvalidSession();
-      }
+      // NO llamar a clearInvalidSession en SIGNED_OUT porque ya fue manejado por signOut()
+      // y causaría un bucle infinito de eventos
 
       // Eventos que indican email confirmado externamente
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
@@ -110,7 +115,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode } > = ({ childre
     };
   }, []);
 
-  const value = useMemo(() => ({ loading, user, session }), [loading, user, session]);
+  const signOut = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      loading,
+      user,
+      session,
+      signOut,
+    }),
+    [loading, user, session, signOut]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

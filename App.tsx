@@ -5,7 +5,7 @@ import { StyleInjector } from './components/common/StyleInjector';
 import { ClientView } from './components/views/ClientView';
 import { AdminView } from './components/views/AdminView';
 import { PublicClientLoader } from './components/views/PublicClientLoader';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
@@ -24,10 +24,33 @@ function LegacyQueryRedirect() {
   return <Navigate to="/admin" replace />;
 }
 
+// Componente que maneja la lógica de redirección post-logout
+const AuthRedirector = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hasNavigatedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    // Si no hay usuario y estamos en una ruta protegida, redirigir a /login
+    if (!user && !loading && location.pathname.startsWith('/admin') && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
+      navigate('/login', { replace: true });
+    }
+    // Resetea el ref si el usuario vuelve a iniciar sesión
+    if (user) {
+      hasNavigatedRef.current = false;
+    }
+  }, [user, loading, location, navigate]);
+
+  return null; // Este componente no renderiza nada
+};
+
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <AuthRedirector />
         <Routes>
           {/* Rutas públicas */}
           <Route path="/login" element={<LoginPage />} />
@@ -39,7 +62,7 @@ function App() {
           <Route path="/" element={<LegacyQueryRedirect />} />
 
           {/* Rutas protegidas */}
-          <Route element={<ProtectedRoute />}> 
+          <Route element={<ProtectedRoute />}>
             <Route
               path="/admin"
               element={(
@@ -65,8 +88,8 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

@@ -11,8 +11,6 @@ import { ClientView } from './ClientView';
 // Modales que se controlarán desde el Header
 // Se podrían mover a un gestor de modales global en el futuro
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { useNavigate } from 'react-router-dom';
 import { useBusinessDispatch } from '../../context/BusinessContext';
 import { Booking } from '../../types';
 
@@ -26,16 +24,12 @@ export const AdminView: React.FC = () => {
     const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
     const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
 
-    // Lógica del menú de usuario (simplificada del código original)
-    const navigate = useNavigate();
-    const { user } = useAuth();
+    // Lógica del menú de usuario
+    const { user, signOut } = useAuth();
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
     const handleSignOut = async () => {
-        try {
-            await supabase.auth.signOut();
-        } finally {
-            navigate('/login', { replace: true });
-        }
+      await signOut();
     };
 
     const handleAddBooking = async (newBooking: Omit<Booking, 'id'>) => {
