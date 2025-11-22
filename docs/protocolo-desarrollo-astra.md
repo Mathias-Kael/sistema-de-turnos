@@ -1,7 +1,7 @@
 # 📋 ASTRA - Protocolo de Desarrollo & Documentación
 
 ## 🎯 OBJETIVO
-Crear un sistema de **mentorship integral** entre Matías y Claude que cubra **TODAS las fases** de construcción de un SaaS exitoso: desde desarrollo técnico hasta ventas, legal, contable y escalamiento empresarial. Mantener **contexto completo** y **trazabilidad total** basado en los documentos del proyecto cargados en el chat.
+Crear un sistema de **mentorship integral** entre Matías y Claude que cubra **TODAS las fases** de construcción de un SaaS exitoso: desde desarrollo técnico hasta ventas, legal, contable y escalamiento empresarial. Mantener **contexto completo** y **trazabilidad total** basado en los documentos del proyecto cargados en docs.
 
 ---
 
