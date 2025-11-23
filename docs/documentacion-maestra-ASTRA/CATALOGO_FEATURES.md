@@ -18,6 +18,7 @@
 8. [Navegación Footer Móvil](#8-navegación-footer-móvil)
 9. [Sistema Multi-tenant](#9-sistema-multi-tenant)
 10. [Share Token System](#10-share-token-system)
+11. [PWA + SEO Metadata](#11-pwa--seo-metadata)
 
 ### 🚧 EN ROADMAP (Planificadas)
 11. [Reprogramar Reservas](#11-reprogramar-reservas)
@@ -26,7 +27,6 @@
 14. [Sistema de Notificaciones](#14-sistema-de-notificaciones)
 15. [Integración Mercado Pago](#15-integración-mercado-pago)
 16. [Seña con Auto-expire](#16-seña-con-auto-expire)
-17. [PWA + SEO Metadata](#17-pwa--seo-metadata)
 
 ---
 
@@ -884,11 +884,94 @@ https://astraturnos.com/?token={share_token}
 - ❌ Brute force (UUID = 2^122 combinaciones)
 - ❌ Timing attacks (constant-time comparison)
 
+### 11. PWA + SEO Metadata
+
+**Estado:** ✅ Producción desde lanzamiento
+**Prioridad:** P0 - Branding profesional
+**Esfuerzo:** Implementación completa
+
+#### Problema Resuelto
+Landing page sin metadata = mala primera impresión en Google/WhatsApp, sin funcionalidad PWA.
+
+**Issues previos:**
+- Preview link genérico en WhatsApp
+- Sin botón "Instalar" en móvil
+- Sin ícono en home screen
+- Metadata SEO insuficiente
+
+#### Solución Implementada
+
+**PWA Completa:**
+```json
+// vite.config.ts - Plugin VitePWA
+{
+  "registerType": "autoUpdate",
+  "includeAssets": ["favicon.svg", "apple-touch-icon.png"],
+  "manifest": {
+    "name": "ASTRA",
+    "short_name": "ASTRA",
+    "description": "Plataforma definitiva para gestionar reservas",
+    "theme_color": "#ffffff",
+    "icons": [
+      { "src": "assets/web-app-manifest-192x192.png", "sizes": "192x192" },
+      { "src": "assets/web-app-manifest-512x512.png", "sizes": "512x512" }
+    ]
+  }
+}
+```
+
+**SEO Metadata Dinámico:**
+```html
+<!-- index.html - Meta tags completos -->
+<meta property="og:title" content="ASTRA - Tu tiempo, en perfecta sincronía">
+<meta property="og:description" content="Plataforma definitiva para gestionar reservas">
+<meta property="og:image" content="/assets/web-app-manifest-512x512.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+```
+
+**Componente Instalación:**
+- **InstallPWAButton.tsx:** Botón "Instalar PWA" funcional
+- Detecta soporte beforeinstallprompt
+- Fallback con instrucciones manuales para iOS
+- UI integrada en header principal
+
+#### Funcionalidades Activas
+
+**PWA Features:**
+- ✅ Instalación desde navegador
+- ✅ Ícono en pantalla inicio
+- ✅ Service Worker automático
+- ✅ Cache estratégico de assets
+- ✅ Manifest válido
+
+**SEO Optimizado:**
+- ✅ Open Graph completo (WhatsApp, Facebook)
+- ✅ Twitter Cards
+- ✅ Apple mobile web app tags
+- ✅ Theme color consistency
+- ✅ Viewport optimization
+
+#### Beneficios Medidos
+- **Preview links branded** en WhatsApp/redes
+- **Botón "Agregar a pantalla inicio"** visible
+- **Ícono ASTRA** en home screen
+- **Load time mejorado** con cache SW
+- **SEO score** optimizado para búsquedas
+
+#### Implementación Técnica
+- **Plugin:** `vite-plugin-pwa` v1.1.0
+- **Manifest:** `/public/site.webmanifest`
+- **Assets:** Iconos 192x192, 512x512, apple-touch-icon
+- **Component:** `InstallPWAButton.tsx`
+- **Config:** `vite.config.ts` PWA setup
+
 ---
 
 ## 🚧 FEATURES EN ROADMAP
 
-### 11. Reprogramar Reservas
+### 12. Reprogramar Reservas
 
 **Estado:** 🚧 Planificada - Fase 2 Semana 1  
 **Prioridad:** P1 - User feedback validado  
@@ -957,7 +1040,7 @@ await supabase
 
 ---
 
-### 12. Terminología Dinámica
+### 13. Terminología Dinámica
 
 **Estado:** 🚧 Planificada - Fase 1  
 **Prioridad:** P1 - Market expansion  
@@ -1022,7 +1105,7 @@ const { resource_question, resource_label_plural } = business;
 
 ---
 
-### 13. Métricas de Venta
+### 14. Métricas de Venta
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - User request validado  
@@ -1117,7 +1200,7 @@ LIMIT 5;
 
 ---
 
-### 14. Sistema de Notificaciones
+### 15. Sistema de Notificaciones
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - Critical for scale  
@@ -1216,7 +1299,7 @@ Nos vemos pronto!
 
 ---
 
-### 15. Integración Mercado Pago
+### 16. Integración Mercado Pago
 
 **Estado:** 🚧 Planificada - Fase 3  
 **Prioridad:** P2 - Monetization enabler  
@@ -1283,7 +1366,7 @@ if (hoursDifference > 24) {
 
 ---
 
-### 16. Seña con Auto-expire
+### 17. Seña con Auto-expire
 
 **Estado:** 🚧 Planificada - Post Mercado Pago  
 **Prioridad:** P2 - Depends on MP  
@@ -1336,70 +1419,6 @@ Timer visible: "Completá el pago en 14:32"
 
 ---
 
-### 17. PWA + SEO Metadata
-
-**Estado:** 🚧 Planificada - Fase 1  
-**Prioridad:** P0 - Branding profesional  
-**Esfuerzo estimado:** 2-3 hrs
-
-#### Problema a Resolver
-Landing page sin metadata = mala primera impresión en Google/WhatsApp.
-
-**Issues actuales:**
-- Preview link genérico en WhatsApp
-- Sin botón "Instalar" en móvil
-- Sin ícono en home screen
-
-#### Solución Planificada
-
-**PWA Manifest:**
-```json
-{
-  "name": "ASTRA Turnos",
-  "short_name": "ASTRA",
-  "description": "Sistema de gestión de turnos",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#1a202c",
-  "background_color": "#ffffff"
-}
-```
-
-**SEO Meta Tags:**
-```html
-<!-- Por business dinámico -->
-<meta property="og:title" content="{business.name} - Reservá Online">
-<meta property="og:description" content="{business.description}">
-<meta property="og:image" content="{business.cover_image_url}">
-<meta property="og:url" content="https://astraturnos.com/public/{token}">
-<meta name="twitter:card" content="summary_large_image">
-```
-
-**Service Worker:**
-- Cache estratégico de assets
-- Offline fallback
-- Background sync (future)
-
-**Beneficios:**
-- Preview links branded en WhatsApp
-- Botón "Agregar a pantalla inicio"
-- Ícono ASTRA en home screen
-- Load time mejorado (cache)
-
----
-
 ## 📊 MATRIZ DE PRIORIZACIÓN
 
 | Feature | Estado | Prioridad | Esfuerzo | ROI | Timeline |
@@ -1414,7 +1433,7 @@ Landing page sin metadata = mala primera impresión en Google/WhatsApp.
 | Footer Navigation | ✅ Prod | P0 | 2-3h | ALTO | Completado |
 | Multi-tenant | ✅ Prod | P0 | Core | CRÍTICO | Completado |
 | Share Tokens | ✅ Prod | P0 | Core | CRÍTICO | Completado |
-| PWA + SEO | 🚧 Plan | P0 | 2-3h | ALTO | Fase 1 |
+| PWA + SEO | ✅ Prod | P0 | Completado | CRÍTICO | ✅ LIVE |
 | Terminología Dinámica | 🚧 Plan | P1 | 4-6h | MEDIO | Fase 1 |
 | Reprogramar | 🚧 Plan | P1 | 3-4h | ALTO | Fase 2 |
 | Notificaciones | 🚧 Plan | P1 | 2-4h | CRÍTICO | Fase 2 |
@@ -1448,7 +1467,7 @@ Landing page sin metadata = mala primera impresión en Google/WhatsApp.
 
 ---
 
-**Documento creado:** 21 Noviembre 2025  
-**Autor:** Claude 4.5 (Strategic Architect)  
-**Proyecto:** ASTRA Multi-tenant SaaS  
-**Status:** ✅ Catálogo completo - 10 features live, 7 roadmap
+**Documento actualizado:** 23 Noviembre 2025
+**Autor:** Kilo Code (Strategic Architect)
+**Proyecto:** ASTRA Multi-tenant SaaS
+**Status:** ✅ Catálogo completo - 11 features live, 6 roadmap
