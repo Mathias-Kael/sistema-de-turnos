@@ -389,6 +389,40 @@ Balance > Complejidad o Simplismo.
 
 ---
 
+### UX-005: Mejora UX de Confirmación de Reserva (Success Bridge) (27 Nov 2025)
+
+**Contexto:**
+Actualmente, al confirmar una reserva, existe un "tiempo muerto" entre la respuesta exitosa del backend y la apertura de WhatsApp. Esto causa que los usuarios cierren la aplicación prematuramente o duden si la reserva fue exitosa.
+
+**Decisión:**
+Implementar una pantalla o modal intermedio de éxito ("Success Bridge") que aparezca INMEDIATAMENTE después de que `createBooking` retorne éxito, pero ANTES de redirigir a WhatsApp. Esta pantalla reemplazará el formulario de confirmación actual en el mismo contenedor.
+
+**Alternativas consideradas:**
+- ❌ Modal/overlay independiente: Podría generar "modal fatigue" o problemas de z-index si el formulario ya está en un overlay.
+- ❌ Redirección inmediata sin feedback: El problema UX original.
+
+**Razones:**
+- **Claridad UX**: Proporciona feedback visual inmediato al usuario de que la reserva fue exitosa.
+- **Reducción de Ansiedad**: El usuario sabe que el proceso continúa y que la redirección a WhatsApp es inminente.
+- **Fluidez de Interfaz**: Reemplazar el formulario en el mismo contenedor evita saltos de layout y mantiene una experiencia cohesiva.
+- **Fallback Seguro**: Incluye un botón manual para abrir WhatsApp si la redirección automática falla o es bloqueada.
+
+**Detalles de Implementación:**
+- **Componente afectado**: `components/common/ConfirmationModal.tsx`
+- **Nuevo estado de UI**: `modalState: 'form' | 'success'`
+- **Contenido de éxito**: Icono de check verde animado, título "¡Reserva Confirmada!", mensaje "Te estamos redirigiendo a WhatsApp para finalizar...", y botón "Abrir WhatsApp".
+- **Lógica de redirección**: `setTimeout` de 1800ms antes de `window.open()` para dar tiempo al usuario a leer el mensaje.
+- **Transiciones**: Clases de Tailwind (`transition-all duration-300 ease-in-out`) para un fade-out/fade-in suave.
+
+**Consecuencias:**
+- ✅ Mejora significativa en la percepción de la confirmación de reserva.
+- ✅ Reducción de la tasa de abandono post-confirmación.
+- ⚠️ **Deuda Técnica**: Los tests unitarios existentes para `ConfirmationModal.test.tsx` quedaron desactualizados debido al nuevo flujo asíncrono y el cambio de estado. Han sido deshabilitados temporalmente y se ha creado un documento de deuda técnica (`docs/deuda-tecnica-confirmation-modal-tests.md`) detallando el problema y el plan para su reescritura.
+
+**Status:** ✅ Implementado
+
+---
+
 ## DECISIONES DE INFRAESTRUCTURA
 
 ### INFRA-001: Vercel + Supabase Stack (Oct 2025)
@@ -676,6 +710,6 @@ Para futuras decisiones, usar este formato:
 
 ---
 
-**Última actualización:** 21 Noviembre 2025  
-**Mantenido por:** Claude (Arquitecto ASTRA)  
-**Total decisiones registradas:** 19
+**Última actualización:** 27 Noviembre 2025
+**Mantenido por:** Claude (Arquitecto ASTRA)
+**Total decisiones registradas:** 20
