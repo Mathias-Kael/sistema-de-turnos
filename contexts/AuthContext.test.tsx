@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
 import { AuthError } from '@supabase/supabase-js';
@@ -89,11 +89,8 @@ describe('AuthContext', () => {
   });
 
   it('should clear session on invalid refresh token error', async () => {
-    const invalidTokenError: AuthError = {
-      name: 'AuthError',
-      message: 'Invalid Refresh Token: Refresh Token Not Found',
-      status: 400,
-    };
+    const invalidTokenError = new AuthError('Invalid Refresh Token: Refresh Token Not Found');
+    invalidTokenError.status = 400;
 
     (supabase.auth.getSession as jest.Mock).mockResolvedValue({
       data: { session: null },
@@ -119,11 +116,8 @@ describe('AuthContext', () => {
   });
 
   it('should handle token expired error', async () => {
-    const expiredTokenError: AuthError = {
-      name: 'AuthError',
-      message: 'Token has expired',
-      status: 400,
-    };
+    const expiredTokenError = new AuthError('Token has expired');
+    expiredTokenError.status = 400;
 
     (supabase.auth.getSession as jest.Mock).mockResolvedValue({
       data: { session: null },
@@ -180,7 +174,9 @@ describe('AuthContext', () => {
     };
 
     if (authChangeCallback) {
-      authChangeCallback('SIGNED_IN', newSession);
+      act(() => {
+        authChangeCallback('SIGNED_IN', newSession);
+      });
     }
 
     await waitFor(() => {
@@ -226,7 +222,9 @@ describe('AuthContext', () => {
 
     // Simulate token refresh failure
     if (authChangeCallback) {
-      authChangeCallback('TOKEN_REFRESHED', null);
+      act(() => {
+        authChangeCallback('TOKEN_REFRESHED', null);
+      });
     }
 
     await waitFor(() => {
@@ -273,14 +271,17 @@ describe('AuthContext', () => {
 
     // Simulate sign out
     if (authChangeCallback) {
-      authChangeCallback('SIGNED_OUT', null);
+      act(() => {
+        authChangeCallback('SIGNED_OUT', null);
+      });
     }
 
     await waitFor(() => {
       expect(screen.getByTestId('session')).toHaveTextContent('No session');
     });
 
-    expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    // signOut should NOT be called on SIGNED_OUT to prevent loops
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 
   it('should handle initialization errors gracefully', async () => {
