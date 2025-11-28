@@ -13,6 +13,7 @@ Se ejecutaron las Fases 1 y 2 del "PLAN_AUDITORIA_ACCESIBILIDAD.md" siguiendo es
 - `components/admin/ReservationsManager.tsx`
 - `components/views/ReservationsView.tsx`
 - `components/admin/ClientList.tsx`
+- `components/admin/ServicesEditor.tsx` (corrección final de truncamiento y accesibilidad)
 
 ## Cambios realizados
 - Escalado de fuentes y jerarquía visual en títulos y descripciones.
@@ -20,6 +21,7 @@ Se ejecutaron las Fases 1 y 2 del "PLAN_AUDITORIA_ACCESIBILIDAD.md" siguiendo es
 - Corrección de clases y estructura JSX para accesibilidad y consistencia.
 - Mejoras en affordance de botones y controles interactivos.
 - Validación de contraste y legibilidad según WCAG 2.1 AA.
+- Eliminación definitiva de truncamiento en nombres y descripciones de servicio en `ServicesEditor.tsx` (input y textarea ahora permiten ver y editar el texto completo, con tamaño accesible).
 
 ## Desviaciones y observaciones
 - El archivo `ServiceList.tsx` no fue localizado en la estructura actual. Se documenta como desviación.
