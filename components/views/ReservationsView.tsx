@@ -6,6 +6,7 @@ import { ManualBookingModal } from '../admin/ManualBookingModal';
 import SpecialBookingModal from '../admin/SpecialBookingModal';
 import CreateBreakModal from '../admin/CreateBreakModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
+import { SecondaryText, StatusBadge } from '../ui';
 
 // Tipo para bookings agrupados (breaks conjuntos)
 interface GroupedBooking {
@@ -204,14 +205,9 @@ export const ReservationsView: React.FC = () => {
                                     )}
                                 >
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className={'inline-block px-2 py-0.5 rounded text-xs font-semibold border ' + (
-                                            grouped.status === 'pending' ? 'border-yellow-400 text-yellow-700 bg-yellow-50' :
-                                            grouped.status === 'confirmed' ? 'border-green-500 text-green-700 bg-green-50' :
-                                            grouped.status === 'cancelled' ? 'border-red-500 text-red-700 bg-red-50' :
-                                            'border-transparent'
-                                        )}>
+                                        <StatusBadge status={grouped.status as any} size="xs">
                                             {grouped.status.charAt(0).toUpperCase() + grouped.status.slice(1)}
-                                        </span>
+                                        </StatusBadge>
                                         <p className="font-bold text-primary m-0">
                                             {formatTimeRange(grouped.start, grouped.end)}
                                         </p>
@@ -219,17 +215,17 @@ export const ReservationsView: React.FC = () => {
                                     {grouped.type === 'booking' ? (
                                         <>
                                             <p className="text-base font-semibold text-primary">👤 {firstBooking.client.name}</p>
-                                            <p className="text-sm text-secondary">📞 {firstBooking.client.phone}</p>
-                                            {firstBooking.client.email && <p className="text-sm text-secondary">📧 {firstBooking.client.email}</p>}
+                                            <SecondaryText>📞 {firstBooking.client.phone}</SecondaryText>
+                                            {firstBooking.client.email && <SecondaryText>📧 {firstBooking.client.email}</SecondaryText>}
                                             <p className="text-base text-secondary mt-1">{firstBooking.services.map(s => s.name).join(', ')}</p>
-                                            {business.employees.find(e => e.id === firstBooking.employeeId) && <p className="text-sm text-secondary mt-1">Con: {business.employees.find(e => e.id === firstBooking.employeeId)?.name}</p>}
-                                            {firstBooking.notes && <p className="text-sm text-secondary mt-1 italic">📝 "{firstBooking.notes}"</p>}
+                                            {business.employees.find(e => e.id === firstBooking.employeeId) && <SecondaryText className="mt-1">Con: {business.employees.find(e => e.id === firstBooking.employeeId)?.name}</SecondaryText>}
+                                            {firstBooking.notes && <SecondaryText className="mt-1 italic">📝 "{firstBooking.notes}"</SecondaryText>}
                                         </>
                                     ) : (
                                         <>
                                             <p className="text-sm font-semibold text-primary">🏢 {grouped.type === 'break-conjunto' ? business.name : grouped.bookings.map(b => business.employees.find(e => e.id === b.employeeId)?.name).join(', ')}</p>
-                                            <p className="text-sm text-secondary">☕ Break / Bloqueo</p>
-                                            {firstBooking.notes && <p className="text-xs text-secondary mt-1">📝 "{firstBooking.notes}"</p>}
+                                            <SecondaryText>☕ Break / Bloqueo</SecondaryText>
+                                            {firstBooking.notes && <SecondaryText className="mt-1">📝 "{firstBooking.notes}"</SecondaryText>}
                                         </>
                                     )}
                                 </li>

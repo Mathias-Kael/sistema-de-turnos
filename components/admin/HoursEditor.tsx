@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Hours, DayHours, Interval } from '../../types';
-import { Button } from '../ui/Button';
-import { ErrorMessage } from '../ui/ErrorMessage';
+import { Button, ErrorMessage, SecondaryText } from '../ui';
 import { validarIntervalos, timeToMinutes } from '../../utils/availability';
 import { getServerDateSync, parseDateString } from '../../utils/dateHelpers';
 
@@ -312,7 +311,7 @@ export const HoursEditor: React.FC = () => {
                     )}
                     <div className="flex justify-between items-center mb-3">
                         <span className="font-semibold text-primary">{label}</span>
-                        <label className="flex items-center space-x-2 cursor-pointer text-secondary">
+                        <SecondaryText as="label" className="flex items-center space-x-2 cursor-pointer">
                             <input
                                 type="checkbox"
                                 checked={draftHours[dayKey].enabled}
@@ -320,18 +319,18 @@ export const HoursEditor: React.FC = () => {
                                 className="h-5 w-5 rounded border-default accent-primary focus:ring-primary"
                             />
                             <span>{draftHours[dayKey].enabled ? 'Abierto' : 'Cerrado'}</span>
-                        </label>
+                        </SecondaryText>
                     </div>
 
                                         {draftHours[dayKey].enabled && (
                                                                         <div className="space-y-3">
                                                         {/* Encabezados de columnas */}
-                                                                                                            <div className="hidden sm:grid grid-cols-[1fr_auto_1fr_auto] items-center text-xs text-secondary px-1">
-                                                            <span>Desde</span>
-                                                            <span></span>
-                                                            <span>Hasta</span>
-                                                                                    <span></span>
-                                                        </div>
+                                                                                                            <div className="hidden sm:grid grid-cols-[1fr_auto_1fr_auto] items-center px-1">
+                                                                                              <SecondaryText size="xs">Desde</SecondaryText>
+                                                                                              <span></span>
+                                                                                              <SecondaryText size="xs">Hasta</SecondaryText>
+                                                                                                                      <span></span>
+                                                                                          </div>
                                                                                 {draftHours[dayKey].intervals.map((interval, index) => {
                                                             // Validar usando timeToMinutes con contexto para horarios nocturnos
                                                             const openMinutes = interval.open ? timeToMinutes(interval.open, 'open') : -1;
@@ -452,9 +451,9 @@ export const HoursEditor: React.FC = () => {
                                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                                         Tienes cambios sin guardar
                                     </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <SecondaryText>
                                         {modifiedDaysCount} {modifiedDaysCount === 1 ? 'día modificado' : 'días modificados'}
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
 
@@ -524,9 +523,9 @@ export const HoursEditor: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-primary">
                                         Copiar horario de {daysOfWeek.find(d => d.key === dayToCopy)?.label}
                                     </h3>
-                                    <p className="mt-1 text-sm text-secondary">
+                                    <SecondaryText className="mt-1">
                                         Esta acción reemplazará los horarios de todos los demás días de la semana.
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>
@@ -542,13 +541,13 @@ export const HoursEditor: React.FC = () => {
                                     {draftHours[dayToCopy].enabled ? (
                                         <div className="mt-2 space-y-1">
                                             {draftHours[dayToCopy].intervals.map((interval, idx) => (
-                                                <p key={idx} className="text-sm text-gray-700 dark:text-blue-200">
+                                                <SecondaryText key={idx}>
                                                     📅 {interval.open} - {interval.close}
-                                                </p>
+                                                </SecondaryText>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-600 dark:text-blue-300 mt-1">Cerrado</p>
+                                        <SecondaryText className="mt-1">Cerrado</SecondaryText>
                                     )}
                                 </div>
                             </div>
@@ -558,13 +557,13 @@ export const HoursEditor: React.FC = () => {
                                     <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                     </svg>
-                                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                    <SecondaryText className="text-yellow-800 dark:text-yellow-200">
                                         <strong>Atención:</strong> Los siguientes días serán sobrescritos:{' '}
                                         {daysOfWeek
                                             .filter(d => d.key !== dayToCopy)
                                             .map(d => d.label)
                                             .join(', ')}
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>
@@ -608,9 +607,9 @@ export const HoursEditor: React.FC = () => {
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-lg font-semibold text-primary">⚠️ Atención: Reservas Futuras Afectadas</h3>
-                                    <p className="mt-1 text-sm text-secondary">
+                                    <SecondaryText className="mt-1">
                                         Los cambios en el horario de atención afectarán {affectedBookings.length} reserva{affectedBookings.length > 1 ? 's' : ''} futura{affectedBookings.length > 1 ? 's' : ''} que quedaría{affectedBookings.length > 1 ? 'n' : ''} fuera del nuevo horario.
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>
@@ -625,7 +624,7 @@ export const HoursEditor: React.FC = () => {
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1">
                                                     <div className="font-medium text-gray-900 dark:text-yellow-100">{booking.client}</div>
-                                                    <div className="text-sm text-gray-600 dark:text-yellow-300 mt-1">
+                                                    <SecondaryText className="mt-1">
                                                         <span className="inline-flex items-center gap-1">
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -636,7 +635,7 @@ export const HoursEditor: React.FC = () => {
                                                                 month: 'long',
                                                                 day: 'numeric'
                                                             })}
-                                                        </span>
+                                                        </span >
                                                         <span className="mx-2">•</span>
                                                         <span className="inline-flex items-center gap-1">
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -644,7 +643,7 @@ export const HoursEditor: React.FC = () => {
                                                             </svg>
                                                             {booking.time}
                                                         </span>
-                                                    </div>
+                                                    </SecondaryText>
                                                 </div>
                                             </div>
                                         </div>
@@ -653,9 +652,9 @@ export const HoursEditor: React.FC = () => {
                             </div>
 
                             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 rounded-md">
-                                <p className="text-sm text-blue-800 dark:text-blue-200">
+                                <SecondaryText className="text-blue-800 dark:text-blue-200">
                                     <strong>Nota importante:</strong> Si continuás, estas reservas seguirán activas en el sistema, pero quedarán fuera del horario de atención configurado. Te recomendamos contactar a los clientes afectados para reprogramar o cancelar las reservas.
-                                </p>
+                                </SecondaryText>
                             </div>
                         </div>
 

@@ -336,7 +336,7 @@ sistema-de-turnos/
 │   ├── admin/              # Componentes del panel de administración
 │   ├── auth/               # Componentes para autenticación (login, registro)
 │   ├── common/             # Componentes reutilizables en toda la app
-│   ├── ui/                 # Componentes de UI puros (Button, Input, etc.)
+│   ├── ui/                 # Componentes de UI puros (Button, Input, SecondaryText, StatusBadge, etc.)
 │   └── views/              # Vistas principales que componen las páginas
 ├── services/
 │   ├── supabaseBackend.ts  # Abstracción sobre Supabase (lógica de negocio)

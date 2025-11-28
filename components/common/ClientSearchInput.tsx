@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Client } from '../../types';
 import { supabaseBackend } from '../../services/supabaseBackend';
+import { SecondaryText } from '../ui';
 
 interface ClientSearchInputProps {
   businessId: string;
@@ -217,13 +218,13 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
                       <div className="font-semibold text-primary truncate">
                         {client.name}
                       </div>
-                      <div className="text-sm text-secondary truncate">
+                      <SecondaryText className="truncate">
                         {client.phone}
-                      </div>
+                      </SecondaryText>
                       {client.email && (
-                        <div className="text-xs text-secondary truncate">
+                        <SecondaryText size="xs" className="truncate">
                           {client.email}
-                        </div>
+                        </SecondaryText>
                       )}
                       {client.tags && client.tags.length > 0 && (
                         <div className="flex gap-1 mt-1 flex-wrap">
@@ -273,9 +274,9 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
                 Crear nuevo cliente
               </div>
               {query && (
-                <div className="text-sm text-secondary">
+                <SecondaryText>
                   {query}
-                </div>
+                </SecondaryText>
               )}
             </div>
           </button>
@@ -293,9 +294,9 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
               <div className="text-sm font-medium text-primary">
                 Cliente seleccionado: {selectedClient.name}
               </div>
-              <div className="text-xs text-secondary">
+              <SecondaryText size="xs">
                 {selectedClient.phone}
-              </div>
+              </SecondaryText>
             </div>
             <button
               type="button"

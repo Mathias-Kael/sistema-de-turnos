@@ -3,8 +3,7 @@ import { Client } from '../../types';
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { useBusinessState } from '../../context/BusinessContext';
 import { ClientFormModal } from '../common/ClientFormModal';
-import { Button } from '../ui/Button';
-import { ErrorMessage } from '../ui/ErrorMessage';
+import { Button, ErrorMessage, SecondaryText } from '../ui';
 
 /**
  * ClientList - Vista de administración de clientes
@@ -92,9 +91,9 @@ export const ClientList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h3 className="text-lg font-medium text-primary">Clientes</h3>
-          <p className="text-sm text-secondary mt-1">
+          <SecondaryText className="mt-1">
             Gestiona tu base de clientes recurrentes
-          </p>
+          </SecondaryText>
         </div>
         <Button
           onClick={handleCreateClient}
@@ -177,13 +176,13 @@ export const ClientList: React.FC = () => {
                     <td className="px-4 py-4">
                       <div>
                         <div className="font-medium text-primary line-clamp-2 md:line-clamp-none">{client.name}</div>
-                        <div className="text-sm text-secondary md:hidden">{client.phone}</div>
+                        <SecondaryText className="md:hidden">{client.phone}</SecondaryText>
                       </div>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
                       <div className="text-sm text-primary">{client.phone}</div>
                       {client.email && (
-                        <div className="text-sm text-secondary max-w-xs">{client.email}</div>
+                        <SecondaryText className="max-w-xs">{client.email}</SecondaryText>
                       )}
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
@@ -199,7 +198,7 @@ export const ClientList: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-sm text-secondary">-</span>
+                        <SecondaryText>-</SecondaryText>
                       )}
                     </td>
                     <td className="px-4 py-4 text-right">

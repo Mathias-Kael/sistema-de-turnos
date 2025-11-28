@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useBusinessState } from '../../../context/BusinessContext';
 import { FlyerGenerator as Generator } from '../../../utils/flyerGenerator';
 import { FlyerData } from '../../../utils/flyerTypes';
-import { Button } from '../../ui/Button';
+import { Button, SecondaryText } from '../../ui';
 import { imageStorage } from '../../../services/imageStorage';
 
 export const FlyerGenerator: React.FC = () => {
@@ -85,10 +85,10 @@ export const FlyerGenerator: React.FC = () => {
       <h4 className="text-lg font-semibold text-primary mb-3">
         🎨 Flyers Promocionales
       </h4>
-      <p className="text-sm text-secondary mb-4">
+      <SecondaryText className="mb-4">
         Genera flyers profesionales para compartir en Instagram y WhatsApp.
         Incluye tu branding, QR code y mensaje promocional.
-      </p>
+      </SecondaryText>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Button
@@ -138,9 +138,9 @@ export const FlyerGenerator: React.FC = () => {
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-              <p className="text-sm text-yellow-800">
+              <SecondaryText className="text-yellow-800">
                 💡 <strong>Tip:</strong> En el espacio de link, pegá tu enlace público cuando subas el flyer a WhatsApp/Instagram para que sea clickeable.
-              </p>
+              </SecondaryText>
             </div>
 
             <div className="flex gap-3">

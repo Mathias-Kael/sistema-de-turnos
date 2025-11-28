@@ -2,12 +2,13 @@ import React, { useMemo } from 'react';
 import { useBusinessState } from '../../context/BusinessContext';
 import { imageStorage } from '../../services/imageStorage';
 import { Wrench, Users, Calendar, Clock } from 'lucide-react';
+import { SecondaryText } from '../ui';
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
     <div className="bg-surface p-4 rounded-lg shadow-md border border-default flex items-center">
         <Icon className="h-8 w-8 mr-4 text-primary" />
         <div>
-            <p className="text-sm text-secondary">{title}</p>
+            <SecondaryText>{title}</SecondaryText>
             <p className="text-2xl font-bold text-primary">{value}</p>
         </div>
     </div>
@@ -34,7 +35,7 @@ export const DashboardView: React.FC = () => {
         <div className="p-4 sm:p-6 space-y-6">
             <div>
                 <h2 className="text-2xl font-bold text-primary">🏠 Página de inicio</h2>
-                <p className="text-secondary">Un resumen de tu negocio.</p>
+                <SecondaryText>Un resumen de tu negocio.</SecondaryText>
             </div>
 
             <div className="space-y-4">

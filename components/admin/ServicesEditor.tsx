@@ -2,9 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Service } from '../../types';
 import ServiceAssignmentEditor from './ServiceAssignmentEditor';
-import { ErrorMessage } from '../ui/ErrorMessage'; 
-import { Button } from '../ui/Button';
-import { DurationInput } from '../ui/DurationInput';
+import { ErrorMessage, Button, DurationInput, SecondaryText, StatusBadge } from '../ui';
 import { Employee } from '../../types'; // Importar Employee
 
 const newServiceTemplate: Omit<Service, 'id' | 'businessId'> = {
@@ -179,7 +177,7 @@ export const ServicesEditor: React.FC = () => {
                         <h4 className="font-semibold text-primary text-lg">Nuevo Servicio</h4>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-secondary mb-1">Nombre del Servicio *</label>
+                        <SecondaryText as="label" className="block mb-1">Nombre del Servicio *</SecondaryText>
                         <input
                             type="text"
                             placeholder="Ej: Corte de cabello"
@@ -192,12 +190,12 @@ export const ServicesEditor: React.FC = () => {
                             }`}
                         />
                         {!newService.name.trim() && (
-                            <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                            <SecondaryText size="xs" className="mt-1 text-red-600 flex items-center gap-1">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                                 El nombre es obligatorio
-                            </p>
+                            </SecondaryText>
                         )}
                     </div>
                     <textarea
@@ -212,7 +210,7 @@ export const ServicesEditor: React.FC = () => {
                     ></textarea>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-1">Duración *</label>
+                            <SecondaryText as="label" className="block mb-1">Duración *</SecondaryText>
                             <DurationInput
                                 value={newService.duration}
                                 onChange={(minutes) => setNewService({...newService, duration: minutes})}
@@ -221,25 +219,25 @@ export const ServicesEditor: React.FC = () => {
                                 error={isDurationInvalid}
                             />
                             {isDurationInvalid && (
-                                <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                                <SecondaryText size="xs" className="mt-1 text-red-600 flex items-center gap-1">
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                     </svg>
                                     La duración debe ser mayor a 0
-                                </p>
+                                </SecondaryText>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
+                            <SecondaryText as="label" className="block mb-1">Precio</SecondaryText>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                <SecondaryText as="span" size="sm" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none select-none opacity-70">$</SecondaryText>
                                 <input type="number" placeholder="0" value={newService.price} onChange={(e) => setNewService({...newService, price: Number(e.target.value)})} className="w-full p-2 pl-8 border border-default rounded bg-background text-primary" />
                             </div>
                         </div>
                     </div>
 
                     {/* Toggle para tiempo de descanso */}
-                    <label className="flex items-center space-x-2 text-secondary cursor-pointer">
+                    <SecondaryText as="label" className="flex items-center space-x-2 cursor-pointer">
                         <input
                             type="checkbox"
                             checked={newServiceBufferEnabled}
@@ -257,7 +255,7 @@ export const ServicesEditor: React.FC = () => {
                             </svg>
                             Agregar tiempo de descanso entre turnos
                         </span>
-                    </label>
+                    </SecondaryText>
 
                     {/* Campo de tiempo de descanso (solo visible si está habilitado) */}
                     {newServiceBufferEnabled && (
@@ -265,9 +263,9 @@ export const ServicesEditor: React.FC = () => {
                             <label className="block text-sm font-medium text-primary mb-2">
                                 ⏱️ Tiempo de descanso
                             </label>
-                            <p className="text-xs text-secondary mb-2">
+                            <SecondaryText size="xs" className="mb-2">
                                 Intervalo entre turnos para preparación o limpieza
-                            </p>
+                            </SecondaryText>
                             <DurationInput
                                 value={newService.buffer}
                                 onChange={(minutes) => setNewService({...newService, buffer: minutes})}
@@ -277,10 +275,10 @@ export const ServicesEditor: React.FC = () => {
                         </div>
                     )}
 
-                    <label className="flex items-center space-x-2 text-secondary">
+                    <SecondaryText as="label" className="flex items-center space-x-2">
                         <input type="checkbox" checked={newService.requiresDeposit} onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} className="rounded accent-primary"/>
                         <span>Requiere depósito</span>
-                    </label>
+                    </SecondaryText>
 
                     {/* Sección de asignación de empleados para nuevo servicio */}
                     <div className={`border-2 p-4 rounded-lg transition-all ${
@@ -295,13 +293,12 @@ export const ServicesEditor: React.FC = () => {
                                 </svg>
                                 Asignar Empleados *
                             </h5>
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                newServiceAssignedEmployeeIds.length === 0
-                                    ? 'bg-red-200 text-red-800'
-                                    : 'bg-green-200 text-green-800'
-                            }`}>
+                            <StatusBadge
+                                status={newServiceAssignedEmployeeIds.length === 0 ? 'inactive' : 'active'}
+                                size="xs"
+                            >
                                 {newServiceAssignedEmployeeIds.length} seleccionado{newServiceAssignedEmployeeIds.length !== 1 ? 's' : ''}
-                            </span>
+                            </StatusBadge>
                         </div>
                         {business.employees.length === 0 ? (
                             <p className="text-secondary">No hay empleados registrados. Por favor, añade empleados primero.</p>
@@ -339,12 +336,12 @@ export const ServicesEditor: React.FC = () => {
                                     ))}
                                 </div>
                                 {newServiceAssignedEmployeeIds.length === 0 && (
-                                    <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                    <SecondaryText size="xs" className="mt-2 text-red-600 flex items-center gap-1">
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                         </svg>
                                         Debes seleccionar al menos un empleado
-                                    </p>
+                                    </SecondaryText>
                                 )}
                             </>
                         )}
@@ -411,7 +408,7 @@ export const ServicesEditor: React.FC = () => {
                         ></textarea>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-secondary mb-1">Duración</label>
+                                <SecondaryText as="label" className="block mb-1">Duración</SecondaryText>
                                 <DurationInput
                                     value={service.duration}
                                     onChange={(minutes) => handleServiceChange(service.id, 'duration', minutes)}
@@ -420,16 +417,16 @@ export const ServicesEditor: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-secondary mb-1">Precio</label>
+                                <SecondaryText as="label" className="block mb-1">Precio</SecondaryText>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none select-none opacity-70">$</span>
+                                    <SecondaryText as="span" size="sm" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none select-none opacity-70">$</SecondaryText>
                                     <input type="number" defaultValue={service.price} onBlur={(e) => handleServiceChange(service.id, 'price', e.target.value)} className="w-full p-2 pl-8 border border-default rounded bg-surface text-primary" title="Precio" />
                                 </div>
                             </div>
                         </div>
 
                         {/* Toggle para tiempo de descanso */}
-                        <label className="flex items-center space-x-2 text-sm cursor-pointer text-secondary">
+                        <SecondaryText as="label" className="flex items-center space-x-2 cursor-pointer">
                             <input
                                 type="checkbox"
                                 checked={bufferEnabledMap[service.id] ?? service.buffer > 0}
@@ -447,7 +444,7 @@ export const ServicesEditor: React.FC = () => {
                                 </svg>
                                 Agregar tiempo de descanso entre turnos
                             </span>
-                        </label>
+                        </SecondaryText>
 
                         {/* Campo de tiempo de descanso (solo visible si está habilitado) */}
                         {(bufferEnabledMap[service.id] ?? service.buffer > 0) && (
@@ -455,9 +452,9 @@ export const ServicesEditor: React.FC = () => {
                                 <label className="block text-sm font-medium text-primary mb-2">
                                     ⏱️ Tiempo de descanso
                                 </label>
-                                <p className="text-xs text-secondary mb-2">
+                                <SecondaryText size="xs" className="mb-2">
                                     Intervalo entre turnos para preparación o limpieza
-                                </p>
+                                </SecondaryText>
                                 <DurationInput
                                     value={service.buffer}
                                     onChange={(minutes) => handleServiceChange(service.id, 'buffer', minutes)}
@@ -467,15 +464,15 @@ export const ServicesEditor: React.FC = () => {
                             </div>
                         )}
 
-                         <label className="flex items-center space-x-2 text-sm cursor-pointer text-secondary">
+                         <SecondaryText as="label" className="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" defaultChecked={!!service.requiresDeposit} onChange={(e) => handleServiceChange(service.id, 'requiresDeposit', e.target.checked)} className="rounded accent-primary"/>
                             <span>Requiere depósito</span>
-                        </label>
+                        </SecondaryText>
 
                         {/* Categorías asignadas */}
                         {business.categories.length > 0 && (
                             <div className="pt-2">
-                                <h6 className="text-sm font-medium text-secondary mb-2">Categorías:</h6>
+                                <SecondaryText as="h6" className="mb-2">Categorías:</SecondaryText>
                                 <div className="flex flex-wrap gap-2">
                                     {business.categories.map(category => {
                                             const currentCategoryIds = pendingCategoryChanges[service.id] ?? service.categoryIds ?? [];
@@ -500,12 +497,12 @@ export const ServicesEditor: React.FC = () => {
                                 {pendingCategoryChanges[service.id] && (
                                     <div className="mt-3 flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-700 rounded-md">
                                         <div className="flex-1">
-                                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                            <SecondaryText as="p" className="font-medium text-yellow-800 dark:text-yellow-200">
                                                 ⚠️ Cambios sin guardar
-                                            </p>
-                                            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
+                                            </SecondaryText>
+                                            <SecondaryText as="p" size="xs" className="text-yellow-600 dark:text-yellow-400 mt-0.5">
                                                 Haz clic en "Guardar" para aplicar los cambios de categoría
-                                            </p>
+                                            </SecondaryText>
                                         </div>
                                         <div className="flex gap-2">
                                             <Button
@@ -577,9 +574,9 @@ export const ServicesEditor: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-primary">
                                         Eliminar Servicio
                                     </h3>
-                                    <p className="mt-1 text-sm text-secondary">
+                                    <SecondaryText className="mt-1">
                                         Esta acción no se puede deshacer.
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>
@@ -590,14 +587,14 @@ export const ServicesEditor: React.FC = () => {
                                 <p className="text-primary mb-2">
                                     ¿Estás seguro que quieres eliminar el servicio <strong>"{serviceToDelete.name}"</strong>?
                                 </p>
-                                <div className="p-3 bg-surface border border-default rounded-md text-sm text-secondary">
+                                <SecondaryText as="div" className="p-3 bg-surface border border-default rounded-md">
                                     <p className="text-primary"><strong>Detalles del servicio:</strong></p>
                                     <ul className="mt-2 space-y-1">
                                         <li>💰 Precio: ${serviceToDelete.price}</li>
                                         <li>⏱️ Duración: {serviceToDelete.duration} min</li>
                                         <li>👥 Empleados asignados: {serviceToDelete.employeeIds?.length || 0}</li>
                                     </ul>
-                                </div>
+                                </SecondaryText>
                             </div>
 
                             <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-700 rounded-md">
@@ -605,9 +602,9 @@ export const ServicesEditor: React.FC = () => {
                                     <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                     </svg>
-                                    <p className="text-sm text-red-800 dark:text-red-200">
+                                    <SecondaryText className="text-red-800 dark:text-red-200">
                                         <strong>Atención:</strong> Al eliminar este servicio, ya no estará disponible para nuevas reservas.
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>

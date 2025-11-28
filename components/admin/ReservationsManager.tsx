@@ -6,6 +6,7 @@ import { ManualBookingModal } from './ManualBookingModal';
 import SpecialBookingModal from './SpecialBookingModal';
 import CreateBreakModal from './CreateBreakModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
+import { SecondaryText, StatusBadge } from '../../components/ui';
 
 // Tipo para bookings agrupados (breaks conjuntos)
 interface GroupedBooking {
@@ -258,18 +259,15 @@ export const ReservationsManager: React.FC = () => {
                                 >
                                     {/* Línea 1: Estado + Horario */}
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className={'inline-block px-2 py-0.5 rounded text-xs font-semibold border bg-white ' + (
-                                            grouped.status === 'pending' ? 'border-yellow-400 text-yellow-700' :
-                                            grouped.status === 'confirmed' ? 'border-green-500 text-green-700' :
-                                            grouped.status === 'cancelled' ? 'border-red-500 text-red-700' :
-                                            'border-transparent'
-                                        )}
+                                        <StatusBadge
+                                            status={grouped.status as any}
+                                            size="xs"
                                             aria-label={'Estado: ' + grouped.status}
                                         >
                                             {grouped.status === 'pending' && 'Pendiente'}
                                             {grouped.status === 'confirmed' && 'Confirmada'}
                                             {grouped.status === 'cancelled' && 'Cancelada'}
-                                        </span>
+                                        </StatusBadge>
                                         <p className="font-bold text-primary m-0">
                                             {formatTimeRange(grouped.start, grouped.end)}
                                         </p>
@@ -282,9 +280,9 @@ export const ReservationsManager: React.FC = () => {
                                             <p className="text-base font-semibold text-primary">🏢 {business.name}</p>
                                             <p className="text-base text-secondary">☕ Break / Bloqueo</p>
                                             {firstBooking.notes && (
-                                                <p className="text-sm text-secondary mt-1 italic">
+                                                <SecondaryText className="mt-1 italic">
                                                     📝 "{firstBooking.notes}"
-                                                </p>
+                                                </SecondaryText>
                                             )}
                                         </>
                                     ) : grouped.type === 'break-individual' ? (
@@ -298,9 +296,9 @@ export const ReservationsManager: React.FC = () => {
                                             </p>
                                             <p className="text-base text-secondary">☕ Break / Bloqueo</p>
                                             {firstBooking.notes && (
-                                                <p className="text-sm text-secondary mt-1 italic">
+                                                <SecondaryText className="mt-1 italic">
                                                     📝 "{firstBooking.notes}"
-                                                </p>
+                                                </SecondaryText>
                                             )}
                                         </>
                                     ) : (
@@ -309,13 +307,13 @@ export const ReservationsManager: React.FC = () => {
                                             <p className="text-base font-semibold text-primary">
                                                 👤 {firstBooking.client.name}
                                             </p>
-                                            <p className="text-sm text-secondary">
+                                            <SecondaryText>
                                                 📞 {firstBooking.client.phone}
-                                            </p>
+                                            </SecondaryText>
                                             {firstBooking.client.email && (
-                                                <p className="text-sm text-secondary">
+                                                <SecondaryText>
                                                     📧 {firstBooking.client.email}
-                                                </p>
+                                                </SecondaryText>
                                             )}
                                             <p className="text-base text-secondary mt-1">
                                                 {firstBooking.services.length > 0 
@@ -326,15 +324,15 @@ export const ReservationsManager: React.FC = () => {
                                             {(() => {
                                                 const employee = business.employees.find(e => e.id === firstBooking.employeeId);
                                                 return employee && (
-                                                    <p className="text-sm text-secondary mt-1">
+                                                    <SecondaryText className="mt-1">
                                                         Con: {employee.name}
-                                                    </p>
+                                                    </SecondaryText>
                                                 );
                                             })()}
                                             {firstBooking.notes && (
-                                                <p className="text-sm text-secondary mt-1 italic">
+                                                <SecondaryText className="mt-1 italic">
                                                     📝 "{firstBooking.notes}"
-                                                </p>
+                                                </SecondaryText>
                                             )}
                                         </>
                                     )}

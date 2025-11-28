@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { FlyerGenerator } from './flyer/FlyerGenerator';
+import { SecondaryText } from '../ui';
 
 type ExpirationOption = 'permanent' | '7d' | '30d' | '1y';
 type LinkStatus = 'active' | 'paused' | 'revoked';
@@ -226,9 +227,9 @@ export const SharePanel: React.FC = () => {
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-bold text-primary mb-2">Compartir y Redes Sociales</h3>
-                <p className="text-secondary text-sm">
+                <SecondaryText>
                     Genera enlaces de reserva y configura tus redes para que los clientes te encuentren.
-                </p>
+                </SecondaryText>
             </div>
 
             {/* Enlace Compartible */}
@@ -269,13 +270,13 @@ export const SharePanel: React.FC = () => {
                     </div>
 
                     {tokenExpiry && (
-                        <p className="text-sm text-secondary">
-                            Expira: {new Date(tokenExpiry).toLocaleDateString('es-AR', { 
-                                day: 'numeric', 
-                                month: 'long', 
-                                year: 'numeric' 
+                        <SecondaryText>
+                            Expira: {new Date(tokenExpiry).toLocaleDateString('es-AR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
                             })}
-                        </p>
+                        </SecondaryText>
                     )}
 
                     {shareableLink && derivedStatus === 'active' && (
@@ -347,18 +348,18 @@ export const SharePanel: React.FC = () => {
                 <h4 className="text-lg font-semibold text-primary mb-3">Redes Sociales</h4>
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="businessWhatsapp" className="block text-sm font-medium text-secondary">WhatsApp del Negocio</label>
+                        <SecondaryText as="label" htmlFor="businessWhatsapp" className="block font-medium">WhatsApp del Negocio</SecondaryText>
                         <input type="text" id="businessWhatsapp" value={localWhatsapp} onChange={(e) => handleSocialMediaChange('whatsapp', e.target.value)} placeholder="+54911234567890" className="mt-1 block w-full px-3 py-2 border border-default rounded-md bg-surface text-primary"/>
                     </div>
                     <div>
-                        <label htmlFor="instagram" className="block text-sm font-medium text-secondary">Instagram</label>
+                        <SecondaryText as="label" htmlFor="instagram" className="block font-medium">Instagram</SecondaryText>
                         <div className="mt-1 flex">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-default bg-surface text-secondary text-sm">@</span>
+                            <SecondaryText as="span" className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-default bg-surface">@</SecondaryText>
                             <input type="text" id="instagram" value={localInstagram} onChange={(e) => handleSocialMediaChange('instagram', e.target.value)} placeholder="mi_negocio" className="flex-1 px-3 py-2 border border-default rounded-r-md bg-surface text-primary"/>
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="facebook" className="block text-sm font-medium text-secondary">Facebook</label>
+                        <SecondaryText as="label" htmlFor="facebook" className="block font-medium">Facebook</SecondaryText>
                         <input type="text" id="facebook" value={localFacebook} onChange={(e) => handleSocialMediaChange('facebook', e.target.value)} placeholder="mi.negocio" className="mt-1 block w-full px-3 py-2 border border-default rounded-md bg-surface text-primary"/>
                     </div>
                 </div>

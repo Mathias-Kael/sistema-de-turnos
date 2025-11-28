@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Service, Category, CategoryIcon as CategoryIconType } from '../../types';
 import { formatDuration } from '../../utils/format';
+import { SecondaryText } from '../ui';
 
 interface ServiceSelectorProps {
     selectedServices: Service[];
@@ -258,9 +259,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                         </div>
                     </div>
                 </div>
-                <p className={`relative z-10 text-sm mt-2 line-clamp-2 transition-colors ${
+                <p className={`relative z-10 text-base mt-2 line-clamp-3 transition-colors ${
                     isSelected ? 'text-secondary' : 'text-secondary'
-                } text-base line-clamp-3`}>
+                }`}>
                     {service.description}
                 </p>
                 <div
@@ -372,9 +373,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                                 {group.categoryName}
                                             </h3>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-sm text-secondary font-medium">
+                                                <SecondaryText className="font-medium">
                                                     {group.services.length} {group.services.length === 1 ? 'servicio' : 'servicios'}
-                                                </span>
+                                                </SecondaryText>
                                                 {hasSelections && (
                                                     <React.Fragment>
                                                         <span className="text-secondary">•</span>

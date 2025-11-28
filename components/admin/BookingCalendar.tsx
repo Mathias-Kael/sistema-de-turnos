@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookingStatus } from '../../types';
+import { SecondaryText } from '../ui';
 
 interface BookingCalendarProps {
     selectedDate: Date;
@@ -29,7 +30,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ selectedDate, 
                     <button onClick={() => setDisplayDate(new Date(displayDate.setMonth(displayDate.getMonth() + 1)))} className="p-2 rounded-full hover:bg-surface-hover text-primary">{'>'}</button>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center">
-                    {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(day => <div key={day} className="font-bold text-sm text-secondary">{day}</div>)}
+                    {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(day => <SecondaryText key={day} className="font-bold">{day}</SecondaryText>)}
                     {dates.map((date, index) => {
                         if (!date) return <div key={`empty-${index}`}></div>;
                         const dateStr = date.toISOString().split('T')[0];

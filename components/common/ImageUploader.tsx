@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { imageStorage } from '../../services/imageStorage';
 import { ImageType } from '../../types';
 import ImageCropModal from './ImageCropModal';
-import { Button } from '../ui/Button';
+import { Button, SecondaryText } from '../ui';
 
 interface ImageUploaderProps {
   currentImageUrl?: string; // ID o URL previa
@@ -196,18 +196,18 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           {isUploading ? (
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-xs text-secondary mt-2">
+              <SecondaryText size="xs" className="mt-2">
                 {retryAttempt > 0 ? `Reintentando (${retryAttempt}/3)...` : 'Subiendo...'}
-              </p>
+              </SecondaryText>
             </div>
           ) : (
             <div className="text-center p-4">
-              <p className="text-sm text-secondary">
+              <SecondaryText>
                 {isDragging ? 'Suelta aquí' : 'Arrastra o haz clic'}
-              </p>
-              <p className="text-xs text-secondary mt-1">
+              </SecondaryText>
+              <SecondaryText size="xs" className="mt-1">
                 JPG, PNG, WebP • Máx {type === 'cover' ? '2MB' : '1MB'}
-              </p>
+              </SecondaryText>
             </div>
           )}
         </div>

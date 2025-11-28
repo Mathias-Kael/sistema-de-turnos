@@ -6,6 +6,7 @@ import { EmployeesEditor } from '../admin/EmployeesEditor';
 import { HoursEditor } from '../admin/HoursEditor';
 import { BrandingEditor } from '../admin/BrandingEditor';
 import { ClientList } from '../admin/ClientList';
+import { SecondaryText } from '../ui';
 
 type ManagementSection = 'services' | 'categories' | 'team' | 'hours' | 'branding' | 'clients';
 
@@ -22,7 +23,7 @@ const ManagementCard: React.FC<{ title: string; icon: React.ElementType; descrip
     <button onClick={onClick} className="bg-surface p-6 rounded-lg shadow-md border border-default text-left w-full hover:border-primary transition-all">
         <Icon className="h-8 w-8 mb-2 text-primary" />
         <h3 className="text-lg font-bold text-primary">{title}</h3>
-        <p className="text-sm text-secondary">{description}</p>
+        <SecondaryText>{description}</SecondaryText>
     </button>
 );
 

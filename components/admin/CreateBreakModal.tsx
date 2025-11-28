@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import TimelinePicker, { TimeSlot } from '../common/TimelinePicker';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Button, Input, SecondaryText } from '../ui';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { createBookingSafe } from '../../services/api';
 import { timeToMinutes, minutesToTime } from '../../utils/availability';
@@ -168,7 +167,7 @@ const CreateBreakModal: React.FC<CreateBreakModalProps> = ({
         {/* Header fijo */}
         <div className="p-6 border-b border-default">
           <h2 className="text-2xl font-bold text-primary">⏸ Agregar Break / Bloqueo</h2>
-          <p className="text-sm text-secondary mt-1">📅 {formatDate(selectedDate)}</p>
+          <SecondaryText className="mt-1">📅 {formatDate(selectedDate)}</SecondaryText>
         </div>
 
         {/* Contenido scrolleable */}

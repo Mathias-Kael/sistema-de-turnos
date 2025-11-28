@@ -8,6 +8,7 @@ import { timeToMinutes, minutesToTime } from '../../utils/availability';
 import { findAvailableEmployeeForSlot } from '../../services/api';
 import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
 import { validateBookingInput } from '../../utils/validation';
+import { SecondaryText } from '../ui';
 
 // Tipos para el Success Bridge
 type ModalState = 'form' | 'success';
@@ -188,9 +189,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
             </div>
             
             <h2 className="text-3xl font-bold text-primary mb-3">¡Reserva Confirmada!</h2>
-            <p className="text-secondary text-lg mb-8">
+            <SecondaryText as="p" className="text-lg mb-8">
                 Te estamos redirigiendo a WhatsApp para finalizar...
-            </p>
+            </SecondaryText>
             
             {/* Botón manual prominente */}
             <button
@@ -243,22 +244,22 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                         <span>Total:</span>
                         <span>${totalPrice}</span>
                     </div>
-                     <div className="text-right text-sm text-secondary">
+                     <SecondaryText className="text-right">
                         <span>Duración total: {formatDuration(totalDuration)}</span>
-                    </div>
+                    </SecondaryText>
                 </div>
 
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-secondary">Nombre Completo</label>
+                        <SecondaryText as="label" htmlFor="name" className="block font-medium">Nombre Completo</SecondaryText>
                         <input type="text" id="name" value={clientName} onChange={e => setClientName(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                     </div>
                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-secondary">Email (Opcional)</label>
+                        <SecondaryText as="label" htmlFor="email" className="block font-medium">Email (Opcional)</SecondaryText>
                         <input type="email" id="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                     </div>
                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-secondary">Teléfono (WhatsApp)</label>
+                        <SecondaryText as="label" htmlFor="phone" className="block font-medium">Teléfono (WhatsApp)</SecondaryText>
                         <input type="tel" id="phone" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-default rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-surface text-primary" />
                     </div>
                 </div>

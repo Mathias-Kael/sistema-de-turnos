@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { Category, CategoryIcon } from '../../types';
-import { Button } from '../ui/Button';
-import { ErrorMessage } from '../ui/ErrorMessage';
+import { Button, ErrorMessage, SecondaryText } from '../ui';
 import { CategoryEditModal } from './CategoryEditModal';
 
 // SVG Icons
@@ -100,10 +99,10 @@ export const CategoryManager: React.FC = () => {
       {business.categories.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-default rounded-md bg-surface">
           <FolderIcon className="w-12 h-12 mx-auto text-secondary mb-3" />
-          <p className="text-secondary">No hay categorías creadas aún</p>
-          <p className="text-sm text-secondary mt-1">
+          <SecondaryText>No hay categorías creadas aún</SecondaryText>
+          <SecondaryText className="mt-1">
             Las categorías te ayudan a organizar tus servicios
-          </p>
+          </SecondaryText>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -139,9 +138,9 @@ export const CategoryManager: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <p className="text-sm text-secondary">
+                <SecondaryText>
                   {serviceCount} {serviceCount === 1 ? 'servicio' : 'servicios'}
-                </p>
+                </SecondaryText>
               </div>
             );
           })}

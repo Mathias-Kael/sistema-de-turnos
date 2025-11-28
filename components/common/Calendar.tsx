@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SecondaryText } from '../ui';
 
 interface CalendarProps {
     selectedDate: Date;
@@ -52,7 +53,7 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateChange }
                 <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-surface-hover text-primary">&gt;</button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center">
-                {weekDays.map(day => <div key={day} className="font-bold text-sm text-secondary">{day}</div>)}
+                {weekDays.map(day => <SecondaryText key={day} className="font-bold">{day}</SecondaryText>)}
                 {dates.map((date, index) => {
                     if (!date) return <div key={index}></div>;
                     const isPast = date < today;

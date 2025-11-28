@@ -4,7 +4,7 @@ import { Employee, Hours, DayHours, Interval } from '../../types';
 import { INITIAL_BUSINESS_DATA } from '../../constants';
 import { validarIntervalos, timeToMinutes } from '../../utils/availability';
 import { getServerDateSync, parseDateString } from '../../utils/dateHelpers';
-import { Button } from '../ui/Button';
+import { Button, SecondaryText } from '../ui';
 
 interface EmployeeHoursEditorProps {
     employee: Employee;
@@ -308,9 +308,9 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-lg font-semibold text-primary">⚠️ Atención: Reservas Futuras Afectadas</h3>
-                                    <p className="mt-1 text-sm text-secondary">
+                                    <SecondaryText className="mt-1">
                                         Los cambios en los horarios de <strong>{employee.name}</strong> afectarán {affectedBookings.length} reserva{affectedBookings.length > 1 ? 's' : ''} futura{affectedBookings.length > 1 ? 's' : ''} que quedaría{affectedBookings.length > 1 ? 'n' : ''} fuera del nuevo horario.
-                                    </p>
+                                    </SecondaryText>
                                 </div>
                             </div>
                         </div>
@@ -325,7 +325,7 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1">
                                                     <div className="font-medium text-gray-900">{booking.client}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">
+                                                    <SecondaryText className="mt-1">
                                                         <span className="inline-flex items-center gap-1">
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -344,7 +344,7 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                                                             </svg>
                                                             {booking.time}
                                                         </span>
-                                                    </div>
+                                                    </SecondaryText>
                                                 </div>
                                             </div>
                                         </div>
@@ -353,9 +353,9 @@ const EmployeeHoursEditor: React.FC<EmployeeHoursEditorProps> = ({ employee, onC
                             </div>
 
                             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                                <p className="text-sm text-blue-800">
+                                <SecondaryText className="text-blue-800">
                                     <strong>Nota importante:</strong> Si continuás, estas reservas seguirán activas en el sistema, pero quedarán fuera del horario de atención de {employee.name}. Te recomendamos contactar a los clientes afectados para reprogramar o reasignar las reservas a otro empleado.
-                                </p>
+                                </SecondaryText>
                             </div>
                         </div>
 
