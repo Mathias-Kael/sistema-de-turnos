@@ -392,7 +392,7 @@ export const ServicesEditor: React.FC = () => {
                                 <svg className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                 </svg>
-                                <input type="text" defaultValue={service.name} onBlur={(e) => handleServiceChange(service.id, 'name', e.target.value)} className="text-lg font-semibold border-b-2 border-transparent focus:border-b-primary w-full focus:outline-none bg-surface text-primary py-1" placeholder="Nombre del servicio" />
+                                <input type="text" defaultValue={service.name} onBlur={(e) => handleServiceChange(service.id, 'name', e.target.value)} className="text-base font-semibold border-b-2 border-transparent focus:border-b-primary w-full focus:outline-none bg-surface text-primary py-1" placeholder="Nombre del servicio" />
                             </div>
                             <button onClick={() => handleDeleteService(service)} className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors flex items-center gap-1 border border-transparent hover:border-red-200" aria-label="Eliminar servicio">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,8 +403,8 @@ export const ServicesEditor: React.FC = () => {
                         <textarea
                             defaultValue={service.description}
                             onBlur={(e) => handleServiceChange(service.id, 'description', e.target.value)}
-                            className="w-full text-sm text-secondary border border-default rounded-md p-2 focus:ring-primary focus:border-primary bg-surface resize-y [&::-webkit-resizer]:bg-primary [&::-webkit-resizer]:rounded-br [&::-webkit-resizer]:border-2 [&::-webkit-resizer]:border-primary [&::-webkit-resizer]:shadow-md [&::-webkit-resizer]:w-12 [&::-webkit-resizer]:h-12 sm:[&::-webkit-resizer]:w-4 sm:[&::-webkit-resizer]:h-4"
-                            rows={2}
+                            className="w-full text-base text-secondary border border-default rounded-md p-2 focus:ring-primary focus:border-primary bg-surface resize-y [&::-webkit-resizer]:bg-primary [&::-webkit-resizer]:rounded-br [&::-webkit-resizer]:border-2 [&::-webkit-resizer]:border-primary [&::-webkit-resizer]:shadow-md [&::-webkit-resizer]:w-12 [&::-webkit-resizer]:h-12 sm:[&::-webkit-resizer]:w-4 sm:[&::-webkit-resizer]:h-4"
+                            rows={3}
                             style={{
                                 resize: 'vertical',
                             }}
