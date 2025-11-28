@@ -176,14 +176,14 @@ export const ClientList: React.FC = () => {
                   <tr key={client.id} className="hover:bg-background transition-colors">
                     <td className="px-4 py-4">
                       <div>
-                        <div className="font-medium text-primary">{client.name}</div>
+                        <div className="font-medium text-primary line-clamp-2 md:line-clamp-none">{client.name}</div>
                         <div className="text-sm text-secondary md:hidden">{client.phone}</div>
                       </div>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
                       <div className="text-sm text-primary">{client.phone}</div>
                       {client.email && (
-                        <div className="text-xs text-secondary truncate max-w-xs">{client.email}</div>
+                        <div className="text-sm text-secondary max-w-xs">{client.email}</div>
                       )}
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
@@ -206,13 +206,13 @@ export const ClientList: React.FC = () => {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEditClient(client)}
-                          className="text-sm text-primary hover:text-primary-dark font-medium"
+                          className="text-base text-primary hover:text-primary-dark font-medium px-4 py-2"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleDeleteClient(client)}
-                          className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                          className="text-base text-red-600 hover:text-red-700 font-medium disabled:opacity-50 px-4 py-2"
                           disabled={isDeleting === client.id}
                         >
                           {isDeleting === client.id ? 'Eliminando...' : 'Eliminar'}

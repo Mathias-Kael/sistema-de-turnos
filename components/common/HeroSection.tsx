@@ -148,8 +148,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="relative flex-1 pointer-events-auto">
               <p
                 ref={descRef}
-                className={`text-secondary text-sm md:text-base transition-all ${
-                  showFullDescription ? '' : 'line-clamp-2 md:line-clamp-none'
+                className={`text-secondary text-base transition-all ${
+                  showFullDescription ? '' : 'line-clamp-3 md:line-clamp-none'
                 }`}
               >
                 {business.description}
@@ -158,7 +158,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {!showFullDescription && isTruncated && (
                 <button
                   onClick={() => setShowFullDescription(true)}
-                  className="mt-1 text-xs font-medium text-primary hover:underline md:hidden"
+                  className="mt-1 text-base font-medium text-primary hover:underline md:hidden"
                 >
                   Ver más
                 </button>
@@ -166,7 +166,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {showFullDescription && (
                 <button
                   onClick={() => setShowFullDescription(false)}
-                  className="mt-1 text-xs font-medium text-primary hover:underline md:hidden"
+                  className="mt-1 text-base font-medium text-primary hover:underline md:hidden"
                 >
                   Ver menos
                 </button>

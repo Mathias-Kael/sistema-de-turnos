@@ -228,31 +228,31 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 
                 <div className="relative z-10 flex justify-between items-start">
                     <div className="flex items-center flex-1 min-w-0">
-                        <h3 className={`font-bold truncate transition-colors ${
-                            isSelected ? 'text-primary' : 'text-primary'
-                        }`}>
+                        <h3 className={`font-bold text-primary line-clamp-2 transition-colors`}>
                             {service.name}
                         </h3>
                         {service.requiresDeposit && <LockIcon />}
                     </div>
                     <div className="flex items-center flex-shrink-0 ml-4">
                         {/* Custom Checkbox Premium */}
-                        <div className={`relative w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
-                            isSelected 
-                                ? 'bg-primary border-primary shadow-lg shadow-primary/30 scale-110' 
-                                : 'border-default bg-background hover:border-primary/50 hover:scale-105'
-                        }`}>
+                        <div
+                            className={`relative w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                                isSelected
+                                    ? 'bg-primary border-primary shadow-lg shadow-primary/30 scale-110'
+                                    : 'border-default bg-background hover:border-primary/50 hover:scale-105'
+                            }`}
+                        >
                             {isSelected && (
-                                <svg 
-                                    className="w-4 h-4 text-brand-text animate-in zoom-in duration-200" 
-                                    fill="none" 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth="3" 
-                                    viewBox="0 0 24 24" 
+                                <svg
+                                    className="w-4 h-4 text-brand-text animate-in zoom-in duration-200"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="3"
+                                    viewBox="0 0 24 24"
                                     stroke="currentColor"
                                 >
-                                    <path d="M5 13l4 4L19 7"></path>
+                                    <path d="M5 13l4 4L19 7" />
                                 </svg>
                             )}
                         </div>
@@ -260,20 +260,24 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 </div>
                 <p className={`relative z-10 text-sm mt-2 line-clamp-2 transition-colors ${
                     isSelected ? 'text-secondary' : 'text-secondary'
-                }`}>
+                } text-base line-clamp-3`}>
                     {service.description}
                 </p>
-                <div className={`relative z-10 text-sm mt-3 font-semibold flex items-center gap-2 ${
-                    isSelected ? 'text-primary' : 'text-secondary'
-                }`}>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface">
+                <div
+                    className={`relative z-10 text-sm mt-3 font-semibold flex items-center gap-2 ${
+                        isSelected ? 'text-primary' : 'text-secondary'
+                    }`}
+                >
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface font-semibold">
                         {formatDuration(service.duration)}
                     </span>
                     <span>•</span>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-lg font-bold ${
-                        isSelected ? 'bg-primary text-brand-text' : 'bg-surface text-primary'
-                    }`}>
-                        ${service.price}
+                    <span
+                        className={`inline-flex items-center px-3 py-1 rounded-lg font-bold text-sm ${
+                            isSelected ? 'bg-primary text-brand-text' : 'bg-surface text-primary'
+                        }`}
+                    >
+                        {service.price}
                     </span>
                 </div>
             </div>
@@ -349,22 +353,22 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                         {/* Icon Container con efecto elevation */}
                                         <div className={`p-3 rounded-xl transition-all duration-300 shadow-md group-hover:shadow-lg group-hover:scale-110 ${
                                             visualState === 'selected'
-                                                ? 'bg-primary shadow-primary/30' 
+                                                ? 'bg-primary shadow-primary/30'
                                                 : visualState === 'open'
                                                 ? 'bg-surface dark:bg-primary/15 shadow-default/20'
                                                 : 'bg-surface shadow-default/10 group-hover:bg-surface'
                                         }`}>
-                                            <CategoryIconComponent 
-                                                icon={group.categoryIcon} 
+                                            <CategoryIconComponent
+                                                icon={group.categoryIcon}
                                                 visualState={visualState}
                                             />
                                         </div>
-                                        
+
                                         {/* Text Content */}
                                         <div className="flex-1 min-w-0 text-left">
                                             <h3 className={`font-extrabold text-lg truncate transition-colors ${
                                                 hasSelections ? 'text-primary' : 'text-primary group-hover:text-primary'
-                                            }`}>
+                                            } line-clamp-2 md:line-clamp-none`}>
                                                 {group.categoryName}
                                             </h3>
                                             <div className="flex items-center gap-2 mt-0.5">
@@ -372,21 +376,21 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                                     {group.services.length} {group.services.length === 1 ? 'servicio' : 'servicios'}
                                                 </span>
                                                 {hasSelections && (
-                                                    <>
+                                                    <React.Fragment>
                                                         <span className="text-secondary">•</span>
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold transition-all ${
-                                                            hasSelections 
-                                                                ? 'bg-primary text-brand-text shadow-md' 
+                                                            hasSelections
+                                                                ? 'bg-primary text-brand-text shadow-md'
                                                                 : 'bg-surface text-secondary'
                                                         }`}>
                                                             {selectedCount} seleccionado{selectedCount !== 1 ? 's' : ''}
                                                         </span>
-                                                    </>
+                                                    </React.Fragment>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Chevron Icon */}
                                     <ChevronIcon isOpen={isOpen} className="text-primary flex-shrink-0 ml-4 group-hover:text-primary" />
                                 </button>

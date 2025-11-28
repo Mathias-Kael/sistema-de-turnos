@@ -145,19 +145,19 @@ export const ReservationsView: React.FC = () => {
                 <div className="flex flex-col md:flex-row gap-2">
                     <button 
                         onClick={() => setIsCreating(true)} 
-                        className="px-4 py-2 bg-primary text-brand-text text-sm font-medium rounded-md hover:bg-primary-dark"
+                        className="px-4 py-2 bg-primary text-brand-text text-base font-medium rounded-md hover:bg-primary-dark"
                     >
                         + Reserva Normal
                     </button>
                     <button 
                         onClick={() => setIsCreatingSpecial(true)} 
-                        className="px-4 py-2 bg-surface text-primary text-sm font-medium rounded-md border border-default hover:bg-surface-hover"
+                        className="px-4 py-2 bg-surface text-primary text-base font-medium rounded-md border border-default hover:bg-surface-hover"
                     >
                         ⚡ Reserva Especial
                     </button>
                     <button 
                         onClick={() => setIsCreatingBreak(true)} 
-                        className="px-4 py-2 bg-surface text-primary text-sm font-medium rounded-md border border-default hover:bg-surface-hover"
+                        className="px-4 py-2 bg-surface text-primary text-base font-medium rounded-md border border-default hover:bg-surface-hover"
                     >
                         ☕ Agregar Break
                     </button>
@@ -218,12 +218,12 @@ export const ReservationsView: React.FC = () => {
                                     </div>
                                     {grouped.type === 'booking' ? (
                                         <>
-                                            <p className="text-sm font-semibold text-primary">👤 {firstBooking.client.name}</p>
-                                            <p className="text-xs text-secondary">📞 {firstBooking.client.phone}</p>
-                                            {firstBooking.client.email && <p className="text-xs text-secondary">📧 {firstBooking.client.email}</p>}
-                                            <p className="text-sm text-secondary mt-1">{firstBooking.services.map(s => s.name).join(', ')}</p>
-                                            {business.employees.find(e => e.id === firstBooking.employeeId) && <p className="text-xs text-secondary mt-1">Con: {business.employees.find(e => e.id === firstBooking.employeeId)?.name}</p>}
-                                            {firstBooking.notes && <p className="text-xs text-secondary mt-1">📝 "{firstBooking.notes}"</p>}
+                                            <p className="text-base font-semibold text-primary">👤 {firstBooking.client.name}</p>
+                                            <p className="text-sm text-secondary">📞 {firstBooking.client.phone}</p>
+                                            {firstBooking.client.email && <p className="text-sm text-secondary">📧 {firstBooking.client.email}</p>}
+                                            <p className="text-base text-secondary mt-1">{firstBooking.services.map(s => s.name).join(', ')}</p>
+                                            {business.employees.find(e => e.id === firstBooking.employeeId) && <p className="text-sm text-secondary mt-1">Con: {business.employees.find(e => e.id === firstBooking.employeeId)?.name}</p>}
+                                            {firstBooking.notes && <p className="text-sm text-secondary mt-1 italic">📝 "{firstBooking.notes}"</p>}
                                         </>
                                     ) : (
                                         <>

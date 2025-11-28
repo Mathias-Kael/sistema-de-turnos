@@ -279,10 +279,10 @@ export const ReservationsManager: React.FC = () => {
                                     {grouped.type === 'break-conjunto' ? (
                                         // Break para todos los empleados
                                         <>
-                                            <p className="text-sm font-semibold text-primary">🏢 {business.name}</p>
-                                            <p className="text-sm text-secondary">☕ Break / Bloqueo</p>
+                                            <p className="text-base font-semibold text-primary">🏢 {business.name}</p>
+                                            <p className="text-base text-secondary">☕ Break / Bloqueo</p>
                                             {firstBooking.notes && (
-                                                <p className="text-xs text-secondary mt-1">
+                                                <p className="text-sm text-secondary mt-1 italic">
                                                     📝 "{firstBooking.notes}"
                                                 </p>
                                             )}
@@ -290,15 +290,15 @@ export const ReservationsManager: React.FC = () => {
                                     ) : grouped.type === 'break-individual' ? (
                                         // Break individual o para algunos empleados
                                         <>
-                                            <p className="text-sm font-semibold text-primary">
+                                            <p className="text-base font-semibold text-primary">
                                                 {grouped.bookings.map(b => {
                                                     const emp = business.employees.find(e => e.id === b.employeeId);
                                                     return emp ? emp.name : 'Empleado';
                                                 }).join(', ')}
                                             </p>
-                                            <p className="text-sm text-secondary">☕ Break / Bloqueo</p>
+                                            <p className="text-base text-secondary">☕ Break / Bloqueo</p>
                                             {firstBooking.notes && (
-                                                <p className="text-xs text-secondary mt-1">
+                                                <p className="text-sm text-secondary mt-1 italic">
                                                     📝 "{firstBooking.notes}"
                                                 </p>
                                             )}
@@ -306,18 +306,18 @@ export const ReservationsManager: React.FC = () => {
                                     ) : (
                                         // Reserva normal o especial
                                         <>
-                                            <p className="text-sm font-semibold text-primary">
+                                            <p className="text-base font-semibold text-primary">
                                                 👤 {firstBooking.client.name}
                                             </p>
-                                            <p className="text-xs text-secondary">
+                                            <p className="text-sm text-secondary">
                                                 📞 {firstBooking.client.phone}
                                             </p>
                                             {firstBooking.client.email && (
-                                                <p className="text-xs text-secondary">
+                                                <p className="text-sm text-secondary">
                                                     📧 {firstBooking.client.email}
                                                 </p>
                                             )}
-                                            <p className="text-sm text-secondary mt-1">
+                                            <p className="text-base text-secondary mt-1">
                                                 {firstBooking.services.length > 0 
                                                     ? firstBooking.services.map(s => s.name).join(', ')
                                                     : '(Sin servicios)'
@@ -326,13 +326,13 @@ export const ReservationsManager: React.FC = () => {
                                             {(() => {
                                                 const employee = business.employees.find(e => e.id === firstBooking.employeeId);
                                                 return employee && (
-                                                    <p className="text-xs text-secondary mt-1">
+                                                    <p className="text-sm text-secondary mt-1">
                                                         Con: {employee.name}
                                                     </p>
                                                 );
                                             })()}
                                             {firstBooking.notes && (
-                                                <p className="text-xs text-secondary mt-1">
+                                                <p className="text-sm text-secondary mt-1 italic">
                                                     📝 "{firstBooking.notes}"
                                                 </p>
                                             )}
