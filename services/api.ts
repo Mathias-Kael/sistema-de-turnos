@@ -28,7 +28,7 @@ export const getAvailableSlots = async (
 
     // 3. Obtener todas las reservas para la fecha seleccionada directamente del objeto Business
     const dateString = date.toISOString().split('T')[0];
-    const allBookingsForDay = business.bookings.filter(booking => booking.date === dateString);
+    const allBookingsForDay = business.bookings.filter(booking => booking.date === dateString && booking.status !== 'cancelled');
 
     // 4. Calculate available slots based on employee selection.
     let finalAvailableSlots: Set<string> = new Set();
@@ -139,7 +139,7 @@ export const findAvailableEmployeeForSlot = (
 
         // B. Check for any overlapping booking
         const employeeBookings = business.bookings.filter(
-            b => b.employeeId === emp.id && b.date === dateString
+            b => b.employeeId === emp.id && b.date === dateString && b.status !== 'cancelled'
         );
 
         const isOverlapping = employeeBookings.some(booking => {
