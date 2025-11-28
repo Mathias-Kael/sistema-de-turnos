@@ -438,6 +438,23 @@ const groupedServices = categories
 
 ---
 
+### Fix: Reservas Canceladas Bloquean Slots (28 Nov 2025)
+**Síntomas:**
+Los usuarios no podían reservar en un slot si una reserva anterior había sido cancelada (`status: 'cancelled'`). El calendario lo mostraba ocupado.
+
+**Causa Raíz:**
+Lógica de filtro incompleta en dos capas:
+1.  **Backend (Supabase/Claude Desktop):** La función `create_booking_safe` solo filtraba por `archived = false`, ignorando el `status`.
+2.  **Frontend (VSCode Agent):** `services/api.ts` incluía los bookings cancelados en la lista de slots ocupados.
+
+**Solución (Doble Capa):**
+1.  **DB Fix (Claude Desktop):** Migración para actualizar `create_booking_safe` con la condición **`AND status != 'cancelled'`**. (También se aprovechó para corregir la *signature* de la función incluyendo `p_client_id` y `p_client_email`).
+2.  **Frontend Fix (VSCode Agent):** Se añadieron filtros `&& booking.status !== 'cancelled'` en `getAvailableSlots` y `findAvailableEmployeeForSlot` dentro de `services/api.ts`.
+
+**Severidad:** P1 (Bloqueo de Revenue).
+
+---
+
 ## ISSUES CONOCIDOS
 
 ### Technical Debt Registrado

@@ -423,6 +423,41 @@ Implementar una pantalla o modal intermedio de éxito ("Success Bridge") que apa
 
 ---
 
+### ADR-007: Fix: Cancelled Bookings & Prioritizar Test Mocks (28 Nov 2025)
+
+**Contexto:**
+Las reservas con status `cancelled` bloqueaban slots en la DB y el Frontend. Además, se detectó que los tests de `utils/availability.ts` tienen mocks incorrectos, lo que impide una validación confiable.
+
+**Decisión:**
+Se implementó una exclusión explícita (`status != 'cancelled'`) en la función DB `create_booking_safe` y en la lógica Frontend (`services/api.ts`).
+
+**Alternativas consideradas:**
+- ❌ Borrar registros cancelados: Rechazado por pérdida de historial de negocio.
+- ❌ Dejar la lógica solo en Frontend: Rechazado por riesgo de colisión en la DB (problema de concurrencia/seguridad).
+
+**Razones:**
+- **Doble capa de protección:** Backend previene colisiones, Frontend optimiza UX
+- **Preservación de historial:** Mantiene datos de negocio para reportes y auditorías
+- **Consistencia de estado:** Ambas capas sinronizadas con misma lógica de filtrado
+- **Revenue recovery:** Libera slots valiosos para nuevas reservas
+
+**Implementación:**
+- **Backend (Claude Desktop):** Migración para actualizar `create_booking_safe` con `AND status != 'cancelled'`
+- **Frontend (VSCode Agent):** Filtros `&& booking.status !== 'cancelled'` en `getAvailableSlots` y `findAvailableEmployeeForSlot`
+
+**Deuda Técnica (P1):**
+La principal deuda técnica es **Refactorizar los Mocks de Test** en `utils/availability.test.ts` para que representen escenarios reales (incluyendo horarios, duraciones y reservas que intersectan), ya que los tests actuales son frágiles.
+
+**Consecuencias:**
+- ✅ Slots con reservas canceladas liberados automáticamente
+- ✅ Protección contra race conditions en ambas capas
+- ✅ Historial de negocio preservado
+- ⚠️ **Deuda técnica:** Tests de availability requieren refactor para mocks realistas
+
+**Status:** ✅ Implementado
+
+---
+
 ## DECISIONES DE INFRAESTRUCTURA
 
 ### INFRA-001: Vercel + Supabase Stack (Oct 2025)
