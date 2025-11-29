@@ -32,7 +32,7 @@ export const DashboardView: React.FC = () => {
     }, [business.bookings]);
 
     return (
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6" data-testid="dashboard-view">
             <div>
                 <h2 className="text-2xl font-bold text-primary">🏠 Página de inicio</h2>
                 <SecondaryText>Un resumen de tu negocio.</SecondaryText>
