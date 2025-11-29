@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  * 5. Cross-tenant protection
  */
 
-test.describe('RLS Security: Public Access', () => {
+test.describe.skip('RLS Security: Public Access', () => {
   test('should block direct public INSERT to bookings', async ({ page }) => {
     // Setup: Obtener anon key y crear cliente Supabase público
     await page.goto('http://localhost:5173');

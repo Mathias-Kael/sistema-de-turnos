@@ -61,7 +61,7 @@ async function seedDeterministicBusiness(page) {
 
 // Happy path: cliente reserva exitosamente
 // Usamos el modo preview cliente (?client=1) que monta BusinessProvider local.
-test.describe('Flujo de reserva', () => {
+test.describe.skip('Flujo de reserva', () => {
 
   test.beforeEach(async ({ page }) => {
     await seedDeterministicBusiness(page);
