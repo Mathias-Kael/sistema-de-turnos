@@ -9,6 +9,53 @@ import {
   sanitizeFacebookPage,
 } from '../utils/socialMedia';
 
+/**
+ * Valida si existe una reserva que se solape con la reserva proporcionada.
+ * Busca reservas 'confirmed' o 'pending' para el mismo empleado en la misma fecha,
+ * excluyendo la propia reserva que se está validando.
+ *
+ * @param booking La reserva que se intenta reactivar de 'cancelled' a 'confirmed'.
+ * @returns `true` si hay un conflicto, `false` en caso contrario.
+ */
+export async function checkBookingOverlap(booking: Pick<Booking, 'id' | 'employeeId' | 'date' | 'start' | 'end'>): Promise<boolean> {
+  // La función `timesOverlap` es necesaria porque la base de datos no puede comparar `time` como rangos directamente
+  // en todos los casos de uso de Supabase. Una query más compleja con `OVERLAPS` podría funcionar,
+  // pero es más seguro y portable hacer una query amplia y filtrar en el cliente.
+  const { data: conflictingBookings, error } = await supabase
+    .from('bookings')
+    .select('id, start_time, end_time')
+    .eq('employee_id', booking.employeeId)
+    .eq('booking_date', booking.date)
+    .neq('id', booking.id)
+    .in('status', ['confirmed', 'pending'])
+    .eq('archived', false);
+
+  if (error) {
+    logger.error('Error checking for booking overlap:', error);
+    // En caso de error, es más seguro asumir que hay un conflicto para no permitir dobles reservas.
+    throw new Error('No se pudo verificar la disponibilidad del horario.');
+  }
+
+  if (!conflictingBookings || conflictingBookings.length === 0) {
+    return false; // No hay reservas en el mismo día/empleado, no puede haber conflicto.
+  }
+
+  // Función de ayuda para verificar el solapamiento de dos intervalos de tiempo.
+  const timesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
+    return start1 < end2 && end1 > start2;
+  };
+
+  // Comprobar si alguna de las reservas encontradas se solapa en tiempo.
+  for (const conflicting of conflictingBookings) {
+    if (timesOverlap(booking.start, booking.end, conflicting.start_time, conflicting.end_time)) {
+      return true; // Conflicto encontrado.
+    }
+  }
+
+  return false; // No se encontraron conflictos.
+}
+
+
 // Cache por sesión de usuario
 const businessCacheByUser = new Map<string, { businessId: string }>();
 

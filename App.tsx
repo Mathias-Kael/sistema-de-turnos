@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { BusinessProvider } from './context/BusinessContext';
 import { StyleInjector } from './components/common/StyleInjector';
 import { ClientView } from './components/views/ClientView';
@@ -50,6 +51,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="bottom-center" />
         <AuthRedirector />
         <Routes>
           {/* Rutas públicas */}

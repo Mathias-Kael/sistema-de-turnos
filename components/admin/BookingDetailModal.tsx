@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Booking, Employee } from '../../types';
+import { Booking, Employee, BookingStatus } from '../../types';
 import { useBusinessDispatch } from '../../context/BusinessContext';
+import { checkBookingOverlap } from '../../services/supabaseBackend';
+import { toast } from 'react-hot-toast';
 
 interface BookingDetailModalProps {
     booking: Booking;
@@ -14,31 +16,48 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
     const [editedBooking, setEditedBooking] = useState<Booking>(booking);
     const dispatch = useBusinessDispatch();
     const [saving, setSaving] = useState(false);
+    const [isValidating, setIsValidating] = useState(false);
 
     useEffect(() => {
         setEditedBooking(booking);
     }, [booking]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setEditedBooking(prev => ({ ...prev, [name]: value as any }));
+        setEditedBooking(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newStatus = e.target.value as BookingStatus;
+
+        if (booking.status === 'cancelled' && (newStatus === 'confirmed' || newStatus === 'pending')) {
+            setIsValidating(true);
+            try {
+                const hasConflict = await checkBookingOverlap(booking);
+                if (hasConflict) {
+                    toast.error('No se puede confirmar: ya existe otra reserva confirmada en este horario.');
+                    // Revertir visualmente la selección al estado original
+                    e.target.value = booking.status;
+                    return;
+                }
+            } catch (error) {
+                console.error("Error checking booking overlap:", error);
+                toast.error('Error al validar el horario. Intente de nuevo.');
+                e.target.value = booking.status;
+                return;
+            } finally {
+                setIsValidating(false);
+            }
+        }
+        setEditedBooking(prev => ({ ...prev, status: newStatus }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
         try {
-            // Si sólo cambió status o notes, usar acción especializada
             const onlyStatusOrNotesChanged =
-                booking.employeeId === editedBooking.employeeId &&
-                booking.start === editedBooking.start &&
-                booking.end === editedBooking.end &&
-                booking.date === editedBooking.date &&
-                JSON.stringify(booking.services) === JSON.stringify(editedBooking.services) &&
-                booking.client.name === editedBooking.client.name &&
-                booking.client.email === editedBooking.client.email &&
-                booking.client.phone === editedBooking.client.phone &&
-                (booking.status !== editedBooking.status || booking.notes !== editedBooking.notes);
+                booking.status !== editedBooking.status || booking.notes !== editedBooking.notes;
 
             if (onlyStatusOrNotesChanged) {
                 await dispatch({
@@ -46,12 +65,13 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                     payload: { bookingId: booking.id, status: editedBooking.status, notes: editedBooking.notes },
                 });
             } else {
+                // Si no hay cambios de estado o notas, asumimos que otros campos (no editables aquí) podrían haber cambiado
+                // y llamamos a onUpdate por si acaso. En la práctica, este flujo es menos probable.
                 onUpdate(editedBooking);
             }
             onClose();
         } catch (err) {
-            // fallback a método completo si falla
-            try { onUpdate(editedBooking); onClose(); } catch {}
+            toast.error('No se pudo guardar la reserva.');
         } finally {
             setSaving(false);
         }
@@ -81,8 +101,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                             id="status"
                             name="status"
                             value={editedBooking.status}
-                            onChange={handleChange}
-                            className="mt-1 w-full p-2 border border-default rounded-md bg-surface text-primary"
+                            onChange={handleStatusChange}
+                            disabled={isValidating}
+                            className="mt-1 w-full p-2 border border-default rounded-md bg-surface text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <option value="pending">Pendiente</option>
                             <option value="confirmed">Confirmada</option>
@@ -96,7 +117,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                             name="notes"
                             rows={3}
                             value={editedBooking.notes || ''}
-                            onChange={handleChange}
+                            onChange={handleNotesChange}
                             className="mt-1 w-full p-2 border border-default rounded-md bg-surface text-primary"
                         />
                     </div>
@@ -104,8 +125,8 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                         <button type="button" onClick={onClose} className="w-full bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover transition-colors">
                             Cerrar
                         </button>
-                        <button type="submit" disabled={saving} className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity disabled:opacity-50">
-                            {saving ? 'Guardando...' : 'Guardar Cambios'}
+                        <button type="submit" disabled={saving || isValidating} className="w-full bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark transition-opacity disabled:opacity-50">
+                            {isValidating ? 'Validando...' : saving ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
                     {editedBooking.status === 'cancelled' && (

@@ -458,6 +458,85 @@ La principal deuda técnica es **Refactorizar los Mocks de Test** en `utils/avai
 
 ---
 
+## ADR-008: Validación UI para Reactivación de Reservas Canceladas
+
+**Fecha:** 2025-11-29
+**Estado:** Aceptado
+**Contexto:** Complemento a ADR-007
+
+### Problema
+
+ADR-007 modificó la lógica para que reservas canceladas no bloqueen
+slots en `create_booking_safe`. Esto permitió que usuarios públicos
+reserven sobre horarios previamente cancelados.
+
+Sin embargo, esto creó un edge case: si un administrador cambia
+manualmente el estado de una reserva de `cancelled` a `confirmed`
+(o `pending`), podría crear un overlap si el slot fue ocupado
+legítimamente por otra reserva activa.
+
+### Decisión
+
+Implementar validación preventiva en el panel de administración que:
+
+1. Detecta cambios de estado `cancelled` → `confirmed/pending`
+2. Valida overlaps contra reservas activas antes de permitir el cambio
+3. Bloquea el cambio y notifica al usuario si hay conflicto
+4. Solo aplica a este caso específico (no afecta otros flujos)
+
+### Implementación
+
+**Frontend (BookingDetailModal.tsx):**
+- Handler `handleStatusChange` intercepta cambios de estado
+- Llama a `checkBookingOverlap()` antes de persistir
+- Gestiona loading state y feedback con toast
+
+**Backend (supabaseBackend.ts):**
+```typescript
+   checkBookingOverlap(booking): Promise<boolean>
+   - Query: same employee_id + booking_date
+   - Filter: status IN ('confirmed', 'pending')
+   - Filter: archived = false
+   - Exclude: current booking
+   - Logic: detect time overlap
+```
+   
+**UX:**
+- Loading spinner durante validación
+- Toast error si hay conflicto
+- Reversión visual del select si bloqueado
+
+### Consecuencias
+
+**Positivas:**
+- Previene overlaps por cambios manuales de admin
+- UX clara con feedback inmediato
+- Consistente con lógica de `create_booking_safe`
+- Solución UI-first (no requiere cambios en DB/Edge Functions)
+
+**Negativas:**
+- Agrega latencia mínima en cambio de estado (~200-500ms)
+- Requiere dependencia adicional: react-hot-toast
+
+### Alternativas Consideradas
+
+1. **Fix en Edge Function:** Agregar filtro `.neq('status', 'cancelled')`
+   - Descartado: No afecta el caso de cambio manual de estado
+
+2. **Validación en RPC:** Crear trigger en DB
+   - Descartado: Más complejo, solución UI es más elegante
+
+3. **Deshabilitar cambio cancelled → confirmed:**
+   - Descartado: Reduce flexibilidad operativa del admin
+
+### Notas
+
+- Esta feature complementa ADR-007
+- Tests manuales confirmados: 29 Nov 2025
+- Dependencia agregada: react-hot-toast@2.x
+
+---
+
 ## DECISIONES DE INFRAESTRUCTURA
 
 ### INFRA-001: Vercel + Supabase Stack (Oct 2025)

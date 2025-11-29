@@ -42,6 +42,7 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
 - Breaks para empleados
 - Branding personalizado live-preview
 - Enlace público compartible con QR
+- ✅ Validación de overlaps al reactivar reservas canceladas
 
 ### Para Clientes Finales
 - Flujo de reserva optimizado

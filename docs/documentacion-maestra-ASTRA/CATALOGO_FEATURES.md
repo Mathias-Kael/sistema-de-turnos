@@ -307,6 +307,31 @@ onPhoneChange(phone) {
 - **Search:** Índice en `phone` column para performance
 - **Privacy:** RLS garantiza aislamiento multi-tenant
 
+   #### Validación de Reactivación de Reservas
+   
+   **Estado:** ✅ Producción desde 29 Nov 2025
+   **Prioridad:** P2 - Prevención de errores
+   
+   **Problema Resuelto:**
+   Al permitir que reservas canceladas liberen slots (ADR-007),
+   surgió un edge case: un admin podría reactivar manualmente una
+   reserva cancelada y crear un overlap si el slot fue ocupado.
+   
+   **Solución Implementada:**
+   Validación en UI que previene cambios de estado cancelled →
+   confirmed/pending si el horario ya está ocupado.
+   
+   **Comportamiento:**
+   - Al cambiar status de cancelada a confirmada/pendiente
+   - Sistema valida si hay overlaps con otras reservas activas
+   - Si hay conflicto: bloquea cambio + muestra toast de error
+   - Si no hay conflicto: permite el cambio normalmente
+   
+   **Implementación Técnica:**
+   - Frontend: `BookingDetailModal.tsx` con validación asíncrona
+   - Backend: `checkBookingOverlap()` en `supabaseBackend.ts`
+   - UX: Loading state + notificaciones con react-hot-toast
+
 ---
 
 ### 5. Reservas Especiales
