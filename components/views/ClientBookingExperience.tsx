@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Business, Service, Employee } from '../../types';
 import { ServiceSelector } from '../common/ServiceSelector';
 import { EmployeeSelector } from '../common/EmployeeSelector';
@@ -7,6 +7,7 @@ import { TimeSlotPicker } from '../common/TimeSlotPicker';
 import { StyleInjector } from '../common/StyleInjector';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { HeroSection } from '../common/HeroSection';
+import { AutoAssignedEmployeeBanner } from '../common/AutoAssignedEmployeeBanner';
 
 export interface ClientBookingExperienceProps {
   business: Business;
@@ -20,6 +21,7 @@ export interface ClientBookingExperienceProps {
 export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = ({ business, mode, publicToken }) => {
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | 'any' | null>(null);
+  const [wasAutoAssigned, setWasAutoAssigned] = useState(false);
   const today = new Date();
   today.setHours(0,0,0,0);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
@@ -45,6 +47,24 @@ export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = (
     });
   }, [selectedServices, business.employees]);
 
+  useEffect(() => {
+    // Auto-seleccionar si solo hay un empleado elegible
+    if (eligibleEmployees.length === 1 && selectedEmployeeId !== eligibleEmployees[0].id) {
+      setSelectedEmployeeId(eligibleEmployees[0].id);
+      setWasAutoAssigned(true);
+    }
+    // Si el negocio es unipersonal desde el inicio, tratarlo como auto-asignado
+    if (business.employees.length === 1 && selectedEmployeeId !== business.employees[0].id) {
+        setSelectedEmployeeId(business.employees[0].id);
+        setWasAutoAssigned(true);
+    }
+  }, [eligibleEmployees, business.employees, selectedEmployeeId]);
+
+  const handleEmployeeSelect = (id: string | 'any' | null) => {
+    setSelectedEmployeeId(id);
+    setWasAutoAssigned(false);
+  };
+
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     setSelectedSlot(null);
@@ -66,18 +86,26 @@ export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = (
             categories={business.categories}
           />
         </section>
-        {selectedServices.length > 0 && (
+        {selectedServices.length > 0 && eligibleEmployees.length === 0 && (
+           <div className="p-4 border border-default rounded-lg bg-[color:var(--color-state-warning-bg)] text-[color:var(--color-state-warning-text)]">
+               <p className="text-[color:var(--color-state-warning-text)]">No hay un único empleado que pueda realizar todos los servicios seleccionados. Por favor, ajusta tu selección.</p>
+           </div>
+        )}
+        {selectedServices.length > 0 && eligibleEmployees.length > 1 && (
           <section>
             <EmployeeSelector
               employees={eligibleEmployees}
               selectedEmployeeId={selectedEmployeeId}
-              onSelectEmployee={setSelectedEmployeeId}
+              onSelectEmployee={handleEmployeeSelect}
             />
           </section>
         )}
         {selectedEmployeeId && (
           <section>
             <h2 className="text-2xl font-bold my-4 text-primary">Elige fecha y hora</h2>
+            {(wasAutoAssigned || business.employees.length === 1) && selectedEmployeeId && selectedEmployeeId !== 'any' && (
+               <AutoAssignedEmployeeBanner employee={business.employees.find(e => e.id === selectedEmployeeId)!} />
+             )}
             <div className="grid md:grid-cols-2 gap-8">
               <Calendar selectedDate={selectedDate} onDateChange={handleDateChange} />
               <TimeSlotPicker

@@ -19,6 +19,7 @@
 9. [Sistema Multi-tenant](#9-sistema-multi-tenant)
 10. [Share Token System](#10-share-token-system)
 11. [PWA + SEO Metadata](#11-pwa--seo-metadata)
+12. [Auto-skip Selección de Empleado](#12-auto-skip-selección-de-empleado)
 
 ### 🚧 EN ROADMAP (Planificadas)
 11. [Reprogramar Reservas](#11-reprogramar-reservas)
@@ -991,6 +992,63 @@ Landing page sin metadata = mala primera impresión en Google/WhatsApp, sin func
 - **Assets:** Iconos 192x192, 512x512, apple-touch-icon
 - **Component:** `InstallPWAButton.tsx`
 - **Config:** `vite.config.ts` PWA setup
+
+---
+
+### 12. Auto-skip Selección de Empleado
+
+**Estado:** ✅ Producción desde 1 Diciembre 2025
+**Prioridad:** P1 - UX improvement
+**Esfuerzo:** 2-3 hrs implementación
+
+#### Problema Resuelto
+En negocios unipersonales o cuando una combinación de servicios solo puede ser realizada por un único empleado, forzar al usuario a seleccionar a ese único empleado es un paso redundante que añade fricción al flujo de reserva.
+
+**Flujo anterior:**
+```
+1. Seleccionar servicios
+2. Ver pantalla con un solo empleado
+3. Hacer clic en ese empleado
+4. Pasar a seleccionar fecha/hora
+```
+
+#### Solución Implementada
+Lógica de auto-avance que detecta cuando solo hay un empleado elegible y salta directamente a la selección de fecha y hora, mostrando un banner informativo.
+
+**Lógica de Flujo:**
+```typescript
+// ClientBookingExperience.tsx
+useEffect(() => {
+  // Si solo hay un empleado elegible (o es negocio unipersonal)
+  if (eligibleEmployees.length === 1) {
+    // Auto-seleccionar y avanzar
+    setSelectedEmployeeId(eligibleEmployees[0].id);
+    setWasAutoAssigned(true);
+  }
+}, [eligibleEmployees]);
+```
+
+**Componentes de Feedback:**
+- **`AutoAssignedEmployeeBanner.tsx`**: Un banner no intrusivo que aparece sobre el calendario, informando al usuario con quién será su turno.
+- **Advertencia de Conflicto**: Si la selección de servicios resulta en CERO empleados elegibles, se muestra una advertencia clara para que el usuario ajuste su selección.
+
+**Flujo nuevo:**
+```
+1. Seleccionar servicios
+2. (Auto-avance)
+3. Ver calendario con banner "Tu turno será con {nombre}"
+4. Seleccionar fecha/hora
+```
+
+#### Impacto en UX
+- **Reducción de clics:** -1 clic en escenarios de empleado único.
+- **Menor fricción:** El flujo se siente más rápido e inteligente.
+- **Feedback claro:** El usuario siempre entiende qué está pasando, ya sea con el banner de asignación o con la advertencia de conflicto.
+
+#### Implementación Técnica
+- **Archivos modificados:** `ClientBookingExperience.tsx`, `EmployeeSelector.tsx`
+- **Nuevo componente:** `AutoAssignedEmployeeBanner.tsx`
+- **Testing:** Tests E2E añadidos en `e2e/public-booking-flow.spec.ts` para validar los 3 escenarios (unipersonal, auto-asignado por servicios, y selección múltiple).
 
 ---
 
