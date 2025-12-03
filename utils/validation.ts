@@ -58,3 +58,15 @@ export function validateBookingInput(input: BookingInput): { ok: boolean; errors
     normalized: ok ? { name: nameRes.value!, phone: phoneRes.value!, email: emailNorm } : null
   };
 }
+
+// Validación de CBU argentino (22 dígitos)
+export function validateCBU(cbu: string): boolean {
+  const cleaned = (cbu || '').replace(/\s/g, '');
+  return /^\d{22}$/.test(cleaned);
+}
+
+// Validación de alias de pago (6-20 caracteres, alfanuméricos, puntos y guiones)
+export function validatePaymentAlias(alias: string): boolean {
+  const cleaned = (alias || '').trim();
+  return /^[a-zA-Z0-9.-]{6,20}$/.test(cleaned);
+}

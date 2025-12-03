@@ -5,6 +5,7 @@ import { BRANDING_PRESETS } from '../../constants';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { ImageUploader } from '../common/ImageUploader';
 import { EditInfoModal } from '../admin/EditInfoModal';
+import { PaymentInfoEditor } from '../admin/PaymentInfoEditor';
 
 export const BrandingEditor: React.FC = () => {
     const business = useBusinessState();
@@ -165,6 +166,11 @@ export const BrandingEditor: React.FC = () => {
                         </select>
                     </div>
                 </div>
+            </div>
+
+            {/* Payment Info Section */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+                <PaymentInfoEditor />
             </div>
 
             {editingField && (

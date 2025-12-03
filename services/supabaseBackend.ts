@@ -130,6 +130,10 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
     facebook: bizData.facebook || undefined,
     profileImageUrl: bizData.profile_image_url,
     coverImageUrl: bizData.cover_image_url,
+    // Payment fields
+    paymentAlias: bizData.payment_alias || undefined,
+    paymentCbu: bizData.payment_cbu || undefined,
+    depositInfo: bizData.deposit_info || undefined,
     branding: bizData.branding,
     hours: bizData.hours as Hours,
     shareToken: bizData.share_token,
@@ -154,6 +158,7 @@ async function buildBusinessObject(businessId: string): Promise<Business> {
         buffer: s.buffer || 0,
         price: parseFloat(s.price),
         requiresDeposit: s.requires_deposit || false,
+        depositAmount: s.deposit_amount ? parseFloat(s.deposit_amount) : undefined,
         employeeIds: s.service_employees.map((se: any) => se.employee_id),
         categoryIds: categoryIds && categoryIds.length > 0 ? categoryIds : undefined,
       };
@@ -533,6 +538,10 @@ export const supabaseBackend = {
           facebook: finalFacebook,
           profile_image_url: newData.profileImageUrl,
           cover_image_url: newData.coverImageUrl,
+          // Payment fields
+          payment_alias: newData.paymentAlias || null,
+          payment_cbu: newData.paymentCbu || null,
+          deposit_info: newData.depositInfo || null,
           branding: newData.branding,
           hours: newData.hours,
           share_token: newData.shareToken,

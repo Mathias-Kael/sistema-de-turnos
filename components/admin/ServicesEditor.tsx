@@ -276,8 +276,22 @@ export const ServicesEditor: React.FC = () => {
                     )}
 
                     <SecondaryText as="label" className="flex items-center space-x-2">
-                        <input type="checkbox" checked={newService.requiresDeposit} onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} className="rounded accent-primary"/>
-                        <span>Requiere depósito</span>
+                        <input 
+                            type="checkbox" 
+                            checked={newService.requiresDeposit} 
+                            onChange={(e) => setNewService({...newService, requiresDeposit: e.target.checked})} 
+                            disabled={!business.paymentAlias && !business.paymentCbu}
+                            className="rounded accent-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={!business.paymentAlias && !business.paymentCbu ? "Configure información de pago en Configuración primero" : ""}
+                        />
+                        <span className={!business.paymentAlias && !business.paymentCbu ? "text-secondary" : ""}>
+                            Requiere depósito
+                            {!business.paymentAlias && !business.paymentCbu && (
+                                <span className="text-xs block text-yellow-600 dark:text-yellow-500">
+                                    ⚠️ Configure datos de pago primero
+                                </span>
+                            )}
+                        </span>
                     </SecondaryText>
 
                     {/* Sección de asignación de empleados para nuevo servicio */}
@@ -465,8 +479,22 @@ export const ServicesEditor: React.FC = () => {
                         )}
 
                          <SecondaryText as="label" className="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" defaultChecked={!!service.requiresDeposit} onChange={(e) => handleServiceChange(service.id, 'requiresDeposit', e.target.checked)} className="rounded accent-primary"/>
-                            <span>Requiere depósito</span>
+                            <input 
+                                type="checkbox" 
+                                defaultChecked={!!service.requiresDeposit} 
+                                onChange={(e) => handleServiceChange(service.id, 'requiresDeposit', e.target.checked)} 
+                                disabled={!business.paymentAlias && !business.paymentCbu}
+                                className="rounded accent-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!business.paymentAlias && !business.paymentCbu ? "Configure información de pago en Configuración primero" : ""}
+                            />
+                            <span className={!business.paymentAlias && !business.paymentCbu ? "text-secondary" : ""}>
+                                Requiere depósito
+                                {!business.paymentAlias && !business.paymentCbu && (
+                                    <span className="text-xs block text-yellow-600 dark:text-yellow-500">
+                                        ⚠️ Configure datos de pago primero
+                                    </span>
+                                )}
+                            </span>
                         </SecondaryText>
 
                         {/* Categorías asignadas */}

@@ -9,9 +9,10 @@ import { findAvailableEmployeeForSlot } from '../../services/api';
 import { buildWhatsappUrl, canUseEmployeeWhatsapp } from '../../utils/whatsapp';
 import { validateBookingInput } from '../../utils/validation';
 import { SecondaryText } from '../ui';
+import { PaymentInfoModal } from './PaymentInfoModal';
 
-// Tipos para el Success Bridge
-type ModalState = 'form' | 'success';
+// Tipos para el Success Bridge y Payment Flow
+type ModalState = 'form' | 'payment' | 'success';
 
 interface WhatsappData {
   url: string;
@@ -130,21 +131,31 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 : `Hola ${targetName}, quiero confirmar mi turno para ${serviceNames} el ${dateString} a las ${slot}. Mi nombre es ${normName}. ¡Gracias!`;
             const whatsappUrl = buildWhatsappUrl(usingEmployee ? (finalEmp!.whatsapp || '') : business.phone, msg);
 
-            // Success Bridge: Guardar datos de WhatsApp y cambiar estado
+            // Success Bridge: Guardar datos de WhatsApp
             const whatsappDataPayload: WhatsappData = {
                 url: whatsappUrl,
                 message: msg,
                 targetName
             };
             setWhatsappData(whatsappDataPayload);
-            setModalState('success');
 
-            // Programar redirección automática
-            const timeout = setTimeout(() => {
-                window.open(whatsappUrl, '_blank');
-            }, 1800); // 1.8 segundos
+            // PAYMENT FLOW: Detectar si algún servicio requiere depósito
+            const requiresDeposit = selectedServices.some(s => s.requiresDeposit);
 
-            setRedirectTimeout(timeout);
+            if (requiresDeposit) {
+                // Mostrar modal de pago antes del success
+                setModalState('payment');
+            } else {
+                // Flujo actual sin cambios: directo a success
+                setModalState('success');
+
+                // Programar redirección automática
+                const timeout = setTimeout(() => {
+                    window.open(whatsappUrl, '_blank');
+                }, 1800); // 1.8 segundos
+
+                setRedirectTimeout(timeout);
+            }
 
         } catch (err: any) {
             setError(err.message || 'Ocurrió un error al confirmar la reserva. Por favor, inténtalo de nuevo.');
@@ -157,6 +168,19 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
     const handleManualWhatsApp = useCallback(() => {
         if (whatsappData?.url) {
             window.open(whatsappData.url, '_blank');
+        }
+    }, [whatsappData]);
+
+    // Handler para confirmar método de pago y continuar a success
+    const handlePaymentConfirm = useCallback(() => {
+        setModalState('success');
+        
+        // Programar redirección automática a WhatsApp
+        if (whatsappData?.url) {
+            const timeout = setTimeout(() => {
+                window.open(whatsappData.url, '_blank');
+            }, 1800);
+            setRedirectTimeout(timeout);
         }
     }, [whatsappData]);
 
@@ -279,6 +303,19 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                         </button>
                     </div>
                 </form>
+                    )}
+                    
+                    {modalState === 'payment' && whatsappData && (
+                        <PaymentInfoModal
+                            business={business}
+                            totalAmount={totalPrice}
+                            selectedServices={selectedServices}
+                            date={date}
+                            slot={slot}
+                            clientName={clientName}
+                            onConfirm={handlePaymentConfirm}
+                            onCancel={handleClose}
+                        />
                     )}
                     
                     {modalState === 'success' && whatsappData && (
