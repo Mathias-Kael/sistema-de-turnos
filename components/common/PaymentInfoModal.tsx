@@ -110,33 +110,34 @@ export const PaymentInfoModal: React.FC<PaymentInfoModalProps> = ({
 
   const handleWalletClick = (wallet: WalletButton) => {
     if (isMobile) {
-      // Strategy mejorada para deep links en móvil
-      // 1. Intentar abrir deep link
-      // 2. Si falla o no responde en 1.5s, abrir URL web como fallback
+      // Strategy mejorada para deep links en móvil: window.location.href es más robusto
+      // para esquemas custom que window.open
       
-      const deepLinkWindow = window.open(wallet.deepLink, '_blank');
+      // Intentar abrir deep link en la misma ventana
+      window.location.href = wallet.deepLink;
       
-      // Fallback: si después de 1.5s la app no se abrió, abrir web
+      // Fallback: si después de 1.5s seguimos aquí, abrir web
+      // Nota: Si la app se abre, el navegador pasa a segundo plano y el timeout se pausa o retrasa
       const fallbackTimer = setTimeout(() => {
-        // Si el deep link no funcionó, abrir versión web
-        if (deepLinkWindow) {
-          deepLinkWindow.close();
-        }
+        // Si el usuario sigue aquí, asumimos que falló
         window.open(wallet.webUrl, '_blank');
       }, 1500);
       
-      // Si la ventana se cierra inmediatamente (app se abrió), cancelar fallback
-      const checkInterval = setInterval(() => {
-        if (deepLinkWindow && deepLinkWindow.closed) {
+      // Limpiar timeout si la página se oculta (usuario cambió de app exitosamente)
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
           clearTimeout(fallbackTimer);
-          clearInterval(checkInterval);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
         }
-      }, 100);
+      };
       
-      // Limpiar timeout después de 2s
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Limpieza de seguridad
       setTimeout(() => {
-        clearInterval(checkInterval);
-      }, 2000);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }, 3000);
+
     } else {
       // Desktop: siempre abrir versión web
       window.open(wallet.webUrl, '_blank');
