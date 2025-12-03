@@ -58,3 +58,41 @@ export function validateBookingInput(input: BookingInput): { ok: boolean; errors
     normalized: ok ? { name: nameRes.value!, phone: phoneRes.value!, email: emailNorm } : null
   };
 }
+
+// Validación de CBU/CVU argentino (22 dígitos con checksum)
+export function validateCBU(cbu: string): boolean {
+  const cleaned = (cbu || '').replace(/\s/g, '');
+  if (!/^\d{22}$/.test(cleaned)) return false;
+
+  // Detección automática de tipo (CBU vs CVU)
+  // Los CVU de PSPs (como Mercado Pago) suelen comenzar con 0000003
+  const isCVU = cleaned.startsWith('0000003');
+
+  // Algoritmo de validación de dígitos verificadores
+  // El algoritmo matemático de checksum es el mismo para CBU y CVU en el sistema SISCEN/COELSA
+  const arr = cleaned.split('').map(Number);
+  
+  // Validar primer bloque (Banco y Sucursal / ID PSP)
+  // Pesos: 7, 1, 3, 9, 7, 1, 3
+  const check1 = arr[7];
+  const sum1 = arr[0]*7 + arr[1]*1 + arr[2]*3 + arr[3]*9 + arr[4]*7 + arr[5]*1 + arr[6]*3;
+  const diff1 = (10 - (sum1 % 10)) % 10;
+  
+  if (diff1 !== check1) return false;
+
+  // Validar segundo bloque (Cuenta / Usuario)
+  // Pesos: 3, 9, 7, 1, 3, 9, 7, 1, 3, 9, 7, 1, 3
+  const check2 = arr[21];
+  const sum2 = arr[8]*3 + arr[9]*9 + arr[10]*7 + arr[11]*1 + arr[12]*3 + arr[13]*9 + arr[14]*7 + arr[15]*1 + arr[16]*3 + arr[17]*9 + arr[18]*7 + arr[19]*1 + arr[20]*3;
+  const diff2 = (10 - (sum2 % 10)) % 10;
+  
+  if (diff2 !== check2) return false;
+
+  return true;
+}
+
+// Validación de alias de pago (6-20 caracteres, alfanuméricos, puntos y guiones)
+export function validatePaymentAlias(alias: string): boolean {
+  const cleaned = (alias || '').trim();
+  return /^[a-zA-Z0-9.-]{6,20}$/.test(cleaned);
+}

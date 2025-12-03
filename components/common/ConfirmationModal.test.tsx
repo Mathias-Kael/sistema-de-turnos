@@ -270,3 +270,123 @@ describe('ConfirmationModal WhatsApp destino', () => {
 afterEach(() => {
   jest.clearAllTimers();
 });
+
+// ==========================================
+// NUEVOS TESTS: Payment Flow con requiresDeposit
+// ==========================================
+
+describe('ConfirmationModal - Payment Flow', () => {
+  const mockServiceWithDeposit: Service = {
+    id: 's2',
+    businessId: 'b1',
+    name: 'Servicio Premium',
+    description: '',
+    duration: 60,
+    buffer: 0,
+    price: 200,
+    requiresDeposit: true,
+    employeeIds: ['e1'],
+  };
+
+  const businessWithPayment: Business = {
+    ...buildBusiness([]),
+    paymentAlias: 'test.alias.mp',
+    paymentCbu: '1234567890123456789012',
+    depositInfo: 'Transferir 50% del total',
+  };
+
+  it('muestra PaymentInfoModal cuando servicio requiere depósito', async () => {
+    const mockOnClose = jest.fn();
+
+    render(
+      <ConfirmationModal
+        date={new Date('2025-12-10')}
+        slot="10:00"
+        selectedServices={[mockServiceWithDeposit]}
+        employeeId="e1"
+        business={businessWithPayment}
+        onClose={mockOnClose}
+      />
+    );
+
+    // Completar formulario
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Nombre Completo/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      await userEvent.type(screen.getByLabelText(/Nombre Completo/i), 'Cliente Test');
+      await userEvent.type(screen.getByLabelText(/Teléfono/i), '1234567890');
+      await userEvent.click(screen.getByRole('button', { name: /Confirmar Reserva/i }));
+    });
+
+    // Debe aparecer modal de pago en lugar de éxito directo
+    await waitFor(() => {
+      expect(screen.getByText('¿Cómo vas a pagar la seña?')).toBeInTheDocument();
+    });
+  });
+
+  it('NO muestra PaymentInfoModal cuando servicio NO requiere depósito', async () => {
+    const mockOnClose = jest.fn();
+
+    render(
+      <ConfirmationModal
+        date={new Date('2025-12-10')}
+        slot="10:00"
+        selectedServices={[mockService]} // servicio sin requiresDeposit
+        employeeId="e1"
+        business={businessWithPayment}
+        onClose={mockOnClose}
+      />
+    );
+
+    // Completar formulario
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Nombre Completo/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      await userEvent.type(screen.getByLabelText(/Nombre Completo/i), 'Cliente Test');
+      await userEvent.type(screen.getByLabelText(/Teléfono/i), '1234567890');
+      await userEvent.click(screen.getByRole('button', { name: /Confirmar Reserva/i }));
+    });
+
+    // Debe ir directo a éxito (flujo sin cambios)
+    await waitFor(() => {
+      expect(screen.getByText('¡Reserva Confirmada!')).toBeInTheDocument();
+    });
+
+    // NO debe aparecer modal de pago
+    expect(screen.queryByText('¿Cómo vas a pagar la seña?')).not.toBeInTheDocument();
+  });
+
+  it('detecta correctamente cuando ALGÚN servicio requiere depósito', async () => {
+    const mockOnClose = jest.fn();
+
+    render(
+      <ConfirmationModal
+        date={new Date('2025-12-10')}
+        slot="10:00"
+        selectedServices={[mockService, mockServiceWithDeposit]} // mix
+        employeeId="e1"
+        business={businessWithPayment}
+        onClose={mockOnClose}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Nombre Completo/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      await userEvent.type(screen.getByLabelText(/Nombre Completo/i), 'Cliente Test');
+      await userEvent.type(screen.getByLabelText(/Teléfono/i), '1234567890');
+      await userEvent.click(screen.getByRole('button', { name: /Confirmar Reserva/i }));
+    });
+
+    // Debe mostrar modal de pago porque AL MENOS UNO requiere depósito
+    await waitFor(() => {
+      expect(screen.getByText('¿Cómo vas a pagar la seña?')).toBeInTheDocument();
+    });
+  });
+});

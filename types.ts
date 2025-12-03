@@ -26,6 +26,7 @@ export interface Service {
   buffer: number; // in minutes
   price: number;
   requiresDeposit?: boolean;
+  depositAmount?: number; // Monto específico de seña (opcional)
   employeeIds: string[];
   categoryIds?: string[]; // Categorías a las que pertenece este servicio
   archived?: boolean; // Soft delete flag
@@ -92,6 +93,10 @@ export interface Business {
   whatsapp?: string; // Número de WhatsApp del negocio (formato internacional)
   instagram?: string; // Username de Instagram (sin @)
   facebook?: string; // Username o ID de página de Facebook
+  // Información de pago para servicios con seña
+  paymentAlias?: string; // Alias Mercado Pago/CVU
+  paymentCbu?: string; // CBU bancario (22 dígitos)
+  depositInfo?: string; // Instrucciones adicionales de depósito
   branding: Branding;
   employees: Employee[];
   services: Service[];
