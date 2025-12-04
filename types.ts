@@ -125,12 +125,19 @@ export interface PeakDay {
   total_reservas: number;
 }
 
+export interface HistoricalMetric {
+  period: string;
+  revenue: number;
+  bookings: number;
+}
+
 export interface AnalyticsResponse {
   analytics: {
     revenue: RevenueMetric;
     topServices: TopService[];
     frequentClients: FrequentClient[];
     peakDays: PeakDay[];
+    historical?: HistoricalMetric[];
   };
 }
   employees: Employee[];

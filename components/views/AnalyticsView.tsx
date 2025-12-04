@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { AnalyticsResponse } from '../../types';
 import { StatCard } from '../admin/analytics/StatCard';
-import { DollarSign, Calendar, TrendingUp, Activity, PieChart as PieIcon } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Activity, PieChart as PieIcon, History } from 'lucide-react';
 import { LoadingSpinner, ErrorMessage } from '../ui';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { AnalyticsHistoryView } from './AnalyticsHistoryView';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export const AnalyticsView: React.FC = () => {
+  const [showHistory, setShowHistory] = useState(false);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,10 @@ export const AnalyticsView: React.FC = () => {
 
     fetchAnalytics();
   }, [period]);
+
+  if (showHistory) {
+    return <AnalyticsHistoryView onBack={() => setShowHistory(false)} />;
+  }
 
   if (loading && !data) {
     return (
@@ -96,27 +102,37 @@ export const AnalyticsView: React.FC = () => {
           <p className="text-gray-500 text-sm">Análisis detallado de rendimiento</p>
         </div>
         
-        <div className="bg-surface p-1 rounded-lg border border-default inline-flex shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-2 items-end sm:items-center">
           <button
-            onClick={() => setPeriod('week')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-              period === 'week' 
-                ? 'bg-primary text-white shadow-sm' 
-                : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-            }`}
+            onClick={() => setShowHistory(true)}
+            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center shadow-sm transition-colors"
           >
-            Esta Semana
+            <History className="w-4 h-4 mr-2" />
+            Ver Histórico
           </button>
-          <button
-            onClick={() => setPeriod('month')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-              period === 'month' 
-                ? 'bg-primary text-white shadow-sm' 
-                : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-            }`}
-          >
-            Este Mes
-          </button>
+
+          <div className="bg-surface p-1 rounded-lg border border-default inline-flex shadow-sm">
+            <button
+              onClick={() => setPeriod('week')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                period === 'week' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 hover:text-primary hover:bg-gray-50'
+              }`}
+            >
+              Esta Semana
+            </button>
+            <button
+              onClick={() => setPeriod('month')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                period === 'month' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 hover:text-primary hover:bg-gray-50'
+              }`}
+            >
+              Este Mes
+            </button>
+          </div>
         </div>
       </div>
 

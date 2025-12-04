@@ -1482,9 +1482,9 @@ export const supabaseBackend = {
    * @param dateRange El rango de fechas para las m�tricas ('day' | 'week' | 'month').
    * @returns Los datos de anal�ticas.
    */
-  getAnalytics: async (dateRange: 'day' | 'week' | 'month' = 'week'): Promise<AnalyticsResponse> => {
+  getAnalytics: async (dateRange: 'day' | 'week' | 'month' = 'week', includeHistory: boolean = false): Promise<AnalyticsResponse> => {
     const { data, error } = await supabase.functions.invoke('analytics-dashboard', {
-      body: { dateRange },
+      body: { dateRange, includeHistory },
     });
 
     if (error) {
@@ -1496,7 +1496,8 @@ export const supabaseBackend = {
           revenue: { amount: 0, period: dateRange },
           topServices: [],
           frequentClients: [],
-          peakDays: []
+          peakDays: [],
+          historical: []
         }
       };
     }
