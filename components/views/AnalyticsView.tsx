@@ -1,41 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { supabaseBackend } from '../../services/supabaseBackend';
-import { AnalyticsResponse } from '../../types';
+import React, { useState, useMemo, useEffect } from 'react';
 import { StatCard } from '../admin/analytics/StatCard';
 import { DollarSign, Calendar, TrendingUp, Activity, PieChart as PieIcon, History } from 'lucide-react';
-import { LoadingSpinner, ErrorMessage } from '../ui';
+import { LoadingSpinner, ErrorMessage, Button } from '../ui';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { AnalyticsHistoryView } from './AnalyticsHistoryView';
+import { useAnalytics } from '../../hooks/useAnalytics';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export const AnalyticsView: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
-  const [data, setData] = useState<AnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const [isMounted, setIsMounted] = useState(false);
+  const { data, loading, error, refetch } = useAnalytics(period);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true);
-      try {
-        const response = await supabaseBackend.getAnalytics(period);
-        setData(response);
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError('No se pudieron cargar las estadísticas. Intenta nuevamente.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    setIsMounted(true);
+  }, []);
 
-    fetchAnalytics();
-  }, [period]);
+  // Memoizar cálculos ANTES de cualquier return condicional
+  const topServicesData = useMemo(() => {
+    if (!data) return [];
+    return data.analytics.topServices.map(s => ({
+      name: s.servicio,
+      reservas: s.total_reservas,
+      ingresos: s.ingresos_total
+    })).slice(0, 5);
+  }, [data]);
+
+  const peakDaysData = useMemo(() => {
+    if (!data) return [];
+    return data.analytics.peakDays.map(d => ({
+      name: d.dia_nombre,
+      value: d.total_reservas
+    }));
+  }, [data]);
+
+  const totalBookings = useMemo(() => {
+    if (!data) return 0;
+    return data.analytics.peakDays.reduce((acc, day) => acc + day.total_reservas, 0);
+  }, [data]);
+
+  const revenueComparisonData = useMemo(() => {
+    if (!data) return [];
+    
+    const getPeriodLabel = (isCurrent: boolean) => {
+      if (period === 'week') return isCurrent ? 'Esta Semana' : 'Semana Anterior';
+      if (period === 'month') return isCurrent ? 'Este Mes' : 'Mes Anterior';
+      return isCurrent ? 'Actual' : 'Anterior';
+    };
+    
+    return [
+      { name: getPeriodLabel(false), amount: data.analytics.revenue.previousAmount || 0 },
+      { name: getPeriodLabel(true), amount: data.analytics.revenue.amount }
+    ];
+  }, [data, period]);
 
   if (showHistory) {
     return <AnalyticsHistoryView onBack={() => setShowHistory(false)} />;
@@ -53,12 +75,12 @@ export const AnalyticsView: React.FC = () => {
     return (
       <div className="p-4">
         <ErrorMessage message={error} />
-        <button 
-          onClick={() => setPeriod(period)} 
-          className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+        <Button 
+          onClick={refetch} 
+          className="mt-4"
         >
           Reintentar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -66,30 +88,6 @@ export const AnalyticsView: React.FC = () => {
   if (!data) return null;
 
   const { analytics } = data;
-
-  // Prepare data for charts
-  const topServicesData = analytics.topServices.map(s => ({
-    name: s.servicio,
-    reservas: s.total_reservas,
-    ingresos: s.ingresos_total
-  })).slice(0, 5);
-
-  const peakDaysData = analytics.peakDays.map(d => ({
-    name: d.dia_nombre,
-    value: d.total_reservas
-  }));
-
-  // Mock data for Revenue Comparison (Current vs Previous) since we don't have time series
-  const getPeriodLabel = (isCurrent: boolean) => {
-    if (period === 'week') return isCurrent ? 'Esta Semana' : 'Semana Anterior';
-    if (period === 'month') return isCurrent ? 'Este Mes' : 'Mes Anterior';
-    return isCurrent ? 'Actual' : 'Anterior';
-  };
-
-  const revenueComparisonData = [
-    { name: getPeriodLabel(false), amount: analytics.revenue.previousAmount || 0 },
-    { name: getPeriodLabel(true), amount: analytics.revenue.amount }
-  ];
 
   return (
     <div className="space-y-6 animate-fade-in p-4 sm:p-6 pb-24">
@@ -103,32 +101,35 @@ export const AnalyticsView: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 items-end sm:items-center">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setShowHistory(true)}
-            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center shadow-sm transition-colors"
+            className="text-sm shadow-sm"
           >
             <History className="w-4 h-4 mr-2" />
             Ver Histórico
-          </button>
+          </Button>
 
           <div className="bg-surface p-1 rounded-lg border border-default inline-flex shadow-sm">
             <button
               onClick={() => setPeriod('week')}
+              disabled={loading}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
                 period === 'week' 
                   ? 'bg-primary text-white shadow-sm' 
                   : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-              }`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Esta Semana
             </button>
             <button
               onClick={() => setPeriod('month')}
+              disabled={loading}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
                 period === 'month' 
                   ? 'bg-primary text-white shadow-sm' 
                   : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-              }`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Este Mes
             </button>
@@ -148,7 +149,7 @@ export const AnalyticsView: React.FC = () => {
         />
         <StatCard 
           title="Reservas Totales" 
-          value={analytics.peakDays.reduce((acc, day) => acc + day.total_reservas, 0)} 
+          value={totalBookings} 
           icon={Calendar} 
         />
         <StatCard 
@@ -172,23 +173,25 @@ export const AnalyticsView: React.FC = () => {
           <h3 className="font-bold text-lg text-primary mb-4 flex items-center">
             <DollarSign className="w-5 h-5 mr-2" /> Comparativa de Ingresos
           </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueComparisonData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Ingresos']}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                />
-                <Bar dataKey="amount" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={60} animationDuration={1500}>
-                  {revenueComparisonData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 1 ? '#4F46E5' : '#9CA3AF'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full" style={{ minHeight: '256px' }}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={revenueComparisonData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Bar dataKey="amount" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={60} animationDuration={1500}>
+                    {revenueComparisonData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === 1 ? '#4F46E5' : '#9CA3AF'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -197,19 +200,21 @@ export const AnalyticsView: React.FC = () => {
           <h3 className="font-bold text-lg text-primary mb-4 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2" /> Servicios Más Solicitados
           </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topServicesData} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
-                <Tooltip 
-                  formatter={(value: number) => [value, 'Reservas']}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                />
-                <Bar dataKey="reservas" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} animationDuration={1500} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full" style={{ minHeight: '256px' }}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topServicesData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
+                  <Tooltip 
+                    formatter={(value: number) => [value, 'Reservas']}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Bar dataKey="reservas" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} animationDuration={1500} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -218,26 +223,28 @@ export const AnalyticsView: React.FC = () => {
           <h3 className="font-bold text-lg text-primary mb-4 flex items-center">
             <PieIcon className="w-5 h-5 mr-2" /> Días con Mayor Demanda
           </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={peakDaysData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {peakDaysData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full" style={{ minHeight: '256px' }}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={peakDaysData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {peakDaysData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

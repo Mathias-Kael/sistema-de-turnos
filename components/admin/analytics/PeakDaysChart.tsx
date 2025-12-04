@@ -6,7 +6,7 @@ interface PeakDaysChartProps {
   days: PeakDay[];
 }
 
-export const PeakDaysChart: React.FC<PeakDaysChartProps> = ({ days }) => {
+export const PeakDaysChart: React.FC<PeakDaysChartProps> = React.memo(({ days }) => {
   if (days.length === 0) {
     return (
       <div className="bg-surface rounded-lg shadow-md border border-default p-4 h-full flex flex-col justify-center items-center text-gray-500">
@@ -40,7 +40,7 @@ export const PeakDaysChart: React.FC<PeakDaysChartProps> = ({ days }) => {
                   </div>
                 </div>
               </div>
-              <span className="text-xs text-gray-500 mt-2 font-medium truncate w-full text-center capitalize">
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium truncate w-full text-center capitalize">
                 {day.dia_nombre.slice(0, 3)}
               </span>
             </div>
@@ -49,4 +49,4 @@ export const PeakDaysChart: React.FC<PeakDaysChartProps> = ({ days }) => {
       </div>
     </div>
   );
-};
+});

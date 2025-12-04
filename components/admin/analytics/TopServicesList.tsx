@@ -6,7 +6,7 @@ interface TopServicesListProps {
   services: TopService[];
 }
 
-export const TopServicesList: React.FC<TopServicesListProps> = ({ services }) => {
+export const TopServicesList: React.FC<TopServicesListProps> = React.memo(({ services }) => {
   if (services.length === 0) {
     return (
       <div className="bg-surface rounded-lg shadow-md border border-default p-4 h-full flex flex-col justify-center items-center text-gray-500">
@@ -28,7 +28,7 @@ export const TopServicesList: React.FC<TopServicesListProps> = ({ services }) =>
         {services.map((service, index) => (
           <div key={index} className="relative">
             <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium text-gray-700 flex items-center">
+              <span className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2 ${index === 0 ? 'bg-yellow-100 text-yellow-700 font-bold' : 'bg-gray-100 text-gray-500'}`}>
                   {index + 1}
                 </span>
@@ -50,4 +50,4 @@ export const TopServicesList: React.FC<TopServicesListProps> = ({ services }) =>
       </div>
     </div>
   );
-};
+});

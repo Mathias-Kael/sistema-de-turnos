@@ -34,7 +34,7 @@ const useCountUp = (end: number, duration: number = 1000) => {
   return count;
 };
 
-export const StatCard: React.FC<StatCardProps> = ({ 
+export const StatCard: React.FC<StatCardProps> = React.memo(({ 
   title, 
   value, 
   icon: Icon, 
@@ -73,4 +73,4 @@ export const StatCard: React.FC<StatCardProps> = ({
       </div>
     </div>
   );
-};
+});

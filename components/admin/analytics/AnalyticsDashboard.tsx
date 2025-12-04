@@ -1,36 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { supabaseBackend } from '../../../services/supabaseBackend';
-import { AnalyticsResponse } from '../../../types';
+import React, { useState, useMemo } from 'react';
 import { StatCard } from './StatCard';
 import { TopServicesList } from './TopServicesList';
 import { FrequentClientsList } from './FrequentClientsList';
 import { PeakDaysChart } from './PeakDaysChart';
 import { DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
-import { LoadingSpinner, ErrorMessage } from '../../ui';
+import { LoadingSpinner, ErrorMessage, Button } from '../../ui';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 
 export const AnalyticsDashboard: React.FC = () => {
-  const [data, setData] = useState<AnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const { data, loading, error, refetch } = useAnalytics(period);
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true);
-      try {
-        const response = await supabaseBackend.getAnalytics(period);
-        setData(response);
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError('No se pudieron cargar las estadísticas. Intenta nuevamente.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAnalytics();
-  }, [period]);
+  // Memoizar cálculo de total de reservas
+  const totalBookings = useMemo(() => {
+    if (!data) return 0;
+    return data.analytics.peakDays.reduce((acc, day) => acc + day.total_reservas, 0);
+  }, [data]);
 
   if (loading && !data) {
     return (
@@ -44,12 +29,12 @@ export const AnalyticsDashboard: React.FC = () => {
     return (
       <div className="p-4">
         <ErrorMessage message={error} />
-        <button 
-          onClick={() => setPeriod(period)} 
-          className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+        <Button 
+          onClick={refetch} 
+          className="mt-4"
         >
           Reintentar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -72,21 +57,23 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="bg-surface p-1 rounded-lg border border-default inline-flex shadow-sm">
           <button
             onClick={() => setPeriod('week')}
+            disabled={loading}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
               period === 'week' 
                 ? 'bg-primary text-white shadow-sm' 
                 : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-            }`}
+            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Esta Semana
           </button>
           <button
             onClick={() => setPeriod('month')}
+            disabled={loading}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
               period === 'month' 
                 ? 'bg-primary text-white shadow-sm' 
                 : 'text-gray-500 hover:text-primary hover:bg-gray-50'
-            }`}
+            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Este Mes
           </button>
@@ -105,7 +92,7 @@ export const AnalyticsDashboard: React.FC = () => {
         />
         <StatCard 
           title="Reservas Totales" 
-          value={analytics.peakDays.reduce((acc, day) => acc + day.total_reservas, 0)} 
+          value={totalBookings} 
           icon={Calendar} 
         />
         <StatCard 
