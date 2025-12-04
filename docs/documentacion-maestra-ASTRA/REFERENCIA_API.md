@@ -1,7 +1,7 @@
 # REFERENCIA API - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 21 Noviembre 2025
+**Última actualización:** 4 Diciembre 2025
 
 ---
 
@@ -76,6 +76,11 @@
       shareTokenStatus: 'active' | 'paused' | 'revoked';
       shareTokenExpiresAt: string | null;
       
+      // Payment Fields para servicios con seña
+      paymentAlias?: string;    // Alias Mercado Pago/CVU
+      paymentCbu?: string;      // CBU bancario (22 dígitos)
+      depositInfo?: string;     // Instrucciones adicionales;
+      
       employees: Array<{
         id: string;
         businessId: string;
@@ -94,6 +99,7 @@
         buffer: number;    // minutos
         price: number;
         requiresDeposit: boolean;
+        depositAmount?: number; // Monto específico de seña
         employeeIds: string[];
         categoryIds?: string[];
       }>;

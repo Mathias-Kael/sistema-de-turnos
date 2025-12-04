@@ -1,7 +1,7 @@
 # REGISTRO DE DECISIONES - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 21 Noviembre 2025
+**Última actualización:** 4 Diciembre 2025
 
 ---
 
@@ -75,6 +75,53 @@ PRODUCCIÓN → Base Supabase Prod → astraturnos.com
 - ⚠️ Requires manual coordination entre ambientes
 
 **Status:** ✅ Implementado, funcionando correctamente
+
+---
+
+### ADR-008: Payment Fields - Sistema de Seña Manual (3 Dic 2025)
+
+**Contexto:**
+Los negocios argentinos (salones, spas, servicios premium) requieren seña previa para confirmar reservas de servicios de alto valor. El sistema solo tenía flujo directo a WhatsApp sin diferenciación por tipo de pago.
+
+**Decisión:**
+Implementar sistema de payment fields que diferencia automáticamente entre servicios con/sin seña, mostrando modal intermedio solo cuando necesario.
+
+**Alternativas consideradas:**
+- ❌ **Integración directa MercadoPago API:** Complejidad alta + compliance + fees para pagos manuales simples
+- ❌ **Campo global por business:** No flexible, algunos servicios necesitan seña otros no
+- ❌ **Modal siempre visible:** Fricción innecesaria para servicios sin seña
+
+**Razones:**
+- **Zero regresiones:** Flujo actual sin seña debe funcionar idénticamente
+- **Flexibilidad:** Cada servicio decide si requiere seña independientemente
+- **UX optimizada:** Modal aparece solo cuando necesario
+- **Pagos manuales:** Argentina prefiere transferencias/efectivo vs integraciones complejas
+
+**Arquitectura implementada:**
+```
+Service.requiresDeposit = true
+  ↓
+ConfirmationModal → modalState: 'payment'
+  ↓
+PaymentInfoModal
+├─ 💵 Efectivo → WhatsApp directo
+└─ 💳 Transferencia → Datos bancarios + wallet buttons
+```
+
+**Componentes creados:**
+- `PaymentInfoModal`: Modal con 2 opciones (efectivo/transferencia)
+- `PaymentInfoEditor`: Panel admin para configurar datos bancarios
+- Validation guards en `ServicesEditor`
+- Deep links corregidos para billeteras argentinas
+
+**Consecuencias:**
+- ✅ **Beneficio:** Soporte nativo para seña sin romper flujo actual
+- ✅ **UX:** Copy-to-clipboard + wallet buttons + mensajes contextualizados
+- ✅ **Flexible:** Admin configura qué servicios requieren seña
+- ⚠️ **Manual:** Confirmación de pago requiere WhatsApp (no automática)
+- ❌ **Dependencia:** Requiere business configurar alias/CBU manualmente
+
+**Status:** ✅ Implementado, 7 tests passing, build exitoso
 
 ---
 
