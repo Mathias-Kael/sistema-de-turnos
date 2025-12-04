@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
-import { Business, Booking, Service, Employee, Hours, Client } from '../types';
+import { Business, Booking, Service, Employee, Hours, Client, AnalyticsResponse } from '../types';
 import { INITIAL_BUSINESS_DATA } from '../constants';
 import { withRetryOrThrow } from '../utils/supabaseWrapper';
 import {
@@ -1473,5 +1473,35 @@ export const supabaseBackend = {
 
     // 3. Retornar el nuevo array de IDs para la actualización de estado local
     return categoryIds;
+  },
+
+  /**
+   * Obtiene las m�tricas de anal�ticas para el dashboard.
+   * Llama a la Edge Function 'analytics-dashboard'.
+   * 
+   * @param dateRange El rango de fechas para las m�tricas ('day' | 'week' | 'month').
+   * @returns Los datos de anal�ticas.
+   */
+  getAnalytics: async (dateRange: 'day' | 'week' | 'month' = 'week', includeHistory: boolean = false): Promise<AnalyticsResponse> => {
+    const { data, error } = await supabase.functions.invoke('analytics-dashboard', {
+      body: { dateRange, includeHistory },
+    });
+
+    if (error) {
+      logger.error('Error fetching analytics:', error);
+      // Fallback mock data for development if function fails or doesn't exist yet
+      console.warn('Using mock analytics data due to error');
+      return {
+        analytics: {
+          revenue: { amount: 0, period: dateRange },
+          topServices: [],
+          frequentClients: [],
+          peakDays: [],
+          historical: []
+        }
+      };
+    }
+
+    return data as AnalyticsResponse;
   },
 };

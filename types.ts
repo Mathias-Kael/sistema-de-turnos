@@ -98,6 +98,48 @@ export interface Business {
   paymentCbu?: string; // CBU bancario (22 dígitos)
   depositInfo?: string; // Instrucciones adicionales de depósito
   branding: Branding;
+}
+
+// Analytics Types
+export interface RevenueMetric {
+  amount: number;
+  period: 'day' | 'week' | 'month';
+  previousAmount?: number; // Para comparativas
+  growthPercentage?: number; // Para comparativas
+}
+
+export interface TopService {
+  servicio: string;
+  total_reservas: number;
+  ingresos_total: number;
+}
+
+export interface FrequentClient {
+  cliente: string;
+  total_reservas: number;
+  ultima_visita: string;
+}
+
+export interface PeakDay {
+  dia_nombre: string;
+  total_reservas: number;
+}
+
+export interface HistoricalMetric {
+  period: string;
+  revenue: number;
+  bookings: number;
+}
+
+export interface AnalyticsResponse {
+  analytics: {
+    revenue: RevenueMetric;
+    topServices: TopService[];
+    frequentClients: FrequentClient[];
+    peakDays: PeakDay[];
+    historical?: HistoricalMetric[];
+  };
+}
   employees: Employee[];
   services: Service[];
   categories: Category[]; // Categorías del negocio

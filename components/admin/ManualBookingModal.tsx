@@ -5,6 +5,7 @@ import { getAvailableSlots, findAvailableEmployeeForSlot } from '../../services/
 import { supabaseBackend } from '../../services/supabaseBackend';
 import { ClientSearchInput } from '../common/ClientSearchInput';
 import { ClientFormModal } from '../common/ClientFormModal';
+import { Button } from '../ui/Button';
 import { getLocalDateString, getTodayString, parseDateString } from '../../utils/dateHelpers';
 
 interface ManualBookingModalProps {
@@ -377,34 +378,39 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
 
                 {/* Footer Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-default">
-                    <button 
+                    <Button 
                         type="button" 
+                        variant="secondary"
                         onClick={onClose} 
-                        className="w-full sm:w-auto bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover border border-default"
+                        className="w-full sm:w-auto"
                     >
                         Cancelar
-                    </button>
+                    </Button>
                     
                     {/* Show "Add to Clients" button only when NOT using existing client */}
                     {!useExistingClient && (
-                        <button 
+                        <Button 
                             type="button"
+                            variant="secondary"
                             onClick={handleSaveAndAddToClients}
-                            className="w-full sm:flex-1 bg-background text-primary font-bold py-3 px-4 rounded-lg hover:bg-surface-hover border border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isSaving || !slot || !isClientDataValid()}
+                            className="w-full sm:flex-1"
+                            disabled={!slot || !isClientDataValid()}
+                            loading={isSaving}
                             title={!isClientDataValid() ? "Completa nombre y teléfono válidos" : "Guardar reserva y añadir cliente a la base de datos"}
                         >
-                            {isSaving ? 'Guardando...' : '📋 Añadir a Clientes'}
-                        </button>
+                            📋 Añadir a Clientes
+                        </Button>
                     )}
                     
-                    <button
+                    <Button
                         type="submit"
-                        className="w-full sm:flex-1 bg-primary text-brand-text font-bold py-3 px-4 rounded-lg hover:bg-primary-dark disabled:bg-secondary disabled:opacity-50"
-                        disabled={isSaving || !slot}
+                        variant="primary"
+                        className="w-full sm:flex-1"
+                        disabled={!slot}
+                        loading={isSaving}
                     >
-                        {isSaving ? 'Guardando...' : 'Guardar Reserva'}
-                    </button>
+                        Guardar Reserva
+                    </Button>
                 </div>
             </form>
             </div>

@@ -24,7 +24,8 @@
     "react-easy-crop": "^5.5.3",
     "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.6.0",
-    "react-router-dom": "^7.9.4"
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",

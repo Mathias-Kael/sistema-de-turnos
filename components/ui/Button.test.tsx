@@ -61,6 +61,15 @@ describe('Button Component', () => {
         expect(buttonElement).toHaveClass('disabled:opacity-50 disabled:cursor-not-allowed');
     });
 
+    test('debe mostrar spinner y estar deshabilitado cuando loading es true', () => {
+        render(<Button loading>Loading Button</Button>);
+        const buttonElement = screen.getByRole('button');
+        expect(buttonElement).toBeDisabled();
+        const spinner = buttonElement.querySelector('svg');
+        expect(spinner).toBeInTheDocument();
+        expect(spinner).toHaveClass('animate-spin');
+    });
+
     test('debe aceptar y aplicar clases adicionales', () => {
         render(<Button className="extra-class">Extra Class</Button>);
         const buttonElement = screen.getByText(/Extra Class/i);
