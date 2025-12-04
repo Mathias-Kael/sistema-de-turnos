@@ -2,7 +2,7 @@
 
 **Plataforma SaaS completa para gestión de reservas con branding personalizado**  
 **Estado:** ✅ Producción - [astraturnos.com](https://astraturnos.com)  
-**Última actualización:** 21 Noviembre 2025
+**Última actualización:** 4 Diciembre 2025
 
 ---
 
@@ -35,11 +35,18 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
 
 ### Para Administradores
 - Dashboard con calendario interactivo
+- **📊 Analytics Dashboard con métricas de engagement**
+  - Ingresos totales (semanal/mensual) con trends
+  - Servicios más solicitados (Top 5)
+  - Clientes frecuentes (Top 10)
+  - Días/horarios pico con gráficos
+  - Vista histórica con tendencias temporales
 - Gestión servicios con categorías visuales
 - Equipo con horarios individuales
 - Clientes recurrentes con autocomplete
 - Reservas manuales y especiales
 - Breaks para empleados
+- Sistema de seña manual con billeteras argentinas
 - Branding personalizado live-preview
 - Enlace público compartible con QR
 - ✅ Validación de overlaps al reactivar reservas canceladas
@@ -359,15 +366,26 @@ MIT License - Ver [LICENSE](LICENSE)
 ## 🎉 CRÉDITOS
 
 **Desarrollo:**
-- Arquitectura: Claude 4.5 Sonnet
+- Arquitectura: Claude 4.5 Sonnet (Anthropic)
 - Implementación: ChatGPT 5, Gemini 2.5 Pro, Zai GML 4.6
 - Visión y Dirección: Matías (Product Owner)
+
+**Features Recientes:**
+- Analytics Dashboard (4 Dic 2025): Claude 4.5 Sonnet
+- Payment Fields System (3 Dic 2025): Claude 4.5 Sonnet
+- Clients Management (31 Oct 2025): Zai GML 4.6
+- Scheduling Dinámico (26 Oct 2025): ChatGPT 5
 
 **Stack:**
 - React Team (Frontend framework)
 - Supabase (Backend platform)
 - Vercel (Hosting + Edge)
 - Tailwind Labs (Styling)
+- Recharts (Data visualization)
+
+---
+
+*"El negocio que se mide, crece. El negocio que se visualiza, se disfruta."* 📊✨
 
 ---
 
