@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, Wrench, Calendar } from 'lucide-react';
+import { Home, Wrench, Calendar, BarChart2 } from 'lucide-react';
 
-export type AdminTab = 'DASHBOARD' | 'MANAGEMENT' | 'RESERVATIONS';
+export type AdminTab = 'DASHBOARD' | 'MANAGEMENT' | 'RESERVATIONS' | 'ANALYTICS';
 
 interface AdminFooterProps {
   activeTab: AdminTab;
@@ -11,6 +11,7 @@ interface AdminFooterProps {
 const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'DASHBOARD', label: 'Inicio', icon: Home },
   { id: 'RESERVATIONS', label: 'Reservas', icon: Calendar },
+  { id: 'ANALYTICS', label: 'Analytics', icon: BarChart2 },
   { id: 'MANAGEMENT', label: 'Gestión', icon: Wrench },
 ];
 

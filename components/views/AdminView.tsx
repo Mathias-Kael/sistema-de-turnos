@@ -4,6 +4,7 @@ import { AdminFooter, AdminTab } from '../admin/AdminFooter';
 import { DashboardView } from './DashboardView';
 import { ManagementView } from './ManagementView';
 import { ReservationsView } from './ReservationsView';
+import { AnalyticsView } from './AnalyticsView';
 import { ManualBookingModal } from '../admin/ManualBookingModal';
 import { SharePanel } from '../admin/SharePanel';
 import { ClientView } from './ClientView';
@@ -113,6 +114,8 @@ export const AdminView: React.FC = () => {
         switch (activeTab) {
             case 'DASHBOARD':
                 return <DashboardView />;
+            case 'ANALYTICS':
+                return <AnalyticsView />;
             case 'MANAGEMENT':
                 return <ManagementView />;
             case 'RESERVATIONS':
