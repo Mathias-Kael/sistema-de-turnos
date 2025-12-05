@@ -6,10 +6,12 @@ import { PeakDaysChart } from './PeakDaysChart';
 import { DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
 import { LoadingSpinner, ErrorMessage, Button } from '../../ui';
 import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useBusinessState } from '../../../context/BusinessContext';
 
 export const AnalyticsDashboard: React.FC = () => {
+  const business = useBusinessState();
   const [period, setPeriod] = useState<'week' | 'month'>('week');
-  const { data, loading, error, refetch } = useAnalytics(period);
+  const { data, loading, error, refetch } = useAnalytics(period, false, business.id);
 
   // Memoizar cálculo de total de reservas
   const totalBookings = useMemo(() => {

@@ -6,15 +6,17 @@ import {
 } from 'recharts';
 import { ArrowLeft, TrendingUp, Calendar, DollarSign } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useBusinessState } from '../../context/BusinessContext';
 
 interface AnalyticsHistoryViewProps {
   onBack: () => void;
 }
 
 export const AnalyticsHistoryView: React.FC<AnalyticsHistoryViewProps> = ({ onBack }) => {
+  const business = useBusinessState();
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [isMounted, setIsMounted] = useState(false);
-  const { data, loading, error } = useAnalytics(period, true);
+  const { data, loading, error } = useAnalytics(period, true, business.id);
 
   useEffect(() => {
     setIsMounted(true);

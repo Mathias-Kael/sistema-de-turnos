@@ -1480,11 +1480,13 @@ export const supabaseBackend = {
    * Llama a la Edge Function 'analytics-dashboard'.
    * 
    * @param dateRange El rango de fechas para las m�tricas ('day' | 'week' | 'month').
+   * @param includeHistory Si se debe incluir datos históricos.
+   * @param businessId ID del negocio para consultas multi-tenant.
    * @returns Los datos de anal�ticas.
    */
-  getAnalytics: async (dateRange: 'day' | 'week' | 'month' = 'week', includeHistory: boolean = false): Promise<AnalyticsResponse> => {
+  getAnalytics: async (dateRange: 'day' | 'week' | 'month' = 'week', includeHistory: boolean = false, businessId?: number): Promise<AnalyticsResponse> => {
     const { data, error } = await supabase.functions.invoke('analytics-dashboard', {
-      body: { dateRange, includeHistory },
+      body: { dateRange, includeHistory, businessId },
     });
 
     if (error) {

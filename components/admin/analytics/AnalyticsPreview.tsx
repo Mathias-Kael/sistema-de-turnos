@@ -4,8 +4,10 @@ import { AnalyticsResponse } from '../../../types';
 import { StatCard } from './StatCard';
 import { DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
 import { LoadingSpinner, ErrorMessage } from '../../ui';
+import { useBusinessState } from '../../../context/BusinessContext';
 
 export const AnalyticsPreview: React.FC = () => {
+  const business = useBusinessState();
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +16,7 @@ export const AnalyticsPreview: React.FC = () => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const response = await supabaseBackend.getAnalytics('week');
+        const response = await supabaseBackend.getAnalytics('week', false, business.id);
         setData(response);
         setError(null);
       } catch (err) {

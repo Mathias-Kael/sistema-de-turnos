@@ -8,14 +8,16 @@ import {
 } from 'recharts';
 import { AnalyticsHistoryView } from './AnalyticsHistoryView';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useBusinessState } from '../../context/BusinessContext';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export const AnalyticsView: React.FC = () => {
+  const business = useBusinessState();
   const [showHistory, setShowHistory] = useState(false);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [isMounted, setIsMounted] = useState(false);
-  const { data, loading, error, refetch } = useAnalytics(period);
+  const { data, loading, error, refetch } = useAnalytics(period, false, business.id);
 
   useEffect(() => {
     setIsMounted(true);

@@ -31,7 +31,7 @@ describe('useAnalytics Hook', () => {
 
     expect(result.current.data).toEqual(mockData);
     expect(result.current.error).toBeNull();
-    expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', false);
+    expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', false, undefined);
   });
 
   test('debe manejar errores correctamente', async () => {
@@ -60,12 +60,12 @@ describe('useAnalytics Hook', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', false);
+    expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', false, undefined);
 
     rerender({ period: 'month' });
 
     await waitFor(() => {
-      expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('month', false);
+      expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('month', false, undefined);
     });
   });
 
@@ -76,7 +76,18 @@ describe('useAnalytics Hook', () => {
     renderHook(() => useAnalytics('week', true));
 
     await waitFor(() => {
-      expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', true);
+      expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', true, undefined);
+    });
+  });
+
+  test('debe enviar businessId cuando se proporciona', async () => {
+    const mockData = { analytics: { revenue: { amount: 1000 }, topServices: [], frequentClients: [], peakDays: [] } };
+    (supabaseBackend.getAnalytics as jest.Mock).mockResolvedValue(mockData);
+
+    renderHook(() => useAnalytics('week', false, 123));
+
+    await waitFor(() => {
+      expect(supabaseBackend.getAnalytics).toHaveBeenCalledWith('week', false, 123);
     });
   });
 });

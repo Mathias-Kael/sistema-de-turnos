@@ -8,9 +8,10 @@ import { AnalyticsResponse } from '../types';
  * 
  * @param period - 'week' | 'month' - Período de análisis
  * @param includeHistory - Si se deben incluir datos históricos
+ * @param businessId - ID del negocio (opcional)
  * @returns { data, loading, error, refetch }
  */
-export const useAnalytics = (period: 'week' | 'month', includeHistory: boolean = false) => {
+export const useAnalytics = (period: 'week' | 'month', includeHistory: boolean = false, businessId?: string) => {
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export const useAnalytics = (period: 'week' | 'month', includeHistory: boolean =
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const response = await supabaseBackend.getAnalytics(period, includeHistory);
+      const response = await supabaseBackend.getAnalytics(period, includeHistory, businessId);
       setData(response);
       setError(null);
     } catch (err) {
@@ -31,7 +32,7 @@ export const useAnalytics = (period: 'week' | 'month', includeHistory: boolean =
 
   useEffect(() => {
     fetchAnalytics();
-  }, [period, includeHistory]);
+  }, [period, includeHistory, businessId]);
 
   return { data, loading, error, refetch: fetchAnalytics };
 };
