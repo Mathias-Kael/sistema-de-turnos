@@ -153,14 +153,15 @@ Implementar dashboard de analytics con 4 métricas esenciales que generen impact
 
 **Arquitectura implementada:**
 
-**Backend: Edge Function analytics-dashboard v4**
+**Backend: Edge Function analytics-dashboard v5** ← **Actualizado con multi-tenant**
 ```typescript
 // POST /functions/v1/analytics-dashboard
 // Auth: JWT Bearer token (owner_id validation)
 
 Input: {
   period: 'week' | 'month',
-  includeHistory?: boolean
+  includeHistory?: boolean,
+  businessId?: number  // ← Soporte multi-tenant agregado
 }
 
 Output: {
@@ -211,6 +212,18 @@ hooks/
 - ✅ React Hooks Order Violation (useMemo después de return condicional)
 - ✅ Recharts Dimension Warnings (isMounted pattern)
 - ✅ DollarSignIcon duplicado (usar lucide-react)
+- ✅ **Multi-tenant 404 Error** (businessId no enviado al Edge Function) ← **4 Dic 2025**
+
+**Actualización Multi-Tenant (4 Dic 2025):**
+- **Problema:** Usuario "Encanto Spacio" (multi-business) → 404 error en Analytics
+- **Root Cause:** Edge Function v5 esperaba `businessId`, frontend no lo enviaba
+- **Solución Implementada:**
+  - `supabaseBackend.getAnalytics()` acepta `businessId?: number`
+  - `useAnalytics()` hook acepta `businessId?: number`
+  - Todos los componentes de analytics extraen `business.id` de `BusinessContext`
+  - 7 archivos modificados + 1 test nuevo
+- **Resultado:** ✅ Analytics filtradas por negocio activo, switch automático al cambiar negocio
+- **Commit:** `a5ba27f` - "fix: soporte multi-tenant en Analytics Dashboard"
 
 **Consecuencias:**
 - ✅ **Engagement:** Dashboard dopamine-driven con count-ups, trends, gráficos
@@ -234,7 +247,8 @@ hooks/
 - Code duplication: -120 lines ✅
 - Re-renders: -40% ✅
 
-**Status:** ✅ Implementado exitosamente, producción desde 4 Dic 2025
+**Status:** ✅ Implementado exitosamente, producción desde 4 Dic 2025  
+**Última Actualización:** 4 Dic 2025 - Multi-tenant support (commit a5ba27f)
 
 ---
 
