@@ -2,7 +2,7 @@
 
 **Plataforma SaaS completa para gestión de reservas con branding personalizado**  
 **Estado:** ✅ Producción - [astraturnos.com](https://astraturnos.com)  
-**Última actualización:** 4 Diciembre 2025
+**Última actualización:** 8 Diciembre 2025
 
 ---
 
@@ -41,6 +41,10 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
   - Clientes frecuentes (Top 10)
   - Días/horarios pico con gráficos
   - Vista histórica con tendencias temporales
+- **🏷️ Terminología Adaptable (Personas vs Espacios)**
+  - Selector binario para cambiar entre "Profesionales" o "Espacios"
+  - Textos dinámicos en toda la app ("con Laura" vs "en Cancha 1")
+  - Configuración persistente en branding del negocio
 - Gestión servicios con categorías visuales
 - Equipo con horarios individuales
 - Clientes recurrentes con autocomplete

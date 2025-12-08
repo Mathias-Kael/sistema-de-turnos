@@ -1,7 +1,7 @@
 # CATÁLOGO DE FEATURES - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 4 Diciembre 2025
+**Última actualización:** 8 Diciembre 2025
 
 ---
 
@@ -22,10 +22,10 @@
 12. [Auto-skip Selección de Empleado](#12-auto-skip-selección-de-empleado)
 13. [Payment Fields - Sistema de Seña Manual](#13-payment-fields---sistema-de-seña-manual)
 14. [Analytics Dashboard - Métricas de Engagement](#14-analytics-dashboard---métricas-de-engagement)
+15. [Terminología Adaptable - Personas vs Espacios](#15-terminología-adaptable---personas-vs-espacios)
 
 ### 🚧 EN ROADMAP (Planificadas)
-15. [Reprogramar Reservas](#15-reprogramar-reservas)
-16. [Terminología Dinámica](#16-terminología-dinámica)
+16. [Reprogramar Reservas](#16-reprogramar-reservas)
 17. [Sistema de Notificaciones](#17-sistema-de-notificaciones)
 18. [Integración Mercado Pago](#18-integración-mercado-pago)
 19. [Seña con Auto-expire](#19-seña-con-auto-expire)
@@ -1124,72 +1124,223 @@ await supabase
 
 ---
 
-### 13. Terminología Dinámica
+### 15. Terminología Adaptable - Personas vs Espacios
 
-**Estado:** 🚧 Planificada - Fase 1  
+**Estado:** ✅ Producción desde 8 Diciembre 2025  
 **Prioridad:** P1 - Market expansion  
-**Esfuerzo estimado:** 4-6 hrs
+**Esfuerzo:** 4-5 hrs implementación
 
-#### Problema a Resolver
-Terminología "empleados" incoherente para negocios de espacios físicos.
+#### Problema Resuelto
+Terminología "empleados/profesionales" era incoherente para negocios que gestionan espacios físicos (canchas, salones, consultorios).
 
-**Ejemplos problema:**
-- **Club:** "¿Con quién querés atenderte? Cancha 1" → Incoherente
-- **Salón eventos:** "Empleados: Salón A, Salón B" → Confuso
+**Ejemplos del problema:**
+- **Club deportivo:** "¿Con quién querés atenderte? → Cancha 1" ❌ Incoherente
+- **Salón de eventos:** "Empleados: Salón A, Salón B, Salón C" ❌ Confuso
+- **Centro médico:** "Gestión de Empleados: Consultorio 1, 2, 3" ❌ Semánticamente incorrecto
 
-#### Solución Planificada
+#### Solución Implementada
 
-**Setup wizard:**
+**Selector Binario Simplificado:**
 ```
-¿Tu negocio trabaja con...?
-○ Personas (empleados, profesionales, staff)
-○ Espacios (canchas, salones, consultorios)
-○ Personalizado
-```
-
-**Schema:**
-```sql
-ALTER TABLE businesses ADD COLUMN resource_type TEXT DEFAULT 'personal';
-ALTER TABLE businesses ADD COLUMN resource_label_singular TEXT DEFAULT 'empleado';
-ALTER TABLE businesses ADD COLUMN resource_label_plural TEXT DEFAULT 'empleados';
-ALTER TABLE businesses ADD COLUMN resource_question TEXT DEFAULT '¿Con quién querés atenderte?';
+┌────────────────────────────────────────────────┐
+│ ¿Qué gestionas en tu negocio?                  │
+│                                                │
+│  [👤 Personas]  [📍 Espacios]                  │
+│                                                │
+│  Esto adaptará los textos de la aplicación    │
+│  (ej: "con Laura" vs "en Cancha 1")           │
+└────────────────────────────────────────────────┘
 ```
 
-**Resultado:**
-
-**Estética:**
-- "¿Con quién querés atenderte?"
-- "Laura / Ana / María"
-
-**Club:**
-- "¿Qué espacio preferís?"
-- "Cancha 1 / Cancha 2 / Cancha 3"
-
-**Personalizado:**
-- Admin define labels custom
-
-**Implementación:**
+**Implementación en Base de Datos:**
 ```typescript
-// Refactor strings hardcoded → Variables
-const { resource_question, resource_label_plural } = business;
+// types.ts
+export type ResourceType = 'person' | 'space';
 
-<h3>{resource_question}</h3>  // Dinámico
-<h2>Gestión de {resource_label_plural}</h2>  // Dinámico
+export interface ResourceTerminology {
+  type: ResourceType;
+  // La UI deriva automáticamente preposiciones y etiquetas
+}
+
+// Schema branding (JSONB)
+interface Branding {
+  primaryColor: string;
+  secondaryColor: string;
+  textColor: string;
+  font: string;
+  terminology?: ResourceTerminology; // ← NUEVO
+}
 ```
 
-**Migración:**
-- Default = "personal" (comportamiento actual)
-- Modal one-time para personalizar
-- Zero breaking changes
+**Almacenamiento:**
+- Campo JSONB `branding.terminology` en tabla `businesses`
+- Valor por defecto: `{ type: 'person' }` (backward compatible)
+- Persistencia automática via `supabaseBackend.updateResourceTerminology()`
 
-**Market expansion:**
-- Desbloquea segmento espacios físicos
-- UX coherente ambos tipos
-- Estimado +15% potencial clientes
+**Textos Adaptativos (15+ ubicaciones):**
+
+| Ubicación | Modo "person" | Modo "space" |
+|-----------|---------------|--------------|
+| Banner auto-asignado | "Tu turno será **con** Laura" | "Tu turno será **en** Cancha 1" |
+| Modal confirmación | "**Con:** Ana García" | "**En:** Salón A" |
+| Selector de recursos | "**Profesional**" | "**Espacio**" |
+| Gestión recursos | "Gestión de **Equipo**" | "Gestión de **Espacios**" |
+| Botón añadir | "Añadir **Profesional**" | "Añadir **Espacio**" |
+| Validaciones | "al menos un **profesional**" | "al menos un **espacio**" |
+| Mensajes error | "**profesional** disponible" | "**espacio** disponible" |
+| Placeholders | "Nombre **Completo**" | "Nombre del **Espacio**" |
+
+**Implementación Técnica:**
+
+**Componentes actualizados (10 archivos):**
+```typescript
+// Ejemplo: AutoAssignedEmployeeBanner.tsx
+<p>
+  Tu turno será {business.branding?.terminology?.type === 'space' ? 'en' : 'con'}{' '}
+  <strong>{employee.name}</strong>
+</p>
+
+// Ejemplo: EmployeesEditor.tsx
+<h3>
+  Gestión de {business.branding?.terminology?.type === 'space' ? 'Espacios' : 'Equipo'}
+</h3>
+
+// Ejemplo: ConfirmationModal.tsx
+<strong>
+  {business.branding?.terminology?.type === 'space' ? 'En:' : 'Con:'}
+</strong> {employee.name}
+```
+
+**Componentes modificados:**
+- `EmployeesEditor.tsx` - Selector binario + textos dinámicos
+- `AutoAssignedEmployeeBanner.tsx` - Preposición adaptable
+- `ConfirmationModal.tsx` - Etiquetas dinámicas
+- `ReservationsManager.tsx` - Textos en listados
+- `ManualBookingModal.tsx` - Validaciones y selectores
+- `BookingDetailModal.tsx` - Etiquetas de detalle
+- `SpecialBookingModal.tsx` - Mensajes de validación
+- `ServicesEditor.tsx` - Validaciones de asignación
+- `ServiceAssignmentEditor.tsx` - Alertas dinámicas
+- `EmployeeEditModal.tsx` - Títulos y placeholders
+
+**Flujo de Usuario:**
+
+1. Admin accede a "Gestión de Empleados"
+2. Ve selector binario en la parte superior
+3. Hace clic en "📍 Espacios"
+4. Sistema muestra feedback: "Actualizando..." (0.5s)
+5. Todos los textos se actualizan inmediatamente:
+   - "Gestión de Equipo" → "Gestión de Espacios"
+   - "Añadir Profesional" → "Añadir Espacio"
+   - Formularios muestran "Nombre del Espacio"
+6. Configuración se guarda en DB automáticamente
+7. Navegación a cualquier vista refleja la nueva terminología
+8. Vista pública también usa terminología adaptada
+
+**Estado de Carga y Feedback:**
+```typescript
+const [isUpdatingTerminology, setIsUpdatingTerminology] = useState(false);
+
+const handleResourceTypeChange = async (type: 'person' | 'space') => {
+  if (isUpdatingTerminology) return; // Evita doble-clic
+  setIsUpdatingTerminology(true);
+  
+  try {
+    await dispatch({
+      type: 'UPDATE_RESOURCE_CONFIG',
+      payload: { type }
+    });
+  } finally {
+    setIsUpdatingTerminology(false);
+  }
+};
+```
+
+**Backend Implementation:**
+
+**Mock Backend (Testing):**
+```typescript
+// mockBackend.e2e.ts
+updateResourceTerminology: async (config: ResourceTerminology): Promise<Business> => {
+  state = {
+    ...state,
+    branding: {
+      ...state.branding,
+      terminology: config
+    }
+  };
+  persist();
+  return state;
+}
+```
+
+**Supabase Backend (Production):**
+```typescript
+// supabaseBackend.ts
+updateResourceTerminology: async (config: ResourceTerminology): Promise<Business> => {
+  const { data: currentBiz } = await supabase
+    .from('businesses')
+    .select('branding')
+    .eq('id', businessId)
+    .single();
+
+  const updatedBranding = {
+    ...currentBiz?.branding,
+    terminology: config
+  };
+
+  await supabase
+    .from('businesses')
+    .update({ branding: updatedBranding })
+    .eq('id', businessId);
+
+  return buildBusinessObject(businessId);
+}
+```
+
+**Context Integration:**
+```typescript
+// BusinessContext.tsx
+type Action = 
+  | ... 
+  | { type: 'UPDATE_RESOURCE_CONFIG'; payload: ResourceTerminology };
+
+// Dispatcher
+case 'UPDATE_RESOURCE_CONFIG':
+  const updatedBusiness = await backend.updateResourceTerminology(action.payload);
+  dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusiness });
+  break;
+```
+
+#### Impacto de la Feature
+
+**Market Expansion:**
+- ✅ Desbloquea segmento de espacios físicos (canchas, salones, consultorios)
+- ✅ UX coherente para ambos tipos de negocio
+- ✅ Estimado +15% de mercado potencial accesible
+
+**User Experience:**
+- ✅ Terminología consistente en 15+ ubicaciones de la app
+- ✅ Zero configuración compleja (solo 1 clic para cambiar)
+- ✅ Feedback visual inmediato
+- ✅ Backward compatible (default = 'person')
+
+**Technical Excellence:**
+- ✅ 0 errores de TypeScript
+- ✅ Tipos seguros end-to-end
+- ✅ Persistencia en DB
+- ✅ Mock y producción implementados
+- ✅ Zero breaking changes
+
+**Casos de Uso Validados:**
+- 🏋️ **Gimnasios:** "Cancha de fútbol 5 / Cancha de paddle"
+- 🎭 **Salones eventos:** "Salón Principal / Salón VIP"
+- 🏥 **Centros médicos:** "Consultorio 1 / Consultorio 2"
+- 💇 **Estéticas (default):** "Laura / Ana / María"
 
 ---
 
-### 14. Métricas de Venta
+### 16. Reprogramar Reservas
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - User request validado  
@@ -1849,7 +2000,8 @@ Click "Volver" → Return to AnalyticsView
 | PWA + SEO | ✅ Prod | P0 | Completado | CRÍTICO | ✅ LIVE |
 | Payment Fields | ✅ Prod | P1 | 4-5h | ALTO | Completado |
 | Analytics Dashboard | ✅ Prod | P1 | 12h | ALTO | Completado |
-| Terminología Dinámica | 🚧 Plan | P1 | 4-6h | MEDIO | Fase 1 |
+| Auto-skip Empleado | ✅ Prod | P1 | 2-3h | MEDIO | Completado |
+| Terminología Adaptable | ✅ Prod | P1 | 4-5h | MEDIO | Completado |
 | Reprogramar | 🚧 Plan | P1 | 3-4h | ALTO | Fase 2 |
 | Notificaciones | 🚧 Plan | P1 | 2-4h | CRÍTICO | Fase 2 |
 | Mercado Pago | 🚧 Plan | P2 | 6-8h | MEDIO | Fase 3 |
@@ -1865,26 +2017,28 @@ Click "Volver" → Return to AnalyticsView
 3. ⭐⭐⭐ Notificaciones (reduce no-shows)
 4. ⭐⭐ Analytics Dashboard (engagement → decisiones basadas en data)
 5. ⭐⭐ Horarios 24h (market expansion)
-6. ⭐⭐ Terminología Dinámica (market expansion)
+6. ⭐⭐ Terminología Adaptable (market expansion +15%)
 7. ⭐ Seña con MP (automatización post-manual)
 
 ### Impacto en UX
 1. ⭐⭐⭐ Footer Navigation (fricción -66%)
 2. ⭐⭐⭐ Clientes Recurrentes (tiempo -60%)
 3. ⭐⭐⭐ Analytics Dashboard (dopamine-driven experience)
-4. ⭐⭐ Categorías (discovery +200%)
-5. ⭐⭐ Reprogramar (evita cancelaciones)
-6. ⭐ PWA (branding profesional)
+4. ⭐⭐ Auto-skip Empleado (reduce clics innecesarios)
+5. ⭐⭐ Categorías (discovery +200%)
+6. ⭐⭐ Reprogramar (evita cancelaciones)
+7. ⭐ PWA (branding profesional)
 
 ### Impacto en Adopción
 1. ⭐⭐⭐ Branding personalizable (diferenciador core)
 2. ⭐⭐ Analytics Dashboard (retention + engagement)
 3. ⭐⭐ Horarios 24h (+25% mercado)
-4. ⭐⭐ Terminología Dinámica (+15% mercado)
+4. ⭐⭐ Terminología Adaptable (+15% mercado potencial)
+5. ⭐⭐ Auto-skip Empleado (onboarding más fluido)
 
 ---
 
-**Documento actualizado:** 4 Diciembre 2025  
+**Documento actualizado:** 8 Diciembre 2025  
 **Autor:** Claude (GitHub Copilot + Strategic Architect)  
 **Proyecto:** ASTRA Multi-tenant SaaS  
-**Status:** ✅ Catálogo completo - 14 features live, 5 roadmap
+**Status:** ✅ Catálogo completo - 15 features live, 4 roadmap

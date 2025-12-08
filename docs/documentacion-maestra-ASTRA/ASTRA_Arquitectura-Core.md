@@ -2,7 +2,7 @@
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
 **Versión:** 1.0 - Producción  
-**Última actualización:** 21 Noviembre 2025
+**Última actualización:** 8 Diciembre 2025
 
 ---
 
@@ -78,7 +78,8 @@ CREATE TABLE businesses (
     "font": "Poppins, sans-serif",
     "textColor": "#2d3748",
     "primaryColor": "#1a202c",
-    "secondaryColor": "#edf2f7"
+    "secondaryColor": "#edf2f7",
+    "terminology": {"type": "person"}
   }'::jsonb,
   
   -- Horarios con soporte 24h
