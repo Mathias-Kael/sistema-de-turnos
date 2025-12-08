@@ -1495,7 +1495,7 @@ export const supabaseBackend = {
       console.warn('Using mock analytics data due to error');
       return {
         analytics: {
-          revenue: { amount: 0, period: dateRange },
+          revenue: { current: 0, previous: 0, period: dateRange },
           topServices: [],
           frequentClients: [],
           peakDays: [],

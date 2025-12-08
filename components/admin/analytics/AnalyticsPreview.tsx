@@ -48,11 +48,11 @@ export const AnalyticsPreview: React.FC = () => {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <StatCard 
         title="Ingresos (Semana)" 
-        value={analytics.revenue.amount} 
+        value={analytics.revenue.current} 
         icon={DollarSign} 
         prefix="$" 
         highlight={true}
-        previousValue={analytics.revenue.previousAmount}
+        previousValue={analytics.revenue.previous}
       />
       <StatCard 
         title="Reservas" 

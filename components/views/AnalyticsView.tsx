@@ -56,8 +56,8 @@ export const AnalyticsView: React.FC = () => {
     };
     
     return [
-      { name: getPeriodLabel(false), amount: data.analytics.revenue.previousAmount || 0 },
-      { name: getPeriodLabel(true), amount: data.analytics.revenue.amount }
+      { name: getPeriodLabel(false), amount: data.analytics.revenue.previous || 0 },
+      { name: getPeriodLabel(true), amount: data.analytics.revenue.current }
     ];
   }, [data, period]);
 
@@ -143,11 +143,11 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="Ingresos Totales" 
-          value={analytics.revenue.amount} 
+          value={analytics.revenue.current} 
           icon={DollarSign} 
           prefix="$" 
           highlight={true}
-          previousValue={analytics.revenue.previousAmount}
+          previousValue={analytics.revenue.previous}
         />
         <StatCard 
           title="Reservas Totales" 

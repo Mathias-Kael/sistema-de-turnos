@@ -86,11 +86,11 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="Ingresos Totales" 
-          value={analytics.revenue.amount} 
+          value={analytics.revenue.current} 
           icon={DollarSign} 
           prefix="$" 
           highlight={true}
-          previousValue={analytics.revenue.previousAmount}
+          previousValue={analytics.revenue.previous}
         />
         <StatCard 
           title="Reservas Totales" 

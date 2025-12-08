@@ -102,10 +102,10 @@ export interface Business {
 
 // Analytics Types
 export interface RevenueMetric {
-  amount: number;
+  current: number;           // Ingresos período actual
+  previous: number;          // Ingresos período anterior
   period: 'day' | 'week' | 'month';
-  previousAmount?: number; // Para comparativas
-  growthPercentage?: number; // Para comparativas
+  growthPercentage?: number; // Calculado en frontend
 }
 
 export interface TopService {

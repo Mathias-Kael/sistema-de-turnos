@@ -12,7 +12,7 @@ describe('useAnalytics Hook', () => {
   test('debe cargar analytics exitosamente', async () => {
     const mockData = {
       analytics: {
-        revenue: { amount: 1000, previousAmount: 800 },
+        revenue: { current: 1000, previous: 800, period: 'week' as const },
         topServices: [],
         frequentClients: [],
         peakDays: []
@@ -48,7 +48,7 @@ describe('useAnalytics Hook', () => {
   });
 
   test('debe recargar datos cuando cambia el período', async () => {
-    const mockData = { analytics: { revenue: { amount: 1000 }, topServices: [], frequentClients: [], peakDays: [] } };
+    const mockData = { analytics: { revenue: { current: 1000, previous: 800, period: 'week' as const }, topServices: [], frequentClients: [], peakDays: [] } };
     (supabaseBackend.getAnalytics as jest.Mock).mockResolvedValue(mockData);
 
     const { result, rerender } = renderHook(
@@ -70,7 +70,7 @@ describe('useAnalytics Hook', () => {
   });
 
   test('debe soportar includeHistory flag', async () => {
-    const mockData = { analytics: { revenue: { amount: 1000 }, topServices: [], frequentClients: [], peakDays: [], historical: [] } };
+    const mockData = { analytics: { revenue: { current: 1000, previous: 800, period: 'week' as const }, topServices: [], frequentClients: [], peakDays: [], historical: [] } };
     (supabaseBackend.getAnalytics as jest.Mock).mockResolvedValue(mockData);
 
     renderHook(() => useAnalytics('week', true));
@@ -81,7 +81,7 @@ describe('useAnalytics Hook', () => {
   });
 
   test('debe enviar businessId cuando se proporciona', async () => {
-    const mockData = { analytics: { revenue: { amount: 1000 }, topServices: [], frequentClients: [], peakDays: [] } };
+    const mockData = { analytics: { revenue: { current: 1000, previous: 800, period: 'week' as const }, topServices: [], frequentClients: [], peakDays: [] } };
     (supabaseBackend.getAnalytics as jest.Mock).mockResolvedValue(mockData);
 
     renderHook(() => useAnalytics('week', false, 123));
