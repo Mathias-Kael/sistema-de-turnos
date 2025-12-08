@@ -7,6 +7,7 @@ import SpecialBookingModal from '../admin/SpecialBookingModal';
 import CreateBreakModal from '../admin/CreateBreakModal';
 import { useBusinessState, useBusinessDispatch } from '../../context/BusinessContext';
 import { SecondaryText, StatusBadge } from '../ui';
+import { useDebounce } from '../../hooks/useDebounce';
 
 // Tipo para bookings agrupados (breaks conjuntos)
 interface GroupedBooking {
@@ -25,6 +26,14 @@ const formatTimeRange = (start: string, end: string): string => {
     return formatTime(start) + '-' + formatTime(end);
 };
 
+// Helper: normalizar texto (case-insensitive + acentos)
+const normalizeText = (text: string): string => {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Eliminar diacríticos
+};
+
 export const ReservationsView: React.FC = () => {
     const business = useBusinessState();
     const dispatch = useBusinessDispatch();
@@ -35,6 +44,12 @@ export const ReservationsView: React.FC = () => {
     const [isCreatingSpecial, setIsCreatingSpecial] = useState(false);
     const [isCreatingBreak, setIsCreatingBreak] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Estados del buscador
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState<string>('all');
+    const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
+    const debouncedSearch = useDebounce(searchQuery, 300);
 
     const groupedBookings = useMemo((): GroupedBooking[] => {
         const dateStr = selectedDate.toISOString().split('T')[0];
@@ -83,6 +98,50 @@ export const ReservationsView: React.FC = () => {
         
         return result.sort((a, b) => a.start.localeCompare(b.start));
     }, [selectedDate, business.bookings, business.employees.length]);
+    
+    // Filtrado combinado: búsqueda + estado + empleado
+    const filteredBookings = useMemo((): GroupedBooking[] => {
+        let result = groupedBookings;
+
+        // Filtro 1: Búsqueda por texto
+        if (debouncedSearch.trim()) {
+            const query = normalizeText(debouncedSearch);
+            result = result.filter(grouped => {
+                const booking = grouped.bookings[0];
+                const employee = business.employees.find(e => e.id === booking.employeeId);
+                
+                return (
+                    // Buscar en cliente
+                    normalizeText(booking.client.name).includes(query) ||
+                    booking.client.phone.includes(query) ||
+                    normalizeText(booking.client.email || '').includes(query) ||
+                    
+                    // Buscar en servicios
+                    booking.services.some(s => normalizeText(s.name).includes(query)) ||
+                    
+                    // Buscar en empleado
+                    normalizeText(employee?.name || '').includes(query) ||
+                    
+                    // Buscar en notas
+                    normalizeText(booking.notes || '').includes(query)
+                );
+            });
+        }
+
+        // Filtro 2: Estado
+        if (selectedStatus !== 'all') {
+            result = result.filter(grouped => grouped.status === selectedStatus);
+        }
+
+        // Filtro 3: Empleado/Espacio
+        if (selectedEmployee !== 'all') {
+            result = result.filter(grouped => 
+                grouped.bookings.some(b => b.employeeId === selectedEmployee)
+            );
+        }
+
+        return result;
+    }, [groupedBookings, debouncedSearch, selectedStatus, selectedEmployee, business.employees]);
     
     const bookingsByDate = useMemo(() => {
         return (business.bookings || []).reduce<Record<string, BookingStatus[]>>((acc, booking) => {
@@ -182,12 +241,74 @@ export const ReservationsView: React.FC = () => {
                     />
                 </div>
                 <div className="md:col-span-2">
+                    {/* Buscador y Filtros */}
+                    <div className="space-y-3 mb-6">
+                        {/* Input de búsqueda */}
+                        <input
+                            type="text"
+                            placeholder="🔍 Buscar por cliente, teléfono, servicio..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full px-4 py-2 border border-default rounded-md bg-surface text-primary placeholder:text-secondary focus:ring-2 focus:ring-primary focus:border-primary"
+                        />
+                        
+                        {/* Filtros + Botón Limpiar */}
+                        <div className="flex flex-wrap gap-3 items-center">
+                            {/* Filtro Estado */}
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                className="px-3 py-2 border border-default rounded-md bg-surface text-primary text-sm focus:ring-2 focus:ring-primary"
+                            >
+                                <option value="all">Todas</option>
+                                <option value="pending">Pendientes</option>
+                                <option value="confirmed">Confirmadas</option>
+                                <option value="cancelled">Canceladas</option>
+                            </select>
+
+                            {/* Filtro Empleado/Espacio */}
+                            <select
+                                value={selectedEmployee}
+                                onChange={(e) => setSelectedEmployee(e.target.value)}
+                                className="px-3 py-2 border border-default rounded-md bg-surface text-primary text-sm focus:ring-2 focus:ring-primary"
+                            >
+                                <option value="all">
+                                    {business.branding?.terminology?.type === 'space' ? 'Todos los espacios' : 'Todos los empleados'}
+                                </option>
+                                {business.employees.map(emp => (
+                                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                ))}
+                            </select>
+
+                            {/* Botón Limpiar Filtros */}
+                            {(searchQuery || selectedStatus !== 'all' || selectedEmployee !== 'all') && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSelectedStatus('all');
+                                        setSelectedEmployee('all');
+                                    }}
+                                    className="px-3 py-2 text-sm text-secondary hover:text-primary hover:bg-surface-hover rounded-md border border-default"
+                                >
+                                    Limpiar filtros
+                                </button>
+                            )}
+
+                            {/* Contador de resultados */}
+                            {filteredBookings.length !== groupedBookings.length && (
+                                <span className="text-sm text-secondary ml-auto">
+                                    Mostrando {filteredBookings.length} de {groupedBookings.length} reservas
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
                     <h4 className="font-semibold mb-4 text-primary">
                         Reservas para el {selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                     </h4>
-                    {groupedBookings.length > 0 ? (
+                    {filteredBookings.length > 0 ? (
                         <ul className="space-y-3">
-                            {groupedBookings.map(grouped => {
+                            {filteredBookings.map(grouped => {
                                 const firstBooking = grouped.bookings[0];
                                 return (
                                 <li
@@ -233,7 +354,27 @@ export const ReservationsView: React.FC = () => {
                             })}
                         </ul>
                     ) : (
-                        <p className="text-secondary">No hay reservas para este día.</p>
+                        <div className="text-center py-8">
+                            {searchQuery || selectedStatus !== 'all' || selectedEmployee !== 'all' ? (
+                                <div className="space-y-2">
+                                    <p className="text-secondary">
+                                        No se encontraron reservas que coincidan con los filtros
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setSelectedStatus('all');
+                                            setSelectedEmployee('all');
+                                        }}
+                                        className="text-primary hover:underline text-sm"
+                                    >
+                                        Limpiar filtros
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="text-secondary">No hay reservas para este día.</p>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
