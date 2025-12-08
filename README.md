@@ -45,6 +45,10 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
   - Selector binario para cambiar entre "Profesionales" o "Espacios"
   - Textos dinámicos en toda la app ("con Laura" vs "en Cancha 1")
   - Configuración persistente en branding del negocio
+- **⚙️ Acceso Rápido a Configuración**
+  - Opción "Configuración" en menú de usuario
+  - Panel fullscreen para gestión completa del negocio
+  - Menú de avatar con posicionamiento fixed (accesible con scroll en móvil)
 - Gestión servicios con categorías visuales
 - Equipo con horarios individuales
 - Clientes recurrentes con autocomplete
