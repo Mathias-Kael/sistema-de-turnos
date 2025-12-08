@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wrench, Folder, Users, Clock, Palette, User } from 'lucide-react';
+import { Wrench, Folder, Users, Clock, Settings, User } from 'lucide-react';
 import { ServicesEditor } from '../admin/ServicesEditor';
 import { CategoryManager } from '../admin/CategoryManager';
 import { EmployeesEditor } from '../admin/EmployeesEditor';
@@ -15,7 +15,7 @@ const sections: { id: ManagementSection; title: string; icon: React.ElementType;
     { id: 'categories', title: 'Categorías', icon: Folder, description: 'Agrupa tus servicios' },
     { id: 'services', title: 'Servicios', icon: Wrench, description: 'Crea y edita tus servicios' },
     { id: 'hours', title: 'Horarios', icon: Clock, description: 'Define tu disponibilidad' },
-    { id: 'branding', title: 'Branding', icon: Palette, description: 'Personaliza tu página' },
+    { id: 'branding', title: 'Configuración', icon: Settings, description: 'Personaliza tu negocio' },
     { id: 'clients', title: 'Clientes', icon: User, description: 'Administra tus clientes' },
 ];
 

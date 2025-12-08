@@ -5,6 +5,7 @@ import { DashboardView } from './DashboardView';
 import { ManagementView } from './ManagementView';
 import { ReservationsView } from './ReservationsView';
 import { AnalyticsView } from './AnalyticsView';
+import { BrandingEditor } from '../admin/BrandingEditor';
 import { ManualBookingModal } from '../admin/ManualBookingModal';
 import { SharePanel } from '../admin/SharePanel';
 import { ClientView } from './ClientView';
@@ -25,6 +26,7 @@ export const AdminView: React.FC = () => {
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
     const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
+    const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
 
     // Lógica del menú de usuario
     const { user, signOut } = useAuth();
@@ -45,6 +47,11 @@ export const AdminView: React.FC = () => {
                 setIsSharePanelOpen(false);
                 return;
             }
+            if (isSettingsPanelOpen) {
+                isNavigatingRef.current = true;
+                setIsSettingsPanelOpen(false);
+                return;
+            }
             // Si no estamos en dashboard, interceptar y volver a dashboard
             if (activeTab !== 'DASHBOARD') {
                 isNavigatingRef.current = true;
@@ -56,7 +63,7 @@ export const AdminView: React.FC = () => {
         // Listener para confirmación de salida desde dashboard
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             // Solo mostrar confirmación si estamos en dashboard y sin paneles abiertos
-            if (activeTab === 'DASHBOARD' && !isPreviewPanelOpen && !isSharePanelOpen) {
+            if (activeTab === 'DASHBOARD' && !isPreviewPanelOpen && !isSharePanelOpen && !isSettingsPanelOpen) {
                 event.preventDefault();
                 event.returnValue = ''; // Chrome requiere returnValue
             }
@@ -69,7 +76,7 @@ export const AdminView: React.FC = () => {
             window.removeEventListener('popstate', handlePopState);
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen]);
+    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen, isSettingsPanelOpen]);
 
     // Empujar estado al historial cuando cambia activeTab o se abren paneles
     useEffect(() => {
@@ -81,15 +88,16 @@ export const AdminView: React.FC = () => {
 
         // Empujar estado si:
         // 1. activeTab no es DASHBOARD
-        // 2. O si hay paneles abiertos (preview o share)
-        if (activeTab !== 'DASHBOARD' || isPreviewPanelOpen || isSharePanelOpen) {
+        // 2. O si hay paneles abiertos (preview, share o settings)
+        if (activeTab !== 'DASHBOARD' || isPreviewPanelOpen || isSharePanelOpen || isSettingsPanelOpen) {
             window.history.pushState({
                 tab: activeTab,
                 preview: isPreviewPanelOpen,
-                share: isSharePanelOpen
+                share: isSharePanelOpen,
+                settings: isSettingsPanelOpen
             }, '', '');
         }
-    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen]);
+    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen, isSettingsPanelOpen]);
 
     const handleSignOut = async () => {
       await signOut();
@@ -107,7 +115,7 @@ export const AdminView: React.FC = () => {
 
     const renderContent = () => {
         // Oculta la vista activa si un panel del header está abierto
-        if (isPreviewPanelOpen || isSharePanelOpen) {
+        if (isPreviewPanelOpen || isSharePanelOpen || isSettingsPanelOpen) {
             return null;
         }
 
@@ -131,6 +139,10 @@ export const AdminView: React.FC = () => {
                 onNewBooking={() => setIsBookingModalOpen(true)}
                 onPreview={() => setIsPreviewPanelOpen(true)}
                 onShare={() => setIsSharePanelOpen(true)}
+                onSettings={() => {
+                    setIsSettingsPanelOpen(true);
+                    setIsUserMenuOpen(false);
+                }}
                 onUserMenuToggle={() => setIsUserMenuOpen(prev => !prev)}
             />
 
@@ -152,6 +164,16 @@ export const AdminView: React.FC = () => {
                         <SharePanel />
                     </div>
                 )}
+
+                {isSettingsPanelOpen && (
+                    <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+                        <button onClick={() => setIsSettingsPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
+                        <div className="max-w-4xl mx-auto pt-8">
+                            <h2 className="text-2xl font-bold text-primary mb-6">Configuración del Negocio</h2>
+                            <BrandingEditor />
+                        </div>
+                    </div>
+                )}
             </main>
 
             <AdminFooter activeTab={activeTab} onTabChange={setActiveTab} />
@@ -165,18 +187,29 @@ export const AdminView: React.FC = () => {
                 />
             )}
             
-            {/* Menú de usuario (lógica simplificada) */}
+            {/* Menú de usuario */}
             {isUserMenuOpen && (
-                 <div className="absolute top-16 right-4 mt-2 w-56 rounded-md border border-default bg-background shadow-lg z-50 overflow-hidden">
+                 <div className="fixed top-16 right-4 w-56 rounded-md border border-default bg-background shadow-lg z-50 overflow-hidden">
                     <div className="px-3 py-2 border-b border-default">
                         <p className="text-xs text-secondary truncate" title={user?.email}>
                             {user?.email || 'Usuario'}
                         </p>
                     </div>
                     <button
-                        onClick={handleSignOut}
-                        className="w-full text-left px-3 py-2 text-primary hover:bg-surface"
+                        onClick={() => {
+                            setIsSettingsPanelOpen(true);
+                            setIsUserMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-primary hover:bg-surface flex items-center gap-2"
                     >
+                        <span className="text-lg">⚙️</span>
+                        Configuración
+                    </button>
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-3 py-2 text-primary hover:bg-surface flex items-center gap-2"
+                    >
+                        <span className="text-lg">🚪</span>
                         Cerrar sesión
                     </button>
                 </div>

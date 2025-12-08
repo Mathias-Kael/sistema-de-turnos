@@ -7,6 +7,7 @@ interface AdminHeaderProps {
   onNewBooking: () => void;
   onPreview: () => void;
   onShare: () => void;
+  onSettings: () => void;
   onUserMenuToggle: () => void;
 }
 
@@ -14,6 +15,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onNewBooking,
   onPreview,
   onShare,
+  onSettings,
   onUserMenuToggle,
 }) => {
   return (
