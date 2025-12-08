@@ -110,7 +110,7 @@ export const ServicesEditor: React.FC = () => {
             return;
         }
         if (newServiceAssignedEmployeeIds.length === 0) { // Usar el nuevo estado
-            setError('Debes asignar al menos un empleado a este servicio.');
+            setError(`Debes asignar al menos un ${business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'} a este servicio.`);
             return;
         }
         const serviceToAdd: Service = {

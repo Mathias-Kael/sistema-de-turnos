@@ -104,7 +104,7 @@ export const ClientBookingExperience: React.FC<ClientBookingExperienceProps> = (
           <section>
             <h2 className="text-2xl font-bold my-4 text-primary">Elige fecha y hora</h2>
             {(wasAutoAssigned || business.employees.length === 1) && selectedEmployeeId && selectedEmployeeId !== 'any' && (
-               <AutoAssignedEmployeeBanner employee={business.employees.find(e => e.id === selectedEmployeeId)!} />
+               <AutoAssignedEmployeeBanner employee={business.employees.find(e => e.id === selectedEmployeeId)!} business={business} />
              )}
             <div className="grid md:grid-cols-2 gap-8">
               <Calendar selectedDate={selectedDate} onDateChange={handleDateChange} />

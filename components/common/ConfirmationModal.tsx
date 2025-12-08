@@ -258,7 +258,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ date, slot
                 <div className="bg-background p-4 rounded-lg mb-6">
                     <p><strong>Fecha:</strong> {date.toLocaleDateString('es-AR')}</p>
                     <p><strong>Hora:</strong> {slot}</p>
-                    {employee && <p><strong>Con:</strong> {employee.name}</p>}
+                    {employee && <p><strong>{business.branding?.terminology?.type === 'space' ? 'En:' : 'Con:'}</strong> {employee.name}</p>}
                     <p><strong>Servicios:</strong></p>
                     <ul className="list-disc list-inside text-sm pl-2">
                         {selectedServices.map(s => <li key={s.id}>{s.name}</li>)}

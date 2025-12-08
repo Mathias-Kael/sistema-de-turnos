@@ -291,7 +291,7 @@ export const ReservationsManager: React.FC = () => {
                                             <p className="text-base font-semibold text-primary">
                                                 {grouped.bookings.map(b => {
                                                     const emp = business.employees.find(e => e.id === b.employeeId);
-                                                    return emp ? emp.name : 'Empleado';
+                                                    return emp ? emp.name : (business.branding?.terminology?.type === 'space' ? 'Espacio' : 'Profesional');
                                                 }).join(', ')}
                                             </p>
                                             <p className="text-base text-secondary">☕ Break / Bloqueo</p>
@@ -325,7 +325,7 @@ export const ReservationsManager: React.FC = () => {
                                                 const employee = business.employees.find(e => e.id === firstBooking.employeeId);
                                                 return employee && (
                                                     <SecondaryText className="mt-1">
-                                                        Con: {employee.name}
+                                                        {business.branding?.terminology?.type === 'space' ? 'En:' : 'Con:'} {employee.name}
                                                     </SecondaryText>
                                                 );
                                             })()}

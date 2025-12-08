@@ -29,7 +29,7 @@ const ServiceAssignmentEditor: React.FC<ServiceAssignmentEditorProps> = memo(({ 
 
     const validateAssignments = (employeeIds: string[]): boolean => {
         if (employeeIds.length === 0) {
-            alert('Debe asignar al menos un empleado al servicio');
+            alert(`Debe asignar al menos un ${business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'} al servicio`);
             return false;
         }
         return true;

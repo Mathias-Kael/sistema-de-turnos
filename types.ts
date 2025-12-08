@@ -5,6 +5,7 @@ export interface Branding {
   secondaryColor: string;
   textColor: string;
   font: string;
+  terminology?: ResourceTerminology;
 }
 
 export interface Employee {
@@ -98,6 +99,16 @@ export interface Business {
   paymentCbu?: string; // CBU bancario (22 dígitos)
   depositInfo?: string; // Instrucciones adicionales de depósito
   branding: Branding;
+  hours: Hours;
+  // Propiedades relacionales
+  employees: Employee[];
+  services: Service[];
+  categories: Category[];
+  bookings: Booking[];
+  // Share token para acceso público
+  shareToken?: string;
+  shareTokenStatus?: 'active' | 'paused' | 'revoked';
+  shareTokenExpiresAt?: string | null;
 }
 
 // Analytics Types
@@ -139,16 +150,6 @@ export interface AnalyticsResponse {
     peakDays: PeakDay[];
     historical?: HistoricalMetric[];
   };
-}
-  employees: Employee[];
-  services: Service[];
-  categories: Category[]; // Categorías del negocio
-  hours: Hours;
-  bookings: Booking[]; // Añadido para gestionar reservas en el contexto
-  // Public share link fields (multi-tenant public access)
-  shareToken?: string;
-  shareTokenStatus?: 'active' | 'paused' | 'revoked';
-  shareTokenExpiresAt?: string | null;
 }
 
 // Types related to bookings/reservations
@@ -270,4 +271,18 @@ export interface ShareLink {
   status: 'active' | 'paused' | 'revoked';
   createdAt: number;
   expiresAt: number | null;
+}
+
+// ===== RESOURCE TERMINOLOGY SYSTEM (SIMPLIFIED) =====
+
+export type ResourceType = 'person' | 'space';
+
+export interface ResourceTerminology {
+  type: ResourceType;
+  // No necesitamos más configuración por ahora, la UI derivará "con/en" y "Empleado/Espacio"
+}
+
+// Extensión de la interfaz Business para incluir la configuración de terminología
+export interface BusinessTerminologyConfig {
+  terminology: ResourceTerminology;
 }

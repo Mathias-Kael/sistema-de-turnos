@@ -603,6 +603,43 @@ export const supabaseBackend = {
     return buildBusinessObject(businessId);
   },
 
+  /**
+   * Actualiza la configuración de terminología de recursos (JSONB en branding)
+   */
+  updateResourceTerminology: async (config: import('../types').ResourceTerminology): Promise<import('../types').Business> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+    const cached = businessCacheByUser.get(userId);
+    const businessId = cached?.businessId;
+    if (!businessId) throw new Error('No business ID found');
+
+    // Obtener branding actual para hacer merge
+    const { data: currentBiz } = await supabase
+      .from('businesses')
+      .select('branding')
+      .eq('id', businessId)
+      .single();
+
+    const currentBranding = currentBiz?.branding || {};
+    
+    // Merge con la nueva configuración
+    const updatedBranding = {
+      ...currentBranding,
+      terminology: config
+    };
+
+    // Actualizar en DB
+    const { error } = await supabase
+      .from('businesses')
+      .update({ branding: updatedBranding })
+      .eq('id', businessId);
+
+    if (error) throw new Error(error.message);
+
+    return buildBusinessObject(businessId);
+  },
+
   getBookingsForDate: async (dateString: string): Promise<Booking[]> => {
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;

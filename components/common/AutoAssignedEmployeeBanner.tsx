@@ -4,9 +4,10 @@ import { imageStorage } from '../../services/imageStorage';
 
 interface AutoAssignedEmployeeBannerProps {
   employee: Employee;
+  business: import('../../types').Business;
 }
 
-export const AutoAssignedEmployeeBanner: React.FC<AutoAssignedEmployeeBannerProps> = ({ employee }) => {
+export const AutoAssignedEmployeeBanner: React.FC<AutoAssignedEmployeeBannerProps> = ({ employee, business }) => {
   const avatarUrl = employee.avatarUrl ? imageStorage.getImageUrl(employee.avatarUrl) : undefined;
 
   return (
@@ -24,7 +25,7 @@ export const AutoAssignedEmployeeBanner: React.FC<AutoAssignedEmployeeBannerProp
       )}
       <div>
         <p className="text-base text-primary">
-          Tu turno será con <strong>{employee.name}</strong>.
+          Tu turno será {business.branding?.terminology?.type === 'space' ? 'en' : 'con'} <strong>{employee.name}</strong>.
         </p>
         <p className="text-sm text-secondary">
           Por favor, selecciona el día y la hora que prefieras.

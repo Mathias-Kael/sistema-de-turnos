@@ -148,7 +148,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                 if (availableEmployee) {
                     finalEmployeeId = availableEmployee.id;
                 } else {
-                    alert("No se encontró un empleado disponible para este horario.");
+                    alert(`No se encontró un ${business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'} disponible para este horario.`);
                     return;
                 }
             }
@@ -209,7 +209,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
             if (availableEmployee) {
                 finalEmployeeId = availableEmployee.id;
             } else {
-                alert("No se encontró un empleado disponible para este horario. Por favor, verifica los horarios del personal.");
+                alert(`No se encontró un ${business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'} disponible para este horario. Por favor, verifica los horarios.`);
                 return;
             }
         }
@@ -344,9 +344,9 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                     {/* Employee Selection */}
                     {selectedServices.length > 0 && (
                         <fieldset className="border border-default p-4 rounded-md bg-surface">
-                             <legend className="font-semibold px-2 text-primary">Empleado</legend>
+                             <legend className="font-semibold px-2 text-primary">{business.branding?.terminology?.type === 'space' ? 'Espacio' : 'Profesional'}</legend>
                              <select value={selectedEmployeeId || ''} onChange={e => setSelectedEmployeeId(e.target.value)} required className="p-2 w-full border border-default rounded-md bg-surface text-primary" disabled={eligibleEmployees.length === 0}>
-                                <option value="" disabled>Seleccionar empleado</option>
+                                <option value="" disabled>Seleccionar {business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'}</option>
                                 {eligibleEmployees.length > 0 ? (
                                     <>
                                         <option value="any">Cualquiera disponible</option>
@@ -355,7 +355,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ defaultD
                                         ))}
                                     </>
                                 ) : (
-                                    <option disabled>No hay empleados elegibles para esta selección</option>
+                                    <option disabled>No hay {business.branding?.terminology?.type === 'space' ? 'espacios' : 'profesionales'} elegibles para esta selección</option>
                                 )}
                             </select>
                         </fieldset>

@@ -15,7 +15,10 @@ interface EmployeeEditModalProps {
     setError: (error: string | null) => void;
 }
 
+import { useBusinessState } from '../../context/BusinessContext';
+
 export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, isOpen, onClose, onSave, error, setError }) => {
+    const business = useBusinessState();
     const [editedName, setEditedName] = useState(employee?.name || '');
     const [editedAvatarUrl, setEditedAvatarUrl] = useState(employee?.avatarUrl || '');
     const [editedWhatsapp, setEditedWhatsapp] = useState(employee?.whatsapp || '');
@@ -34,7 +37,7 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, 
     const handleSave = () => {
         setError(null);
         if (!editedName.trim()) {
-            setError('El nombre del empleado es obligatorio.');
+            setError(`El nombre del ${business.branding?.terminology?.type === 'space' ? 'espacio' : 'profesional'} es obligatorio.`);
             return;
         }
         if (employee) {
@@ -50,7 +53,7 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div className="bg-surface p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-xl font-bold text-primary mb-4">Editar Empleado</h2>
+                <h2 className="text-xl font-bold text-primary mb-4">Editar {business.branding?.terminology?.type === 'space' ? 'Espacio' : 'Profesional'}</h2>
                 {error && <ErrorMessage message={error} />}
                 <div className="space-y-4">
                     <div>
@@ -60,7 +63,7 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, 
                             type="text"
                             value={editedName}
                             onChange={(e) => setEditedName(e.target.value)}
-                            placeholder="Nombre del empleado"
+                            placeholder={business.branding?.terminology?.type === 'space' ? "Nombre del Espacio" : "Nombre Completo"}
                         />
                     </div>
                     <div>
@@ -68,7 +71,7 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({ employee, 
                         <ImageUploader
                           currentImageUrl={editedAvatarUrl}
                           type="avatar"
-                          label="Avatar del Empleado"
+                          label={business.branding?.terminology?.type === 'space' ? "Foto del Espacio" : "Foto de Perfil"}
                           onImageChange={(id) => setEditedAvatarUrl(id)}
                           onError={(err) => setError(err)}
                         />

@@ -429,12 +429,12 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
             {/* Step 2: Employee Selection */}
             {selectedServiceIds.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar Empleado</h3>
+                <h3 className="text-lg font-semibold mb-2 text-primary">Paso 2: Seleccionar {business.branding?.terminology?.type === 'space' ? 'Espacio' : 'Profesional'}</h3>
                 
                 {availableEmployees.length === 0 ? (
                   <div className="p-4 border border-state-warning-bg rounded-md bg-state-warning-bg/20">
                     <p className="text-state-warning-text text-sm">
-                      ⚠️ No hay empleados que puedan realizar todos los servicios seleccionados. 
+                      ⚠️ No hay {business.branding?.terminology?.type === 'space' ? 'espacios' : 'profesionales'} que puedan realizar todos los servicios seleccionados. 
                       Por favor, ajusta tu selección de servicios.
                     </p>
                   </div>
@@ -445,7 +445,7 @@ const SpecialBookingModal: React.FC<SpecialBookingModalProps> = ({
                     onChange={e => setEmployeeId(e.target.value)} 
                     className="w-full p-2 border border-default rounded-md bg-surface text-primary focus:ring-2 focus:ring-primary focus:border-primary"
                   >
-                    <option value="" disabled>Selecciona un empleado capacitado</option>
+                    <option value="" disabled>Selecciona {business.branding?.terminology?.type === 'space' ? 'un espacio' : 'un profesional'} capacitado</option>
                     {availableEmployees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name}

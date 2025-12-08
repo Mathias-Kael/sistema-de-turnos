@@ -311,6 +311,21 @@ export const mockBackendTest = {
     // Devuelve los IDs actualizados, tal como lo hace el backend real
     return categoryIds;
   },
+
+  updateResourceTerminology: async (config: import('../types').ResourceTerminology): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    state = {
+      ...state,
+      branding: {
+        ...state.branding,
+        terminology: config
+      }
+    };
+
+    persist();
+    return state;
+  },
 };
 
 // Utilidad para tests que necesiten resetear completamente el estado in-memory
