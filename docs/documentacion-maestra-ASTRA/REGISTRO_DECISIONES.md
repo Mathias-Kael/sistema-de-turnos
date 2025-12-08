@@ -153,7 +153,7 @@ Implementar dashboard de analytics con 4 métricas esenciales que generen impact
 
 **Arquitectura implementada:**
 
-**Backend: Edge Function analytics-dashboard v5** ← **Actualizado con multi-tenant**
+**Backend: Edge Function analytics-dashboard v6** ← **Actualizado con multi-tenant + response structure v6**
 ```typescript
 // POST /functions/v1/analytics-dashboard
 // Auth: JWT Bearer token (owner_id validation)
@@ -166,7 +166,13 @@ Input: {
 
 Output: {
   analytics: {
-    revenue: { amount, previousAmount, period },
+    revenue: { 
+      current: number,   // ← v6: antes era 'amount'
+      previous: number,  // ← v6: antes era 'previousAmount' (opcional)
+      period: 'week' | 'month' 
+    },
+    totalBookings: number,    // ← v6: agregado
+    activeClients: number,    // ← v6: agregado
     topServices: [...],
     frequentClients: [...],
     peakDays: [...],
@@ -213,6 +219,22 @@ hooks/
 - ✅ Recharts Dimension Warnings (isMounted pattern)
 - ✅ DollarSignIcon duplicado (usar lucide-react)
 - ✅ **Multi-tenant 404 Error** (businessId no enviado al Edge Function) ← **4 Dic 2025**
+- ✅ **Response Structure v6** (current/previous nomenclatura) ← **8 Dic 2025**
+
+**Actualización Response Structure v6 (8 Dic 2025):**
+- **Problema:** Nomenclatura ambigua `amount`/`previousAmount` en revenue
+- **Decisión:** Migrar a `current`/`previous` para mayor claridad semántica
+- **Cambios:**
+  - Interface `RevenueMetric`: `amount` → `current`, `previousAmount` → `previous`
+  - `previous` ahora obligatorio (no opcional) - backend siempre envía ambos valores
+  - 4 componentes actualizados: AnalyticsDashboard, AnalyticsPreview, AnalyticsView
+  - Tests actualizados con nueva estructura
+  - Fallback mock data actualizado
+- **Beneficios:**
+  - ✅ Semántica explícita (qué período representa cada valor)
+  - ✅ Tipo más estricto (previous obligatorio)
+  - ✅ Consistencia en toda la codebase
+- **Commit:** `8aa1ed7` - "fix: actualizar frontend Analytics para Edge Function v6"
 
 **Actualización Multi-Tenant (4 Dic 2025):**
 - **Problema:** Usuario "Encanto Spacio" (multi-business) → 404 error en Analytics
@@ -248,7 +270,7 @@ hooks/
 - Re-renders: -40% ✅
 
 **Status:** ✅ Implementado exitosamente, producción desde 4 Dic 2025  
-**Última Actualización:** 4 Dic 2025 - Multi-tenant support (commit a5ba27f)
+**Última Actualización:** 8 Dic 2025 - Response structure v6 (commit 8aa1ed7)
 
 ---
 

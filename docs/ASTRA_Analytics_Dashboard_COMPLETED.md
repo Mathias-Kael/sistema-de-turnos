@@ -2,9 +2,9 @@
 
 **Fecha Inicio:** 4 Diciembre 2025  
 **Fecha Finalización:** 4 Diciembre 2025  
-**Última Actualización:** 4 Diciembre 2025 (Multi-Tenant Support)  
+**Última Actualización:** 8 Diciembre 2025 (Edge Function v6 - Response Structure)  
 **Feature:** Sistema de métricas avanzadas para engagement emocional  
-**Status:** ✅ **PRODUCCIÓN - COMPLETADO + MULTI-TENANT**  
+**Status:** ✅ **PRODUCCIÓN - COMPLETADO + MULTI-TENANT + V6**  
 **Branch:** `main` (merged desde `feature/analiticas`)
 
 ---
@@ -15,15 +15,16 @@
 Transformar ASTRA de "herramienta por necesidad" a "app adictiva que genera dopamina" mediante métricas gamificadas que muestren el crecimiento del negocio de forma emocionalmente rewarding.
 
 ### Entregables Completados
-- ✅ Edge Function `analytics-dashboard` v5 (backend con multi-tenant)
+- ✅ Edge Function `analytics-dashboard` v6 (backend con multi-tenant + nueva estructura response)
 - ✅ Vista Analytics Pro (frontend principal)
 - ✅ Vista Historical Analytics (tendencias temporales)
 - ✅ Dashboard Preview (widget resumen)
 - ✅ Optimizaciones de performance (~60% reducción operaciones)
 - ✅ **Soporte multi-tenant (businessId parameter)**
 - ✅ **Integración BusinessContext en todos los componentes**
+- ✅ **Response structure v6 (revenue.current/previous)**
 - ✅ Tests unitarios (307/314 passing - 97.7%)
-- ✅ Documentación técnica completa
+- ✅ Documentación técnica completa + actualizada
 
 ### Métricas de Implementación
 - **Tiempo total:** ~12 horas (6h backend + 6h frontend)
@@ -37,7 +38,7 @@ Transformar ASTRA de "herramienta por necesidad" a "app adictiva que genera dopa
 
 ## 🏗️ ARQUITECTURA IMPLEMENTADA
 
-### Backend: Edge Function analytics-dashboard v5
+### Backend: Edge Function analytics-dashboard v6
 
 **Ubicación:** `/supabase/functions/analytics-dashboard/index.ts`
 
@@ -53,15 +54,17 @@ Transformar ASTRA de "herramienta por necesidad" a "app adictiva que genera dopa
 }
 ```
 
-#### Response Schema
+#### Response Schema (v6 - Actualizado 8 Dic 2025)
 ```typescript
 {
   analytics: {
     revenue: {
-      amount: number,
-      previousAmount: number,
+      current: number,          // Ingresos período actual
+      previous: number,         // Ingresos período anterior
       period: 'week' | 'month'
     },
+    totalBookings: number,      // Total reservas período actual
+    activeClients: number,      // Clientes únicos activos
     topServices: Array<{
       servicio: string,
       total_reservas: number,
@@ -85,6 +88,12 @@ Transformar ASTRA de "herramienta por necesidad" a "app adictiva que genera dopa
   }
 }
 ```
+
+**Cambios v5 → v6:**
+- ✅ `revenue.amount` → `revenue.current`
+- ✅ `revenue.previousAmount` → `revenue.previous`
+- ✅ Agregado `totalBookings` (antes calculado en frontend)
+- ✅ Agregado `activeClients` (antes calculado en frontend)
 
 #### Queries SQL Optimizadas
 
@@ -721,9 +730,133 @@ Implementar dashboard de analytics con:
 ### Deuda Técnica
 - [x] Resolver Recharts dimension warnings completamente
 - [x] **Implementar soporte multi-tenant (businessId scoping)**
+- [x] **Actualizar estructura response v6 (current/previous)**
 - [ ] Aumentar test coverage E2E (depende ADR-007 resolution)
 - [ ] Implementar query caching en Edge Function (5min TTL)
 - [ ] Agregar loading skeletons más sofisticados
+
+---
+
+## 🔄 ACTUALIZACIÓN: RESPONSE STRUCTURE V6 (8 Diciembre 2025)
+
+### Problema Detectado
+Edge Function analytics-dashboard v6 cambió la estructura del response para mayor claridad semántica:
+- ❌ `revenue.amount` / `revenue.previousAmount` (ambiguo)
+- ✅ `revenue.current` / `revenue.previous` (explícito)
+
+Frontend necesitaba actualizarse para consumir la nueva estructura sin romper funcionalidad.
+
+### Cambios Implementados
+
+**1. Tipos TypeScript (types.ts):**
+```typescript
+// ❌ ANTES (v5)
+export interface RevenueMetric {
+  amount: number;
+  previousAmount?: number;
+  period: 'day' | 'week' | 'month';
+}
+
+// ✅ DESPUÉS (v6)
+export interface RevenueMetric {
+  current: number;           // Período actual
+  previous: number;          // Período anterior
+  period: 'day' | 'week' | 'month';
+  growthPercentage?: number; // Calculado en frontend
+}
+```
+
+**2. Componentes Actualizados (4 archivos):**
+- `components/admin/analytics/AnalyticsDashboard.tsx`
+- `components/admin/analytics/AnalyticsPreview.tsx`
+- `components/views/AnalyticsView.tsx`
+- `components/views/AnalyticsHistoryView.tsx` (sin cambios necesarios)
+
+**Patrón de actualización:**
+```typescript
+// ❌ ANTES
+<StatCard 
+  value={analytics.revenue.amount} 
+  previousValue={analytics.revenue.previousAmount}
+/>
+
+// ✅ DESPUÉS
+<StatCard 
+  value={analytics.revenue.current} 
+  previousValue={analytics.revenue.previous}
+/>
+```
+
+**3. Gráfico Comparativo:**
+```typescript
+// AnalyticsView.tsx - revenueComparisonData
+// ✅ Actualizado para usar current/previous
+const revenueComparisonData = useMemo(() => {
+  return [
+    { name: 'Semana Anterior', amount: data.analytics.revenue.previous || 0 },
+    { name: 'Esta Semana', amount: data.analytics.revenue.current }
+  ];
+}, [data, period]);
+```
+
+**4. Tests Actualizados:**
+```typescript
+// hooks/useAnalytics.test.ts
+const mockData = {
+  analytics: {
+    revenue: { current: 1000, previous: 800, period: 'week' as const },
+    topServices: [],
+    frequentClients: [],
+    peakDays: []
+  }
+};
+```
+
+**5. Fallback Mock Data:**
+```typescript
+// services/supabaseBackend.ts
+return {
+  analytics: {
+    revenue: { current: 0, previous: 0, period: dateRange },
+    topServices: [],
+    frequentClients: [],
+    peakDays: [],
+    historical: []
+  }
+};
+```
+
+### Validación
+
+```bash
+# TypeScript Compilation
+✅ No errors found
+
+# Tests
+npm test -- useAnalytics.test.ts
+✅ 5/5 tests passing
+
+# Git Workflow
+git commit -m "fix: actualizar frontend Analytics para Edge Function v6"
+git push origin main
+✅ Commit 8aa1ed7
+```
+
+### Impacto
+
+**Beneficios:**
+- ✅ **Semántica clara:** `current` vs `previous` más explícito que `amount` vs `previousAmount`
+- ✅ **Consistencia:** Todos los componentes usan misma nomenclatura
+- ✅ **Tipo obligatorio:** `previous` no es opcional (siempre existe en v6)
+- ✅ **Gráficos mantenidos:** Comparativa actual vs anterior sigue funcionando
+
+**Archivos Modificados:**
+- `types.ts` - Interface RevenueMetric
+- `components/admin/analytics/AnalyticsDashboard.tsx`
+- `components/admin/analytics/AnalyticsPreview.tsx`
+- `components/views/AnalyticsView.tsx`
+- `hooks/useAnalytics.test.ts`
+- `services/supabaseBackend.ts`
 
 ---
 
@@ -831,7 +964,7 @@ useAnalytics(period, includeHistory, business.id)
     ↓
 supabaseBackend.getAnalytics(period, includeHistory, businessId)
     ↓
-Edge Function analytics-dashboard v5
+Edge Function analytics-dashboard v6
     ↓
 PostgreSQL queries con WHERE business_id = $businessId
     ↓
