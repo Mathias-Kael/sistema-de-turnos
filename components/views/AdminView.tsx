@@ -8,23 +8,26 @@ import { AnalyticsView } from './AnalyticsView';
 import { ManualBookingModal } from '../admin/ManualBookingModal';
 import { SharePanel } from '../admin/SharePanel';
 import { ClientView } from './ClientView';
+import { ResourceConfigurationWizard } from '../admin/resource-config';
 
 // Modales que se controlarán desde el Header
 // Se podrían mover a un gestor de modales global en el futuro
 import { useAuth } from '../../contexts/AuthContext';
-import { useBusinessDispatch } from '../../context/BusinessContext';
-import { Booking } from '../../types';
+import { useBusinessDispatch, useBusinessState } from '../../context/BusinessContext';
+import { Booking, ResourceTerminology } from '../../types';
 
 
 export const AdminView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<AdminTab>('DASHBOARD');
     const dispatch = useBusinessDispatch();
+    const business = useBusinessState();
     const isNavigatingRef = useRef(false);
     
     // Estados para controlar la visibilidad de los modales/paneles del Header
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
     const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
+    const [isResourceConfigOpen, setIsResourceConfigOpen] = useState(false);
 
     // Lógica del menú de usuario
     const { user, signOut } = useAuth();
@@ -45,6 +48,11 @@ export const AdminView: React.FC = () => {
                 setIsSharePanelOpen(false);
                 return;
             }
+            if (isResourceConfigOpen) {
+                isNavigatingRef.current = true;
+                setIsResourceConfigOpen(false);
+                return;
+            }
             // Si no estamos en dashboard, interceptar y volver a dashboard
             if (activeTab !== 'DASHBOARD') {
                 isNavigatingRef.current = true;
@@ -56,7 +64,7 @@ export const AdminView: React.FC = () => {
         // Listener para confirmación de salida desde dashboard
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             // Solo mostrar confirmación si estamos en dashboard y sin paneles abiertos
-            if (activeTab === 'DASHBOARD' && !isPreviewPanelOpen && !isSharePanelOpen) {
+            if (activeTab === 'DASHBOARD' && !isPreviewPanelOpen && !isSharePanelOpen && !isResourceConfigOpen) {
                 event.preventDefault();
                 event.returnValue = ''; // Chrome requiere returnValue
             }
@@ -82,14 +90,15 @@ export const AdminView: React.FC = () => {
         // Empujar estado si:
         // 1. activeTab no es DASHBOARD
         // 2. O si hay paneles abiertos (preview o share)
-        if (activeTab !== 'DASHBOARD' || isPreviewPanelOpen || isSharePanelOpen) {
+        if (activeTab !== 'DASHBOARD' || isPreviewPanelOpen || isSharePanelOpen || isResourceConfigOpen) {
             window.history.pushState({
                 tab: activeTab,
                 preview: isPreviewPanelOpen,
-                share: isSharePanelOpen
+                share: isSharePanelOpen,
+                resourceConfig: isResourceConfigOpen
             }, '', '');
         }
-    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen]);
+    }, [activeTab, isPreviewPanelOpen, isSharePanelOpen, isResourceConfigOpen]);
 
     const handleSignOut = async () => {
       await signOut();
@@ -105,9 +114,23 @@ export const AdminView: React.FC = () => {
         }
     };
 
+    const handleSaveResourceConfig = async (config: ResourceTerminology) => {
+        try {
+            // Aquí se implementará la persistencia real
+            // Por ahora, simulamos guardado en el contexto o log
+            console.log("Saving resource config:", config);
+            
+            await dispatch({ type: 'UPDATE_RESOURCE_CONFIG', payload: config });
+            
+            setIsResourceConfigOpen(false);
+        } catch (e) {
+            console.error("Error saving resource config:", e);
+        }
+    };
+
     const renderContent = () => {
         // Oculta la vista activa si un panel del header está abierto
-        if (isPreviewPanelOpen || isSharePanelOpen) {
+        if (isPreviewPanelOpen || isSharePanelOpen || isResourceConfigOpen) {
             return null;
         }
 
@@ -132,6 +155,7 @@ export const AdminView: React.FC = () => {
                 onPreview={() => setIsPreviewPanelOpen(true)}
                 onShare={() => setIsSharePanelOpen(true)}
                 onUserMenuToggle={() => setIsUserMenuOpen(prev => !prev)}
+                onConfigResources={() => setIsResourceConfigOpen(true)}
             />
 
             <main className="flex-1 pb-20">
@@ -150,6 +174,16 @@ export const AdminView: React.FC = () => {
                     <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
                         <button onClick={() => setIsSharePanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
                         <SharePanel />
+                    </div>
+                )}
+
+                {isResourceConfigOpen && (
+                    <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+                        <ResourceConfigurationWizard
+                            onSave={handleSaveResourceConfig}
+                            onCancel={() => setIsResourceConfigOpen(false)}
+                            initialConfig={business?.branding?.terminology}
+                        />
                     </div>
                 )}
             </main>

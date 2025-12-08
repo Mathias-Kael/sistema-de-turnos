@@ -68,9 +68,9 @@ export const EmployeesEditor: React.FC = () => {
     return (
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 className="text-lg font-medium">Gestión de Empleados</h3>
+                <h3 className="text-lg font-medium">Gestión de {business.branding?.terminology?.labels?.plural || 'Empleados'}</h3>
                 <Button onClick={() => setIsAdding(!isAdding)} variant={isAdding ? 'secondary' : 'primary'} className="w-full sm:w-auto">
-                    {isAdding ? 'Cancelar' : 'Añadir Empleado'}
+                    {isAdding ? 'Cancelar' : `Añadir ${business.branding?.terminology?.labels?.singular || 'Empleado'}`}
                 </Button>
             </div>
             
@@ -78,18 +78,18 @@ export const EmployeesEditor: React.FC = () => {
 
             {isAdding && (
                  <div className="p-4 border border-default rounded-md bg-surface space-y-4">
-                    <h4 className="font-semibold text-primary">Nuevo Empleado</h4>
+                    <h4 className="font-semibold text-primary">Nuevo {business.branding?.terminology?.labels?.singular || 'Empleado'}</h4>
                                         <input type="text" placeholder="Nombre Completo" value={newEmployee.name} onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})} className="w-full p-2 border border-default rounded bg-background text-primary" />
                                         <div>
                                                 <ImageUploader
                                                     currentImageUrl={newEmployee.avatarUrl}
                                                     type="avatar"
-                                                    label="Avatar del Empleado"
+                                                    label={`Avatar del ${business.branding?.terminology?.labels?.singular || 'Empleado'}`}
                                                     onImageChange={(imageId) => setNewEmployee({...newEmployee, avatarUrl: imageId })}
                                                     onError={(err) => console.error('Error avatar empleado:', err)}
                                                 />
                                         </div>
-                    <Button onClick={handleAddEmployee} className="w-full">Guardar Empleado</Button>
+                    <Button onClick={handleAddEmployee} className="w-full">Guardar {business.branding?.terminology?.labels?.singular || 'Empleado'}</Button>
                 </div>
             )}
             

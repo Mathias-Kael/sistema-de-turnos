@@ -21,6 +21,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
      * @type {string}
      */
     containerClassName?: string;
+    /**
+     * Texto de ayuda que aparece debajo del input.
+     * @type {string}
+     */
+    helperText?: string;
 }
 
 /**
@@ -35,6 +40,7 @@ export const Input: React.FC<InputProps> = ({
     label,
     icon,
     id,
+    helperText,
     ...props
 }) => {
     const baseClasses = 'w-full px-3 py-2 border border-default rounded-md shadow-sm bg-surface text-primary focus:ring-primary focus:border-primary';
@@ -55,6 +61,7 @@ export const Input: React.FC<InputProps> = ({
                     {...props}
                 />
             </div>
+            {helperText && <p className="mt-1 text-xs text-secondary">{helperText}</p>}
         </div>
     );
 };

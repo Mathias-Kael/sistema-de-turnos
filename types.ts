@@ -271,3 +271,26 @@ export interface ShareLink {
   createdAt: number;
   expiresAt: number | null;
 }
+
+// ===== RESOURCE TERMINOLOGY SYSTEM =====
+
+export type ResourceType = 'person' | 'space';
+
+export interface ResourceLabels {
+  singular: string; // ej: "Profesional", "Cancha", "Doctor"
+  plural: string;   // ej: "Profesionales", "Canchas", "Doctores"
+  action: string;   // ej: "Reservar con", "Reservar en"
+}
+
+export interface ResourceTerminology {
+  type: ResourceType;
+  categoryIcon: CategoryIcon; // Icono representativo
+  labels: ResourceLabels;
+  isCustom: boolean;
+}
+
+// Extensión de la interfaz Business para incluir la configuración de terminología
+// Nota: Esto se guardará dentro del campo JSONB 'branding' o similar en la DB
+export interface BusinessTerminologyConfig {
+  terminology: ResourceTerminology;
+}

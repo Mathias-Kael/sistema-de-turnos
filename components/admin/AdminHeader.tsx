@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/Button';
-import { Plus, Eye, Link, User } from 'lucide-react';
+import { Plus, Eye, Link, User, Settings } from 'lucide-react';
 import InstallPWAButton from '../common/InstallPWAButton';
 
 interface AdminHeaderProps {
@@ -8,6 +8,7 @@ interface AdminHeaderProps {
   onPreview: () => void;
   onShare: () => void;
   onUserMenuToggle: () => void;
+  onConfigResources?: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
@@ -15,6 +16,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onPreview,
   onShare,
   onUserMenuToggle,
+  onConfigResources,
 }) => {
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center sticky top-0 z-40">
@@ -36,6 +38,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         <Button variant="ghost" size="icon" aria-label="Compartir" onClick={onShare} className="rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
           <Link className="h-5 w-5" />
         </Button>
+        {onConfigResources && (
+          <Button variant="ghost" size="icon" aria-label="Configurar Recursos" onClick={onConfigResources} className="rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <Settings className="h-5 w-5" />
+          </Button>
+        )}
         <div className="relative">
             <button onClick={onUserMenuToggle} className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-800 dark:text-white font-bold border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                 <User className="h-5 w-5" />

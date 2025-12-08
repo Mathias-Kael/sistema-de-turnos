@@ -12,7 +12,10 @@ interface BookingDetailModalProps {
     onDelete: (bookingId: string) => void;
 }
 
+import { useBusinessState } from '../../context/BusinessContext';
+
 export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, employee, onClose, onUpdate, onDelete }) => {
+    const business = useBusinessState();
     const [editedBooking, setEditedBooking] = useState<Booking>(booking);
     const dispatch = useBusinessDispatch();
     const [saving, setSaving] = useState(false);
@@ -90,7 +93,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking,
                     <hr className="my-2 border-default"/>
                     <p><strong>Fecha:</strong> {new Date(booking.date + 'T00:00:00').toLocaleDateString('es-AR')}</p>
                     <p><strong>Hora:</strong> {booking.start} - {booking.end}</p>
-                    {employee && <p><strong>Empleado:</strong> {employee.name}</p>}
+                    {employee && <p><strong>{business.branding?.terminology?.labels?.singular || 'Empleado'}:</strong> {employee.name}</p>}
                     <p><strong>Servicios:</strong> {booking.services.map(s => s.name).join(', ')}</p>
                 </div>
 
