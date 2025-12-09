@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Business } from '../../types';
 import { imageStorage } from '../../services/imageStorage';
 import { SocialMediaButtons } from './SocialMediaButtons';
+import { RatingDisplay } from './RatingDisplay';
 
 interface HeroSectionProps {
   business: Business;
@@ -117,8 +118,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* Social Media Buttons - Solo en vista cliente */}
           {!editable && (
-            <div className="pointer-events-auto">
+            <div className="pointer-events-auto space-y-3">
               <SocialMediaButtons business={business} />
+              <RatingDisplay business={business} />
             </div>
           )}
         </div>

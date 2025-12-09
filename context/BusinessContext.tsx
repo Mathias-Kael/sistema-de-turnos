@@ -32,7 +32,8 @@ type Action =
     | { type: 'UPDATE_CATEGORY'; payload: { categoryId: string; name: string; icon: import('../types').CategoryIcon } }
     | { type: 'DELETE_CATEGORY'; payload: string }
     | { type: 'UPDATE_SERVICE_CATEGORIES'; payload: { serviceId: string; categoryIds: string[] } }
-    | { type: 'UPDATE_RESOURCE_CONFIG'; payload: import('../types').ResourceTerminology };
+    | { type: 'UPDATE_RESOURCE_CONFIG'; payload: import('../types').ResourceTerminology }
+    | { type: 'UPDATE_RATING'; payload: import('../types').BusinessRating };
 
 // --- Contextos ---
 const BusinessStateContext = createContext<Business | undefined>(undefined);
@@ -255,6 +256,10 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 case 'UPDATE_RESOURCE_CONFIG':
                     const updatedBusinessAfterResourceConfig = await backend.updateResourceTerminology(action.payload);
                     dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterResourceConfig });
+                    break;
+                case 'UPDATE_RATING':
+                    const updatedBusinessAfterRating = await backend.updateBusinessRating(action.payload);
+                    dispatch({ type: 'UPDATE_BUSINESS', payload: updatedBusinessAfterRating });
                     break;
                 default:
                     // Esta rama es para HYDRATE_STATE, que no necesita lógica asíncrona.

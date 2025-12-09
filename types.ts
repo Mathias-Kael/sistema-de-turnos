@@ -1,11 +1,19 @@
 // types.ts
 
+export interface BusinessRating {
+  score: number;          // 0-5, ej: 4.3
+  count: number;          // cantidad reseñas, ej: 47
+  googleMapsUrl?: string; // URL completa de Google Maps
+  visible: boolean;       // toggle mostrar/ocultar
+}
+
 export interface Branding {
   primaryColor: string;
   secondaryColor: string;
   textColor: string;
   font: string;
   terminology?: ResourceTerminology;
+  rating?: BusinessRating;
 }
 
 export interface Employee {
