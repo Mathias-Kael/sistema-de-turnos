@@ -29,7 +29,11 @@ export const RatingEditor: React.FC = () => {
         if (!url) return true; // Opcional
         try {
             const parsed = new URL(url);
-            return parsed.hostname.includes('google.com') || parsed.hostname.includes('maps.google');
+            // Aceptar todos los dominios de Google Maps y Google Share
+            return parsed.hostname.includes('google.com') || 
+                   parsed.hostname.includes('maps.google') ||
+                   parsed.hostname.includes('goo.gl') ||
+                   parsed.hostname === 'share.google';
         } catch {
             return false;
         }
@@ -48,7 +52,7 @@ export const RatingEditor: React.FC = () => {
         }
 
         if (!validateGoogleMapsUrl(googleMapsUrl)) {
-            setMessage({ type: 'error', text: 'URL debe ser de Google Maps (maps.google.com)' });
+            setMessage({ type: 'error', text: 'URL debe ser de Google Maps o Google Share' });
             return;
         }
 
@@ -76,7 +80,7 @@ export const RatingEditor: React.FC = () => {
     const renderStars = () => {
         const scoreNum = parseFloat(score) || 0;
         const fullStars = Math.floor(scoreNum);
-        const hasHalfStar = scoreNum % 1 >= 0.3;
+        const hasHalfStar = scoreNum % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
         return (
