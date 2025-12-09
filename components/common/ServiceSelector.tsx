@@ -153,6 +153,22 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     // Estado para acordeón: solo una categoría abierta a la vez
     const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
 
+    // Estado para controlar descripciones expandidas
+    const [expandedServiceIds, setExpandedServiceIds] = useState<Set<string>>(new Set());
+
+    const toggleDescription = (e: React.MouseEvent, serviceId: string) => {
+        e.stopPropagation();
+        setExpandedServiceIds(prev => {
+            const next = new Set(prev);
+            if (next.has(serviceId)) {
+                next.delete(serviceId);
+            } else {
+                next.add(serviceId);
+            }
+            return next;
+        });
+    };
+
     // Agrupar servicios por categorías
     const serviceGroups = useMemo((): ServiceGroup[] => {
         const groups: ServiceGroup[] = [];
@@ -208,6 +224,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
     const renderService = (service: Service) => {
         const isSelected = selectedIds.has(service.id);
+        const isExpanded = expandedServiceIds.has(service.id);
+        // Considerar larga si tiene más de 100 caracteres O más de 3 líneas
+        const isLongDescription = (service.description?.length || 0) > 100 || (service.description?.split('\n').length || 0) > 3;
         
         return (
             <div
@@ -221,7 +240,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             >
                 {/* Ripple effect overlay cuando está seleccionado */}
                 {isSelected && (
-                    <div 
+                    <div
                         className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 animate-pulse pointer-events-none"
                         style={{ animationDuration: '2s' }}
                     />
@@ -259,11 +278,23 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                         </div>
                     </div>
                 </div>
-                <p className={`relative z-10 text-base mt-2 line-clamp-3 transition-colors ${
-                    isSelected ? 'text-secondary' : 'text-secondary'
-                }`}>
-                    {service.description}
-                </p>
+                <div className="relative z-10">
+                    <p className={`text-base mt-2 transition-all duration-200 ${
+                        isSelected ? 'text-secondary' : 'text-secondary'
+                    } ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                        {service.description}
+                    </p>
+                    {isLongDescription && (
+                        <button
+                            onClick={(e) => toggleDescription(e, service.id)}
+                            className={`mt-1 text-sm font-medium hover:underline focus:outline-none transition-colors ${
+                                isSelected ? 'text-primary' : 'text-primary'
+                            }`}
+                        >
+                            {isExpanded ? 'Ver menos' : 'Ver más'}
+                        </button>
+                    )}
+                </div>
                 <div
                     className={`relative z-10 text-sm mt-3 font-semibold flex items-center gap-2 ${
                         isSelected ? 'text-primary' : 'text-secondary'
