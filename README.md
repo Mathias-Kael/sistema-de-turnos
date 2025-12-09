@@ -49,6 +49,13 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
   - Opción "Configuración" en menú de usuario
   - Panel fullscreen para gestión completa del negocio
   - Menú de avatar con posicionamiento fixed (accesible con scroll en móvil)
+- **🔍 Buscador Avanzado de Reservas**
+  - Búsqueda instantánea con debounce (300ms)
+  - Normalización de acentos (María = maria)
+  - Busca en: cliente, teléfono, email, servicio, empleado, notas
+  - Filtros combinados: Estado + Empleado/Espacio
+  - Contador de resultados en tiempo real
+  - Optimizado para 100+ reservas/día
 - Gestión servicios con categorías visuales
 - Equipo con horarios individuales
 - Clientes recurrentes con autocomplete
