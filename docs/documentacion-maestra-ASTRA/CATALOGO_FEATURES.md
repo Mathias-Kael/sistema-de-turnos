@@ -24,12 +24,13 @@
 14. [Analytics Dashboard - Métricas de Engagement](#14-analytics-dashboard---métricas-de-engagement)
 15. [Terminología Adaptable - Personas vs Espacios](#15-terminología-adaptable---personas-vs-espacios)
 16. [Buscador Avanzado de Reservas](#16-buscador-avanzado-de-reservas)
+17. [Sistema de Calificación Google Maps](#17-sistema-de-calificación-google-maps)
 
 ### 🚧 EN ROADMAP (Planificadas)
-17. [Reprogramar Reservas](#17-reprogramar-reservas)
-18. [Sistema de Notificaciones](#18-sistema-de-notificaciones)
-19. [Integración Mercado Pago](#19-integración-mercado-pago)
-20. [Seña con Auto-expire](#20-seña-con-auto-expire)
+18. [Reprogramar Reservas](#18-reprogramar-reservas)
+19. [Sistema de Notificaciones](#19-sistema-de-notificaciones)
+20. [Integración Mercado Pago](#20-integración-mercado-pago)
+21. [Seña con Auto-expire](#21-seña-con-auto-expire)
 
 ---
 
@@ -1565,7 +1566,125 @@ vs scroll manual: 15-20 segundos
 
 ---
 
-### 17. Reprogramar Reservas
+### 17. Sistema de Calificación Google Maps
+
+**Estado:** ✅ Producción desde 8 Diciembre 2025  
+**Prioridad:** P2 - Trust & Social Proof  
+**Esfuerzo:** 4 hrs implementación
+
+#### Problema Resuelto
+Negocios con buenas reseñas en Google quieren mostrar su rating para generar confianza en la landing page de reservas.
+
+**Casos de uso:**
+- Restaurant con 4.8⭐ (234 reseñas) → Mayor conversión
+- Spa nuevo sin reseñas → Ocultar hasta tener suficientes
+- Gimnasio → Link directo para verificar autenticidad
+
+#### Solución Implementada
+Sistema JSONB en campo `branding.rating` con UI de admin y display público.
+
+**Admin UI (BrandingEditor):**
+```
+┌─────────────────────────────────────────┐
+│ ⭐ CALIFICACIÓN Y GOOGLE MAPS            │
+├─────────────────────────────────────────┤
+│ Puntuación: [4.3] ★★★★☆ 4.3             │
+│ Reseñas:    [47]  (47 reseñas)          │
+│ URL Google: [https://maps.app.goo.gl/…] │
+│ [✓] Mostrar calificación                │
+│                                          │
+│ 💡 Cómo encontrar tu URL:                │
+│    🔗 Buscar "[Nombre Negocio]"          │
+├─────────────────────────────────────────┤
+│          [Guardar Calificación]          │
+└─────────────────────────────────────────┘
+```
+
+**Cliente UI (HeroSection):**
+```
+┌─────────────────────────────────────────┐
+│  [Foto Perfil]                          │
+│   📘 📷 📧                               │
+│   ★★★★☆                                 │
+│   4.3 (47 reseñas)  ← Link "secreto"    │
+└─────────────────────────────────────────┘
+```
+
+#### Características Técnicas
+
+**Validación de URLs:**
+- ✅ `google.com/maps/*`
+- ✅ `maps.google.com/*`
+- ✅ `goo.gl/*` (acortador clásico)
+- ✅ `maps.app.goo.gl/*` (acortador nuevo)
+- ✅ `share.google/*` (share links)
+
+**Renderizado de Estrellas:**
+- Estrellas llenas: `Math.floor(score)`
+- Media estrella: Si `score % 1 >= 0.5`
+- Estrellas vacías: `5 - llenas - medias`
+- Preview en tiempo real en admin
+
+**UX "Link Secreto":**
+```tsx
+<a 
+  href={googleMapsUrl}
+  target="_blank"
+  style={{ cursor: 'default' }}  // Sin pointer
+>
+  {/* Estrellas + texto */}
+</a>
+```
+- Sin indicador visual de clickeabilidad
+- Abre Google Maps en nueva pestaña
+- Solo usuarios curiosos descubren la funcionalidad
+
+#### Storage (JSONB)
+```typescript
+interface BusinessRating {
+  score: number;          // 0-5, ej: 4.3
+  count: number;          // cantidad reseñas, ej: 47
+  googleMapsUrl?: string; // opcional
+  visible: boolean;       // toggle admin
+}
+
+// En tabla businesses
+branding: {
+  primaryColor: "#...",
+  rating: {
+    score: 4.3,
+    count: 47,
+    googleMapsUrl: "https://maps.app.goo.gl/...",
+    visible: true
+  }
+}
+```
+
+#### Backend API
+```typescript
+// services/supabaseBackend.ts
+updateBusinessRating: async (rating: BusinessRating) => {
+  // 1. Get current branding
+  // 2. Merge { ...branding, rating }
+  // 3. Update JSONB field
+  // 4. Return updated Business object
+}
+```
+
+#### Componentes Implementados
+- **`RatingEditor.tsx`** - Admin form con validación y preview
+- **`RatingDisplay.tsx`** - Cliente: estrellas + link secreto
+- **Integración:** BrandingEditor, HeroSection
+
+#### Casos de Uso Validados
+- ✅ Admin ingresa rating → Cliente ve estrellas en landing
+- ✅ Click en estrellas → Abre Google Maps (verificación)
+- ✅ Toggle visible=false → Oculta calificación completamente
+- ✅ URLs acortadas (goo.gl, share.google) → Validadas correctamente
+
+---
+
+### 18. Reprogramar Reservas
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - User request validado  
