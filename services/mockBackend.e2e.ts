@@ -326,6 +326,21 @@ export const mockBackendTest = {
     persist();
     return state;
   },
+
+  updateBusinessRating: async (rating: import('../types').BusinessRating): Promise<Business> => {
+    await new Promise(r => setTimeout(r, 5));
+    
+    state = {
+      ...state,
+      branding: {
+        ...state.branding,
+        rating
+      }
+    };
+
+    persist();
+    return state;
+  },
 };
 
 // Utilidad para tests que necesiten resetear completamente el estado in-memory
