@@ -5,6 +5,7 @@ import { supabaseBackend as prodBackend } from '../services/supabaseBackend';
 import { mockBackendTest } from '../services/mockBackend.e2e';
 import { createBookingSafe } from '../services/api';
 import { normalizeBusinessData } from '../utils/availability';
+import { supabase } from '../lib/supabase';
 
 // --- Tipos de Acción ---
 type Action =
@@ -73,6 +74,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stateRef.current = state;
     }, [state]);
 
+    // Carga inicial de datos
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const devMock = params.get('devMock') === '1';
@@ -89,6 +91,103 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         })();
     }, []);
+
+    // Auto-refresh: Refetch silencioso solo al volver a la pestaña
+    useEffect(() => {
+        if (!isLoaded) return; // Esperar a que cargue inicialmente
+
+        const params = new URLSearchParams(window.location.search);
+        const devMock = params.get('devMock') === '1';
+        const backend = devMock ? mockBackendTest : prodBackend;
+
+        let isRefetching = false; // Flag para evitar refetch simultáneos
+
+        // Función para refetch silencioso con protecciones
+        const silentRefetch = async () => {
+            const startTime = Date.now();
+            
+            // Log: Intento de refetch
+            console.log('[Auto-refresh] 🔄 Attempting refetch...', {
+                timestamp: new Date().toISOString(),
+                isRefetching
+            });
+
+            // Evitar refetch si ya hay uno en progreso
+            if (isRefetching) {
+                console.log('[Auto-refresh] ⏭️ Skipped: Already refetching');
+                return;
+            }
+
+            // Verificar sesión activa (CRÍTICO: evita errores de autenticación)
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                console.log('[Auto-refresh] ⏭️ Skipped: No active session');
+                return;
+            }
+
+            // Evitar refetch si hay modales abiertos o formularios activos
+            const hasOpenModals = document.querySelector('[role="dialog"]') !== null;
+            const hasDirtyForms = document.querySelector('form[data-dirty="true"]') !== null;
+            
+            if (hasOpenModals) {
+                console.log('[Auto-refresh] ⏭️ Skipped: Modal is open');
+                return;
+            }
+            
+            if (hasDirtyForms) {
+                console.log('[Auto-refresh] ⏭️ Skipped: Form has unsaved changes');
+                return;
+            }
+
+            isRefetching = true;
+            try {
+                console.log('[Auto-refresh] 📡 Fetching fresh data...');
+                const freshData = await backend.getBusinessData();
+                
+                // Solo actualizar si los datos son válidos
+                if (freshData && freshData.id) {
+                    const duration = Date.now() - startTime;
+                    console.log('[Auto-refresh] ✅ Success', {
+                        duration: `${duration}ms`,
+                        bookingsCount: freshData.bookings?.length || 0,
+                        servicesCount: freshData.services?.length || 0,
+                        employeesCount: freshData.employees?.length || 0
+                    });
+                    dispatch({ type: 'HYDRATE_STATE', payload: freshData });
+                } else {
+                    console.warn('[Auto-refresh] ⚠️ Invalid data received', freshData);
+                }
+            } catch (error: any) {
+                const duration = Date.now() - startTime;
+                console.error('[Auto-refresh] ❌ Failed', {
+                    duration: `${duration}ms`,
+                    error: error.message,
+                    errorType: error.constructor.name
+                });
+            } finally {
+                isRefetching = false;
+            }
+        };
+
+        // Refetch al volver a la pestaña (más seguro y útil)
+        const handleVisibilityChange = () => {
+            const state = document.visibilityState;
+            console.log('[Auto-refresh] 👁️ Visibility changed:', state);
+            
+            if (state === 'visible') {
+                console.log('[Auto-refresh] 🔙 Tab is back in focus, scheduling refetch...');
+                // Delay pequeño para evitar race conditions
+                setTimeout(silentRefetch, 500);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isLoaded]);
 
     const asyncDispatch = async (action: Action) => {
         try {
