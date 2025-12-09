@@ -62,6 +62,12 @@ ASTRA es una plataforma SaaS white-label que permite a negocios (salones de bell
   - Validación URLs: google.com/maps, goo.gl, share.google, maps.app.goo.gl
   - Preview en tiempo real en panel de admin
   - Toggle de visibilidad (mostrar/ocultar rating)
+- **🔄 Auto-Refresh Inteligente**
+  - Actualización automática al volver a la pestaña del navegador
+  - Sin reload visual (refetch silencioso en background)
+  - Protecciones: no actualiza si hay modales o formularios con cambios
+  - Logs estructurados para debugging y monitoreo
+  - Ideal para negocios que dejan la app abierta en mostrador
 - Gestión servicios con categorías visuales
 - Equipo con horarios individuales
 - Clientes recurrentes con autocomplete
@@ -392,6 +398,7 @@ MIT License - Ver [LICENSE](LICENSE)
 - Visión y Dirección: Matías (Product Owner)
 
 **Features Recientes:**
+- Auto-Refresh Inteligente (9 Dic 2025): Claude 4.5 Sonnet
 - Sistema Calificación Google Maps (8 Dic 2025): Claude 4.5 Sonnet
 - Buscador Avanzado Reservas (8 Dic 2025): Claude 4.5 Sonnet
 - Terminología Adaptable (8 Dic 2025): Claude 4.5 Sonnet

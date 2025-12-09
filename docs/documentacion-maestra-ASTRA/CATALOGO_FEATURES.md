@@ -1,7 +1,7 @@
 # CATÁLOGO DE FEATURES - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 8 Diciembre 2025
+**Última actualización:** 9 Diciembre 2025
 
 ---
 
@@ -25,12 +25,13 @@
 15. [Terminología Adaptable - Personas vs Espacios](#15-terminología-adaptable---personas-vs-espacios)
 16. [Buscador Avanzado de Reservas](#16-buscador-avanzado-de-reservas)
 17. [Sistema de Calificación Google Maps](#17-sistema-de-calificación-google-maps)
+18. [Auto-Refresh Inteligente](#18-auto-refresh-inteligente)
 
 ### 🚧 EN ROADMAP (Planificadas)
-18. [Reprogramar Reservas](#18-reprogramar-reservas)
-19. [Sistema de Notificaciones](#19-sistema-de-notificaciones)
-20. [Integración Mercado Pago](#20-integración-mercado-pago)
-21. [Seña con Auto-expire](#21-seña-con-auto-expire)
+19. [Reprogramar Reservas](#19-reprogramar-reservas)
+20. [Sistema de Notificaciones](#20-sistema-de-notificaciones)
+21. [Integración Mercado Pago](#21-integración-mercado-pago)
+22. [Seña con Auto-expire](#22-seña-con-auto-expire)
 
 ---
 
@@ -1684,7 +1685,185 @@ updateBusinessRating: async (rating: BusinessRating) => {
 
 ---
 
-### 18. Reprogramar Reservas
+### 18. Auto-Refresh Inteligente
+
+**Estado:** ✅ Producción desde 9 Diciembre 2025  
+**Prioridad:** P2 - Operational efficiency  
+**Esfuerzo:** 4 hrs implementación
+
+#### Problema Resuelto
+Admins dejan la app abierta en el mostrador y no ven reservas nuevas hasta refrescar manualmente (F5).
+
+**Casos de uso:**
+- Cliente hace reserva desde link público → Admin NO la ve (hasta F5)
+- Admin cambia a WhatsApp → Vuelve a la app → Datos desactualizados
+- Negocios con alto volumen → Necesitan datos en tiempo real
+
+#### Solución Implementada
+Auto-refresh silencioso (sin reload visual) al volver a la pestaña del navegador.
+
+**Trigger Principal:**
+```typescript
+// Al cambiar visibilidad de la pestaña
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        // Refetch automático después de 500ms
+        setTimeout(silentRefetch, 500);
+    }
+});
+```
+
+**Flow Completo:**
+```
+1. Admin trabaja en app → Sale a WhatsApp
+2. Cliente hace reserva desde link público
+3. Admin vuelve a pestaña de ASTRA
+4. visibilitychange: 'visible' detected
+5. Wait 500ms (evitar race conditions)
+6. Validar sesión activa ✓
+7. Validar no hay modales abiertos ✓
+8. Validar no hay formularios con cambios ✓
+9. Fetch fresh data from backend
+10. Update BusinessContext state
+11. UI se actualiza (sin reload visible)
+```
+
+#### Protecciones Implementadas
+
+**1. Validación de Sesión**
+```typescript
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) {
+    console.log('[Auto-refresh] ⏭️ Skipped: No active session');
+    return;
+}
+```
+**Razón:** Evita errores "Usuario no autenticado" al cargar app.
+
+**2. Protección de Modales**
+```typescript
+const hasOpenModals = document.querySelector('[role="dialog"]') !== null;
+if (hasOpenModals) return; // No refrescar si hay modal abierto
+```
+**Razón:** Evita cerrar modales mientras usuario completa formularios.
+
+**3. Protección de Formularios con Cambios**
+```typescript
+const hasDirtyForms = document.querySelector('form[data-dirty="true"]') !== null;
+if (hasDirtyForms) return; // No refrescar si hay cambios sin guardar
+```
+**Razón:** Evita perder datos que el usuario está editando.
+
+**4. Flag de Refetch en Progreso**
+```typescript
+let isRefetching = false;
+if (isRefetching) return; // Evitar refetch simultáneos
+```
+**Razón:** Previene race conditions si usuario cambia de pestaña rápidamente.
+
+**5. Validación de Datos**
+```typescript
+if (freshData && freshData.id) {
+    dispatch({ type: 'HYDRATE_STATE', payload: freshData });
+} else {
+    console.warn('[Auto-refresh] ⚠️ Invalid data received');
+}
+```
+**Razón:** No actualizar estado si backend devuelve datos corruptos.
+
+#### Logs Estructurados (Debugging)
+
+Logs con prefijo `[Auto-refresh]` para visibility:
+
+```
+[Auto-refresh] 👁️ Visibility changed: visible
+[Auto-refresh] 🔙 Tab is back in focus, scheduling refetch...
+[Auto-refresh] 🔄 Attempting refetch...
+[Auto-refresh] 📡 Fetching fresh data...
+[Auto-refresh] ✅ Success {
+    duration: "234ms",
+    bookingsCount: 5,
+    servicesCount: 8,
+    employeesCount: 3
+}
+```
+
+**Si hay problema:**
+```
+[Auto-refresh] ⏭️ Skipped: Modal is open
+[Auto-refresh] ⏭️ Skipped: No active session
+[Auto-refresh] ❌ Failed {
+    duration: "1200ms",
+    error: "Network error",
+    errorType: "TypeError"
+}
+```
+
+**Métricas incluidas:**
+- Duración del refetch
+- Counts de entidades (bookings, services, employees)
+- Tipo de error si falla
+- Razón de skip si no ejecuta
+
+#### Implementación Técnica
+
+**Component:** `BusinessContext.tsx`  
+**Hook:** `useEffect` con dependency `[isLoaded]`  
+**Trigger:** `visibilitychange` event  
+**Delay:** 500ms (evitar race conditions)  
+**Storage:** HYDRATE_STATE action (reusa reducer existente)
+
+**No requiere:**
+- ❌ Migración de BD
+- ❌ Nuevos componentes UI
+- ❌ Cambios en backend
+- ❌ Supabase Realtime (usa polling simple)
+
+#### Edge Cases Testeados
+
+✅ **Modal abierto durante refetch**  
+- Admin abre modal → Cambia pestaña → Vuelve
+- Resultado: Modal NO se cierra, NO se hace refetch
+
+✅ **Cliente hace reserva mientras admin usa app**  
+- Cliente reserva desde link público
+- Admin cambia pestaña → Vuelve
+- Resultado: Nueva reserva aparece automáticamente
+
+✅ **Conexión lenta/intermitente**  
+- Throttle a "Slow 3G"
+- Cambia pestaña → Vuelve (dispara refetch)
+- Resultado: No crash, maneja timeout correctamente
+
+✅ **Múltiples tabs abiertos**  
+- 2 tabs de ASTRA abiertos
+- Cambio en Tab 1 → Switch a Tab 2
+- Resultado: Tab 2 ve cambios al enfocar
+
+✅ **Error de backend (500, timeout)**  
+- Backend caído temporalmente
+- Cambia pestaña → Vuelve
+- Resultado: Log de error pero app NO se rompe
+
+✅ **Formulario con cambios sin guardar**  
+- Admin edita servicio (no guarda)
+- Cambia pestaña → Vuelve
+- Resultado: NO refetch, cambios locales preservados
+
+#### Casos de Uso Validados
+- ✅ Negocio deja app abierta en mostrador → Se actualiza al volver
+- ✅ Admin en WhatsApp → Vuelve → Ve reservas nuevas
+- ✅ Múltiples admins en diferentes dispositivos → Sincronización
+- ✅ Conexión inestable → Maneja errores sin crashes
+
+#### Roadmap Futuro (Opcional)
+- 🔄 **Polling cada 5 min si idle** (si usuarios lo solicitan)
+- 🔄 **Supabase Realtime** para updates instantáneos (si volumen crece)
+- 🔄 **Indicador visual** de "Actualizando..." (opcional)
+
+---
+
+### 19. Reprogramar Reservas
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - User request validado  
