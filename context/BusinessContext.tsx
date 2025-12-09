@@ -91,7 +91,7 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })();
     }, []);
 
-    // Auto-refresh: Refetch silencioso en 3 escenarios
+    // Auto-refresh: Refetch silencioso solo al volver a la pestaña
     useEffect(() => {
         if (!isLoaded) return; // Esperar a que cargue inicialmente
 
@@ -99,66 +99,46 @@ export const BusinessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const devMock = params.get('devMock') === '1';
         const backend = devMock ? mockBackendTest : prodBackend;
 
-        let lastActivity = Date.now();
-        let refreshInterval: NodeJS.Timeout;
+        let isRefetching = false; // Flag para evitar refetch simultáneos
 
-        // Función para refetch silencioso
+        // Función para refetch silencioso con protecciones
         const silentRefetch = async () => {
-            try {
-                const freshData = await backend.getBusinessData();
-                dispatch({ type: 'HYDRATE_STATE', payload: freshData });
-            } catch (error) {
-                console.error('Auto-refresh failed', error);
-            }
-        };
+            // Evitar refetch si ya hay uno en progreso
+            if (isRefetching) return;
 
-        // 1. Refetch al volver a la pestaña (visibilitychange)
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                silentRefetch();
-            }
-        };
-
-        // 2. Detectar actividad del usuario (para idle detection)
-        const resetIdleTimer = () => {
-            lastActivity = Date.now();
-        };
-
-        // 3. Auto-refresh cada 5 min SI:
-        //    - Usuario idle (sin actividad por 5 min)
-        //    - No hay modales abiertos
-        //    - Pestaña está visible
-        const autoRefreshCheck = async () => {
-            const now = Date.now();
-            const isIdle = (now - lastActivity) >= 300000; // 5 min en ms
-            const isVisible = document.visibilityState === 'visible';
+            // Evitar refetch si hay modales abiertos o formularios activos
             const hasOpenModals = document.querySelector('[role="dialog"]') !== null;
             const hasDirtyForms = document.querySelector('form[data-dirty="true"]') !== null;
+            
+            if (hasOpenModals || hasDirtyForms) return;
 
-            if (isIdle && isVisible && !hasOpenModals && !hasDirtyForms) {
-                await silentRefetch();
-                lastActivity = Date.now(); // Reset para evitar refetch continuo
+            isRefetching = true;
+            try {
+                const freshData = await backend.getBusinessData();
+                // Solo actualizar si los datos son válidos
+                if (freshData && freshData.id) {
+                    dispatch({ type: 'HYDRATE_STATE', payload: freshData });
+                }
+            } catch (error) {
+                console.error('Auto-refresh failed', error);
+            } finally {
+                isRefetching = false;
             }
         };
 
-        // Event listeners
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('mousemove', resetIdleTimer);
-        window.addEventListener('keydown', resetIdleTimer);
-        window.addEventListener('click', resetIdleTimer);
-        window.addEventListener('scroll', resetIdleTimer);
+        // Refetch al volver a la pestaña (más seguro y útil)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                // Delay pequeño para evitar race conditions
+                setTimeout(silentRefetch, 500);
+            }
+        };
 
-        // Check cada 1 min si debe hacer auto-refresh
-        refreshInterval = setInterval(autoRefreshCheck, 60000);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         // Cleanup
         return () => {
-            clearInterval(refreshInterval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('mousemove', resetIdleTimer);
-            window.removeEventListener('keydown', resetIdleTimer);
-            window.removeEventListener('click', resetIdleTimer);
-            window.removeEventListener('scroll', resetIdleTimer);
         };
     }, [isLoaded]);
 
