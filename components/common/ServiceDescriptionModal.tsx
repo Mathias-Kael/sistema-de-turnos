@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Service } from '../../types';
 import { formatDuration } from '../../utils/format';
+import { useLayout } from '../../contexts/LayoutContext';
+import { useModalBackNavigation } from '../../hooks/useModalBackNavigation';
 
 interface ServiceDescriptionModalProps {
     service: Service;
@@ -17,57 +19,26 @@ export const ServiceDescriptionModal: React.FC<ServiceDescriptionModalProps> = (
     onClose, 
     onConfirm 
 }) => {
-    console.log('[ServiceDescriptionModal] 📄 Modal abierto', { service: service.name });
+    const { isInAdminPreview } = useLayout();
+
+    // Manejar navegación back con History API (deshabilitado en AdminView)
+    useModalBackNavigation({
+        isOpen: true,
+        onClose,
+        modalId: 'service-description',
+        shouldEnable: !isInAdminPreview,
+    });
 
     // Manejar tecla Escape
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                console.log('[ServiceDescriptionModal] ⌨️ Escape presionado, cerrando modal');
                 onClose();
             }
         };
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [onClose]);
-
-    // Simular navegación back del browser
-    // PERO: No hacerlo si estamos dentro de AdminView preview/panels
-    useEffect(() => {
-        // Detectar si estamos en contexto de AdminView (tiene z-50 panels)
-        const isInAdminContext = document.querySelector('[class*="z-50"]') !== null;
-        console.log('[ServiceDescriptionModal] 🔍 ¿Estamos en AdminView?', isInAdminContext);
-
-        if (isInAdminContext) {
-            console.log('[ServiceDescriptionModal] ⚠️ En AdminView, NO haciendo pushState para evitar conflictos');
-            // En AdminView, solo manejar Escape y clicks, no history API
-            return;
-        }
-
-        // Solo en vista pública: usar History API para back button
-        console.log('[ServiceDescriptionModal] 📍 Vista pública: Haciendo pushState');
-        window.history.pushState({ modal: 'service-description', __modalInternal: true }, '');
-        console.log('[ServiceDescriptionModal] 📍 Estado actual:', window.history.state);
-
-        const handlePopState = (e: PopStateEvent) => {
-            console.log('[ServiceDescriptionModal] ⬅️ popstate event recibido:', e.state);
-            if (e.state?.modal === 'service-description') {
-                console.log('[ServiceDescriptionModal] ✅ Es nuestro modal, cerrando');
-                onClose();
-            }
-        };
-
-        window.addEventListener('popstate', handlePopState);
-
-        return () => {
-            window.removeEventListener('popstate', handlePopState);
-            // Limpiar estado si modal se cierra sin back button
-            if (window.history.state?.modal === 'service-description') {
-                console.log('[ServiceDescriptionModal] 🧹 Cleanup: haciendo back');
-                window.history.back();
-            }
-        };
     }, [onClose]);
 
     // Prevenir scroll del body

@@ -9,6 +9,7 @@ import { BrandingEditor } from '../admin/BrandingEditor';
 import { ManualBookingModal } from '../admin/ManualBookingModal';
 import { SharePanel } from '../admin/SharePanel';
 import { ClientView } from './ClientView';
+import { LayoutProvider } from '../../contexts/LayoutContext';
 
 // Modales que se controlarán desde el Header
 // Se podrían mover a un gestor de modales global en el futuro
@@ -175,27 +176,33 @@ export const AdminView: React.FC = () => {
 
                 {/* Paneles flotantes que se abren desde el Header */}
                 {isPreviewPanelOpen && (
-                    <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
-                        <button onClick={() => setIsPreviewPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
-                        <ClientView />
-                    </div>
+                    <LayoutProvider isInAdminPreview={true}>
+                        <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+                            <button onClick={() => setIsPreviewPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
+                            <ClientView />
+                        </div>
+                    </LayoutProvider>
                 )}
 
                 {isSharePanelOpen && (
-                    <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
-                        <button onClick={() => setIsSharePanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
-                        <SharePanel />
-                    </div>
+                    <LayoutProvider isInAdminPreview={true}>
+                        <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+                            <button onClick={() => setIsSharePanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
+                            <SharePanel />
+                        </div>
+                    </LayoutProvider>
                 )}
 
                 {isSettingsPanelOpen && (
-                    <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
-                        <button onClick={() => setIsSettingsPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
-                        <div className="max-w-4xl mx-auto pt-8">
-                            <h2 className="text-2xl font-bold text-primary mb-6">Configuración del Negocio</h2>
-                            <BrandingEditor />
+                    <LayoutProvider isInAdminPreview={true}>
+                        <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+                            <button onClick={() => setIsSettingsPanelOpen(false)} className="fixed top-4 right-4 h-8 w-8 bg-gray-800/50 text-white rounded-full flex items-center justify-center z-50 hover:bg-gray-800/75 transition-colors">&times;</button>
+                            <div className="max-w-4xl mx-auto pt-8">
+                                <h2 className="text-2xl font-bold text-primary mb-6">Configuración del Negocio</h2>
+                                <BrandingEditor />
+                            </div>
                         </div>
-                    </div>
+                    </LayoutProvider>
                 )}
             </main>
 

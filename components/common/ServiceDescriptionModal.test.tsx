@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ServiceDescriptionModal } from './ServiceDescriptionModal';
 import { Service } from '../../types';
+import { LayoutProvider } from '../../contexts/LayoutContext';
 
 // Mock window.history para tests de navegación back
 const mockHistoryPushState = jest.fn();
@@ -24,6 +25,15 @@ beforeEach(() => {
     mockHistoryBack.mockClear();
 });
 
+// Helper para renderizar con LayoutProvider
+const renderWithLayout = (ui: React.ReactElement, isInAdminPreview = false) => {
+    return render(
+        <LayoutProvider isInAdminPreview={isInAdminPreview}>
+            {ui}
+        </LayoutProvider>
+    );
+};
+
 const mockService: Service = {
     id: 's1',
     businessId: 'b1',
@@ -41,7 +51,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -70,7 +80,7 @@ describe('ServiceDescriptionModal', () => {
         const onConfirm = jest.fn();
         const user = userEvent.setup();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -91,7 +101,7 @@ describe('ServiceDescriptionModal', () => {
         const onConfirm = jest.fn();
         const user = userEvent.setup();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -110,7 +120,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -128,7 +138,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -146,7 +156,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        const { unmount } = render(
+        const { unmount } = renderWithLayout(
             <ServiceDescriptionModal
                 service={mockService}
                 onClose={onClose}
@@ -170,7 +180,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={serviceWithoutDeposit}
                 onClose={onClose}
@@ -190,7 +200,7 @@ describe('ServiceDescriptionModal', () => {
         const onClose = jest.fn();
         const onConfirm = jest.fn();
 
-        render(
+        renderWithLayout(
             <ServiceDescriptionModal
                 service={serviceNoDescription}
                 onClose={onClose}

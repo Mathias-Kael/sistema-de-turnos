@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageZoomModal } from './ImageZoomModal';
+import { LayoutProvider } from '../../contexts/LayoutContext';
 
 // Mock window.history para tests de navegación back
 const mockHistoryPushState = jest.fn();
@@ -23,6 +24,15 @@ beforeEach(() => {
     mockHistoryBack.mockClear();
 });
 
+// Helper para renderizar con LayoutProvider
+const renderWithLayout = (ui: React.ReactElement, isInAdminPreview = false) => {
+    return render(
+        <LayoutProvider isInAdminPreview={isInAdminPreview}>
+            {ui}
+        </LayoutProvider>
+    );
+};
+
 describe('ImageZoomModal', () => {
     const mockImageUrl = 'https://example.com/avatar.jpg';
     const mockAltText = 'Ana García';
@@ -30,7 +40,7 @@ describe('ImageZoomModal', () => {
     it('debe renderizar correctamente con imagen y alt text', () => {
         const onClose = jest.fn();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -51,7 +61,7 @@ describe('ImageZoomModal', () => {
         const onClose = jest.fn();
         const user = userEvent.setup();
 
-        const { container } = render(
+        const { container } = renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -70,7 +80,7 @@ describe('ImageZoomModal', () => {
         const onClose = jest.fn();
         const user = userEvent.setup();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -88,7 +98,7 @@ describe('ImageZoomModal', () => {
         const onClose = jest.fn();
         const user = userEvent.setup();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -106,7 +116,7 @@ describe('ImageZoomModal', () => {
     it('debe cerrar modal al presionar tecla Escape', () => {
         const onClose = jest.fn();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -123,7 +133,7 @@ describe('ImageZoomModal', () => {
     it('debe push estado al history para capturar back button', () => {
         const onClose = jest.fn();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -140,7 +150,7 @@ describe('ImageZoomModal', () => {
     it('debe prevenir scroll del body cuando está abierto', () => {
         const onClose = jest.fn();
 
-        const { unmount } = render(
+        const { unmount } = renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -158,7 +168,7 @@ describe('ImageZoomModal', () => {
     it('debe tener cursor zoom-out en overlay', () => {
         const onClose = jest.fn();
 
-        const { container } = render(
+        const { container } = renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
@@ -173,7 +183,7 @@ describe('ImageZoomModal', () => {
     it('debe aplicar estilos de animación fadeIn', () => {
         const onClose = jest.fn();
 
-        render(
+        renderWithLayout(
             <ImageZoomModal
                 imageUrl={mockImageUrl}
                 altText={mockAltText}
