@@ -34,29 +34,52 @@ export const AdminView: React.FC = () => {
 
     // History API: Gestión del botón "Atrás" del navegador
     useEffect(() => {
+        console.log('[AdminView] 🎛️ Estado paneles:', { isPreviewPanelOpen, isSharePanelOpen, isSettingsPanelOpen, activeTab });
+
         // Listener para interceptar el botón "Atrás"
         const handlePopState = (event: PopStateEvent) => {
+            console.log('[AdminView] ⬅️ popstate event recibido en AdminView:', event.state);
+            console.log('[AdminView] 🔍 Estado ACTUAL de history:', window.history.state);
+            console.log('[AdminView] 📊 Estado actual paneles:', { isPreviewPanelOpen, isSharePanelOpen, isSettingsPanelOpen });
+            
+            // IMPORTANTE: event.state contiene el estado ANTERIOR, no el actual
+            // Debemos verificar window.history.state que tiene el estado ACTUAL después del pushState
+            const currentState = window.history.state;
+            
+            // Ignorar eventos de modals internos (ImageZoom, ServiceDescription, etc.)
+            if (currentState?.__modalInternal) {
+                console.log('[AdminView] 🚫 Estado ACTUAL tiene __modalInternal, IGNORANDO');
+                return;
+            }
+            
+            console.log('[AdminView] ✅ Estado ACTUAL NO tiene __modalInternal, procesando...');
+            
             // Si hay paneles abiertos, cerrarlos primero
             if (isPreviewPanelOpen) {
+                console.log('[AdminView] 🔴 Cerrando PreviewPanel');
                 isNavigatingRef.current = true;
                 setIsPreviewPanelOpen(false);
                 return;
             }
             if (isSharePanelOpen) {
+                console.log('[AdminView] 🔴 Cerrando SharePanel');
                 isNavigatingRef.current = true;
                 setIsSharePanelOpen(false);
                 return;
             }
             if (isSettingsPanelOpen) {
+                console.log('[AdminView] 🔴 Cerrando SettingsPanel');
                 isNavigatingRef.current = true;
                 setIsSettingsPanelOpen(false);
                 return;
             }
             // Si no estamos en dashboard, interceptar y volver a dashboard
             if (activeTab !== 'DASHBOARD') {
+                console.log('[AdminView] 🔴 Volviendo a DASHBOARD desde', activeTab);
                 isNavigatingRef.current = true;
                 setActiveTab('DASHBOARD');
             }
+            console.log('[AdminView] ✅ No hay acción que tomar');
             // Si estamos en dashboard, dejar que el navegador maneje la navegación normal
         };
 

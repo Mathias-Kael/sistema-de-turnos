@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Employee } from '../../types';
 import { imageStorage } from '../../services/imageStorage';
+import { ImageZoomModal } from './ImageZoomModal';
 
 interface EmployeeSelectorProps {
     employees: Employee[];
@@ -13,6 +14,16 @@ interface EmployeeSelectorProps {
 }
 
 export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, selectedEmployeeId, onSelectEmployee }) => {
+    const [zoomImageData, setZoomImageData] = useState<{ url: string; alt: string } | null>(null);
+
+    const handleImageClick = (e: React.MouseEvent, avatarUrl: string, name: string) => {
+        console.log('[EmployeeSelector] 🖱️ Click en imagen de empleado:', name);
+        e.stopPropagation();
+        const imageUrl = imageStorage.getImageUrl(avatarUrl);
+        console.log('[EmployeeSelector] 🖼️ URL de imagen:', imageUrl);
+        setZoomImageData({ url: imageUrl, alt: name });
+        console.log('[EmployeeSelector] ✅ zoomImageData seteado, debería abrir modal');
+    };
     
     return (
         <div>
@@ -50,10 +61,11 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                                 <img
                                     src={avatarUrl}
                                     alt={employee.name}
+                                    onClick={(e) => handleImageClick(e, employee.avatarUrl!, employee.name)}
                                     /* Tamaños anteriores: w-20 (80px) / md:w-24 (96px)
                                        Requerido: >=96px móvil y >=128px desktop.
                                        Elegimos w-24 (96px) móvil y md:w-32 (128px) desktop para cumplir claramente. */
-                                    className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-3 object-cover shadow-md"
+                                    className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-3 object-cover shadow-md cursor-zoom-in hover:opacity-90 transition-opacity"
                                 />
                             ) : (
                                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-3 bg-background flex items-center justify-center text-secondary text-4xl shadow-inner">
@@ -65,6 +77,21 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({ employees, s
                     );
                 })}
             </div>
+
+            {/* Modal de zoom de imagen */}
+            {zoomImageData && (
+                <>
+                    {console.log('[EmployeeSelector] 🎬 Renderizando ImageZoomModal con data:', zoomImageData)}
+                    <ImageZoomModal
+                        imageUrl={zoomImageData.url}
+                        altText={zoomImageData.alt}
+                        onClose={() => {
+                            console.log('[EmployeeSelector] ❌ Cerrando ImageZoomModal');
+                            setZoomImageData(null);
+                        }}
+                    />
+                </>
+            )}
         </div>
     );
 };
