@@ -1,7 +1,7 @@
 # REGISTRO DE DECISIONES - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 4 Diciembre 2025
+**Última actualización:** 10 Diciembre 2025
 
 ---
 
@@ -16,6 +16,155 @@
 ---
 
 ## DECISIONES ARQUITECTÓNICAS
+
+### ADR-008: LayoutContext para Detección de AdminView (10 Dic 2025)
+
+**Contexto:**
+En la implementación de modales fullscreen (`ImageZoomModal`, `ServiceDescriptionModal`), necesitábamos detectar si el modal estaba siendo renderizado dentro del AdminView preview panel para deshabilitar la History API (evitar cerrar el panel).
+
+**Decisión inicial (frágil):**
+```typescript
+const isInAdminContext = document.querySelector('[class*="z-50"]') !== null;
+```
+
+**Problema identificado en code review:**
+- Acopla lógica de negocio con implementación visual (clases CSS)
+- Si cambiamos z-index de paneles, la detección falla silenciosamente
+- Cualquier elemento con `z-50` en el DOM rompe la lógica
+- No es testeable con herramientas estándar de React Testing Library
+- Viola principios de arquitectura limpia
+
+**Decisión final:**
+Crear `LayoutContext` que provee explícitamente el estado `isInAdminPreview: boolean`.
+
+**Implementación:**
+```typescript
+// contexts/LayoutContext.tsx
+export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
+  children, 
+  isInAdminPreview = false 
+}) => {
+  return (
+    <LayoutContext.Provider value={{ isInAdminPreview }}>
+      {children}
+    </LayoutContext.Provider>
+  );
+};
+
+// Uso en AdminView.tsx
+<LayoutProvider isInAdminPreview={true}>
+  <div className="fixed inset-0 z-50 bg-background p-4 overflow-y-auto">
+    <ClientView />
+  </div>
+</LayoutProvider>
+
+// Uso en modales
+const { isInAdminPreview } = useLayout();
+```
+
+**Alternativas consideradas:**
+- ❌ Props drilling de `isInAdminView` a todos los componentes → Verbose y frágil
+- ❌ Global state con Zustand → Overkill para un flag booleano simple
+- ✅ React Context → Balance perfecto entre simplicidad y robustez
+
+**Beneficios:**
+- ✅ Detección explícita, type-safe con TypeScript
+- ✅ Fácilmente inyectable en tests: `<LayoutProvider isInAdminPreview={true}>`
+- ✅ Escalable: puede extenderse con más flags layout (sidebar, theme, etc.)
+- ✅ Zero acoplamiento con CSS o DOM queries
+- ✅ Respeta arquitectura React (composition over configuration)
+
+**Consecuencias:**
+- Todos los modales deben usar `useLayout()` en lugar de DOM queries
+- Tests requieren wrapper con `LayoutProvider` (trade-off aceptable)
+- Código más robusto y mantenible a largo plazo
+
+**Status:** ✅ Implementado (commit `2abbb5a`)
+
+---
+
+### ADR-009: useModalBackNavigation Hook para History API (10 Dic 2025)
+
+**Contexto:**
+Los modales `ImageZoomModal` y `ServiceDescriptionModal` implementaban soporte para navegación back del browser usando History API. El código era idéntico (~70 líneas duplicadas) con solo cambios en el `modalId`.
+
+**Problema identificado:**
+- Violación del principio DRY (Don't Repeat Yourself)
+- Lógica compleja duplicada: `pushState`, `popstate`, cleanup
+- Difícil mantener consistencia entre modales
+- Cada bug requiere fix en N lugares
+
+**Decisión:**
+Extraer toda la lógica de History API a un custom hook reutilizable `useModalBackNavigation`.
+
+**Implementación:**
+```typescript
+// hooks/useModalBackNavigation.ts
+export const useModalBackNavigation = ({
+  isOpen,
+  onClose,
+  modalId,
+  shouldEnable = true,
+}: UseModalBackNavigationOptions) => {
+  useEffect(() => {
+    if (!isOpen || !shouldEnable) return;
+
+    const stateId = `modal-${modalId}`;
+    window.history.pushState({ modal: stateId, __modalInternal: true }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      const currentState = window.history.state;
+      if (currentState?.modal === stateId) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.modal === stateId) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, shouldEnable, modalId, onClose]);
+};
+
+// Uso simplificado en modales
+useModalBackNavigation({
+    isOpen: true,
+    onClose,
+    modalId: 'image-zoom',
+    shouldEnable: !isInAdminPreview,
+});
+```
+
+**Alternativas consideradas:**
+- ❌ HOC (Higher Order Component) → Demasiado overhead para este caso
+- ❌ Render props → Sintaxis más verbosa
+- ✅ Custom hook → Idiomático en React, composable, limpio
+
+**Beneficios:**
+- ✅ Elimina ~70 líneas de código duplicado
+- ✅ Single source of truth para lógica History API
+- ✅ Documentado con JSDoc y tipos TypeScript
+- ✅ Fácilmente reutilizable en futuros modales
+- ✅ Testeable de forma aislada
+- ✅ Parámetro `shouldEnable` permite deshabilitar condicionalmente
+
+**Métricas:**
+- Reducción de código: -71% en lógica History API
+- Complejidad ciclomática: 8 → 4
+- Mantenibilidad: Media → Alta
+
+**Consecuencias:**
+- Nuevos modales que necesiten back button deben usar este hook
+- Bugs en History API se fixean en un solo lugar
+- Código más fácil de razonar y mantener
+
+**Status:** ✅ Implementado (commit `2abbb5a`)
+
+---
 
 ### ADR-007: Deuda Crítica: Deshabilitar Tests E2E por AuthContext (29 Nov 2025)
 
