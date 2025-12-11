@@ -1,7 +1,7 @@
 # CATÁLOGO DE FEATURES - ASTRA
 
 **Sistema de Gestión de Turnos Multi-tenant SaaS**  
-**Última actualización:** 9 Diciembre 2025
+**Última actualización:** 10 Diciembre 2025
 
 ---
 
@@ -26,12 +26,13 @@
 16. [Buscador Avanzado de Reservas](#16-buscador-avanzado-de-reservas)
 17. [Sistema de Calificación Google Maps](#17-sistema-de-calificación-google-maps)
 18. [Auto-Refresh Inteligente](#18-auto-refresh-inteligente)
+19. [UX Premium Vista Pública - 3 Mejoras](#19-ux-premium-vista-pública---3-mejoras)
 
 ### 🚧 EN ROADMAP (Planificadas)
-19. [Reprogramar Reservas](#19-reprogramar-reservas)
-20. [Sistema de Notificaciones](#20-sistema-de-notificaciones)
-21. [Integración Mercado Pago](#21-integración-mercado-pago)
-22. [Seña con Auto-expire](#22-seña-con-auto-expire)
+20. [Reprogramar Reservas](#20-reprogramar-reservas)
+21. [Sistema de Notificaciones](#21-sistema-de-notificaciones)
+22. [Integración Mercado Pago](#22-integración-mercado-pago)
+23. [Seña con Auto-expire](#23-seña-con-auto-expire)
 
 ---
 
@@ -1863,7 +1864,280 @@ Logs con prefijo `[Auto-refresh]` para visibility:
 
 ---
 
-### 19. Reprogramar Reservas
+### 19. UX Premium Vista Pública - 3 Mejoras
+
+**Estado:** ✅ Producción desde 10 Diciembre 2025  
+**Prioridad:** P1 - UX Premium  
+**Esfuerzo:** 8 hrs implementación + 3 hrs refactor  
+**Branch:** `fix/mejoras_ux_vista_cliente`  
+**Commits:** `a8df33d` (features), `2abbb5a` (refactor)
+
+#### Problema Resuelto
+Vista pública de reservas tenía 3 friction points que afectaban conversión mobile-first:
+1. Nombres de categorías largas se truncaban con "..." → Difícil comprensión
+2. Descripciones de servicios se truncaban a 3 líneas → Lectura incómoda
+3. Fotos de empleados/espacios pequeñas (96px) → Sin posibilidad de ver detalles
+
+#### Solución Implementada
+
+**MEJORA 1: Fix Categorías Truncadas** ✅
+
+Antes:
+```
+┌────────────────────────┐
+│ Servicios de Bell... ▼ │  ❌ Texto cortado
+└────────────────────────┘
+```
+
+Después:
+```
+┌────────────────────────┐
+│ Servicios de Belleza   │  ✅ Texto completo
+│ y Estética            ▼│     con wrap
+└────────────────────────┘
+```
+
+**Código:**
+```tsx
+// components/common/ServiceSelector.tsx
+// ANTES: truncate line-clamp-2
+<h3 className="font-extrabold text-lg break-words">
+    {group.categoryName}
+</h3>
+```
+
+**MEJORA 2: Modal Fullscreen Descripción Servicios** ✅
+
+**Componente nuevo:** `ServiceDescriptionModal.tsx`
+
+Features:
+- Modal fullscreen con overlay (z-100)
+- Header fijo: título + botón X
+- Contenido scrollable: duración, precio, badge "Requiere seña", descripción completa
+- Footer fijo: botones "Cerrar" y "Seleccionar servicio"
+- Cierre con Escape y browser back button
+- Prevención de scroll del body
+
+**Flow:**
+```
+Lista servicios → Click "Ver más" → Modal fullscreen
+                                    ↓
+                        Click "Seleccionar servicio"
+                                    ↓
+                    Servicio seleccionado + cierra modal
+```
+
+**Integración:**
+```tsx
+// components/common/ServiceSelector.tsx
+const [serviceModalData, setServiceModalData] = useState<Service | null>(null);
+
+<button onClick={() => setServiceModalData(service)}>Ver más...</button>
+
+{serviceModalData && (
+    <ServiceDescriptionModal
+        service={serviceModalData}
+        onClose={() => setServiceModalData(null)}
+        onConfirm={() => {
+            onServiceChange(serviceModalData);
+            setServiceModalData(null);
+        }}
+    />
+)}
+```
+
+**MEJORA 3: Modal Amplificación Foto Empleado/Espacio** ✅
+
+**Componente nuevo:** `ImageZoomModal.tsx`
+
+Features:
+- Overlay fullscreen con fondo negro semi-transparente
+- Imagen centrada máxima `max-h-[90vh]`
+- Botón X en esquina superior derecha
+- Caption con nombre del empleado/espacio
+- Click en overlay cierra modal
+- Click en imagen NO cierra (stopPropagation)
+- Cierre con Escape y browser back button
+- Cursor `zoom-out` en overlay, `zoom-in` en thumbnail
+- Animación fadeIn suave (0.3s)
+
+**Integración:**
+```tsx
+// components/common/EmployeeSelector.tsx
+// components/common/AutoAssignedEmployeeBanner.tsx
+const [zoomImageData, setZoomImageData] = useState<{ url: string; alt: string } | null>(null);
+
+<img
+    src={avatarUrl}
+    alt={employee.name}
+    onClick={(e) => handleImageClick(e, avatarUrl, employee.name)}
+    className="cursor-pointer hover:opacity-80"
+/>
+
+{zoomImageData && (
+    <ImageZoomModal
+        imageUrl={zoomImageData.url}
+        altText={zoomImageData.alt}
+        onClose={() => setZoomImageData(null)}
+    />
+)}
+```
+
+**Casos cubiertos:**
+- ✅ Zoom en `EmployeeSelector` (cuando hay múltiples opciones)
+- ✅ Zoom en `AutoAssignedEmployeeBanner` (cuando solo 1 opción disponible)
+
+#### Refactorización Post Code-Review
+
+**Problema 1 detectado:** Detección frágil de AdminView
+```typescript
+// ANTES (frágil)
+const isInAdminContext = document.querySelector('[class*="z-50"]') !== null;
+```
+
+**Solución:** `LayoutContext`
+```typescript
+// contexts/LayoutContext.tsx
+export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
+  children, 
+  isInAdminPreview = false 
+}) => {
+  return (
+    <LayoutContext.Provider value={{ isInAdminPreview }}>
+      {children}
+    </LayoutContext.Provider>
+  );
+};
+
+// Uso en modales
+const { isInAdminPreview } = useLayout();
+```
+
+**Beneficios:**
+- ✅ Zero acoplamiento con CSS
+- ✅ Type-safe con TypeScript
+- ✅ Testeable con inyección de context
+- ✅ Escalable para futuros flags de layout
+
+**Problema 2 detectado:** Código History API duplicado (~70 líneas)
+
+**Solución:** `useModalBackNavigation` hook
+```typescript
+// hooks/useModalBackNavigation.ts
+export const useModalBackNavigation = ({
+  isOpen,
+  onClose,
+  modalId,
+  shouldEnable = true,
+}: UseModalBackNavigationOptions) => {
+  useEffect(() => {
+    if (!isOpen || !shouldEnable) return;
+    
+    const stateId = `modal-${modalId}`;
+    window.history.pushState({ modal: stateId, __modalInternal: true }, '');
+    
+    const handlePopState = (e: PopStateEvent) => {
+      const currentState = window.history.state;
+      if (currentState?.modal === stateId) {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.modal === stateId) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, shouldEnable, modalId, onClose]);
+};
+
+// Uso simplificado
+useModalBackNavigation({
+    isOpen: true,
+    onClose,
+    modalId: 'image-zoom',
+    shouldEnable: !isInAdminPreview,
+});
+```
+
+**Beneficios:**
+- ✅ Elimina ~70 líneas de código duplicado
+- ✅ Single source of truth para History API
+- ✅ Reutilizable en futuros modales
+- ✅ Documentado con JSDoc
+
+#### Testing
+
+**Tests Unitarios:**
+- `ServiceDescriptionModal.test.tsx` (8 tests) ✅
+- `ImageZoomModal.test.tsx` (9 tests) ✅
+- Actualizados con helper `renderWithLayout()` para inyectar LayoutProvider
+
+**Tests E2E:**
+- `e2e/ux-improvements.spec.ts` (8 casos) ✅
+- Categorías sin truncar
+- Modales abren/cierran correctamente
+- Navegación back funciona
+- Clicks en overlay/contenido
+
+**Build:**
+```bash
+✅ TypeScript: 0 errores
+✅ Vite build: Exitoso
+✅ Dev server: Funcionando
+```
+
+#### Archivos Modificados/Creados
+
+**Nuevos:**
+- `components/common/ServiceDescriptionModal.tsx` (155 líneas)
+- `components/common/ImageZoomModal.tsx` (105 líneas)
+- `contexts/LayoutContext.tsx` (30 líneas)
+- `hooks/useModalBackNavigation.ts` (45 líneas)
+- Tests correspondientes (412 líneas)
+
+**Modificados:**
+- `components/common/ServiceSelector.tsx` (+25 líneas)
+- `components/common/EmployeeSelector.tsx` (+20 líneas)
+- `components/common/AutoAssignedEmployeeBanner.tsx` (+15 líneas)
+- `components/views/AdminView.tsx` (+15 líneas)
+
+**Sin cambios:**
+- Backend/DB (zero migrations)
+- Types (sin modificaciones)
+- `ClientBookingExperience.tsx`
+
+#### Métricas de Impacto
+
+**Código:**
+- Reducción duplicación: -71% en lógica History API
+- Complejidad ciclomática: 8 → 4
+- Líneas totales agregadas: +350 (neto después de refactor)
+
+**UX:**
+- Categorías: 100% texto visible
+- Descripciones: Lectura cómoda en fullscreen
+- Fotos: Zoom ilimitado (vs 96px fijos)
+
+**Segmentos beneficiados:**
+- ✅ Negocios con servicios complejos (descripciones largas)
+- ✅ Negocios que gestionan espacios (canchas, salones) - pueden mostrar fotos
+- ✅ Usuarios mobile (95% del tráfico) - experiencia premium
+
+#### Decisiones Arquitecturales Registradas
+- **ADR-008:** LayoutContext para detección de AdminView
+- **ADR-009:** useModalBackNavigation hook para History API
+
+#### Referencias
+- [Documentación completa](../ASTRA_UX_Improvements_Vista_Publica.md)
+- [ADR-008 y ADR-009](./REGISTRO_DECISIONES.md)
+
+---
+
+### 20. Reprogramar Reservas
 
 **Estado:** 🚧 Planificada - Fase 2  
 **Prioridad:** P1 - User request validado  

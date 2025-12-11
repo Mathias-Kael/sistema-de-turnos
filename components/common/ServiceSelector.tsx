@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Service, Category, CategoryIcon as CategoryIconType } from '../../types';
 import { formatDuration } from '../../utils/format';
 import { SecondaryText } from '../ui';
+import { ServiceDescriptionModal } from './ServiceDescriptionModal';
 
 interface ServiceSelectorProps {
     selectedServices: Service[];
@@ -156,6 +157,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     // Estado para controlar descripciones expandidas
     const [expandedServiceIds, setExpandedServiceIds] = useState<Set<string>>(new Set());
 
+    // Estado para modal de descripción
+    const [serviceModalData, setServiceModalData] = useState<Service | null>(null);
+
     const toggleDescription = (e: React.MouseEvent, serviceId: string) => {
         e.stopPropagation();
         setExpandedServiceIds(prev => {
@@ -167,6 +171,17 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             }
             return next;
         });
+    };
+
+    const openServiceModal = (e: React.MouseEvent, service: Service) => {
+        e.stopPropagation();
+        setServiceModalData(service);
+    };
+
+    const handleServiceModalConfirm = () => {
+        if (serviceModalData && !selectedIds.has(serviceModalData.id)) {
+            onServiceChange(serviceModalData);
+        }
     };
 
     // Agrupar servicios por categorías
@@ -281,17 +296,17 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 <div className="relative z-10">
                     <p className={`text-base mt-2 transition-all duration-200 ${
                         isSelected ? 'text-secondary' : 'text-secondary'
-                    } ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                    } line-clamp-3`}>
                         {service.description}
                     </p>
                     {isLongDescription && (
                         <button
-                            onClick={(e) => toggleDescription(e, service.id)}
+                            onClick={(e) => openServiceModal(e, service)}
                             className={`mt-1 text-sm font-medium hover:underline focus:outline-none transition-colors ${
                                 isSelected ? 'text-primary' : 'text-primary'
                             }`}
                         >
-                            {isExpanded ? 'Ver menos' : 'Ver más'}
+                            Ver más
                         </button>
                     )}
                 </div>
@@ -398,9 +413,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
                                         {/* Text Content */}
                                         <div className="flex-1 min-w-0 text-left">
-                                            <h3 className={`font-extrabold text-lg truncate transition-colors ${
+                                            <h3 className={`font-extrabold text-lg transition-colors ${
                                                 hasSelections ? 'text-primary' : 'text-primary group-hover:text-primary'
-                                            } line-clamp-2 md:line-clamp-none`}>
+                                            } break-words`}>
                                                 {group.categoryName}
                                             </h3>
                                             <div className="flex items-center gap-2 mt-0.5">
@@ -447,6 +462,15 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 <div className="space-y-3">
                     {services.map(renderService)}
                 </div>
+            )}
+
+            {/* Modal de descripción de servicio */}
+            {serviceModalData && (
+                <ServiceDescriptionModal
+                    service={serviceModalData}
+                    onClose={() => setServiceModalData(null)}
+                    onConfirm={handleServiceModalConfirm}
+                />
             )}
         </div>
     );
