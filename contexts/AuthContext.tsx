@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode } > = ({ childre
   }, []);
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) {
       console.error('Error signing out:', error);
     }
