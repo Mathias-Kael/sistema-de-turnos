@@ -41,7 +41,50 @@ export default defineConfig(() => {
     ],
     build: {
       rollupOptions: {
-        // Podemos extender aquí en el futuro reglas de chunking
+        output: {
+          manualChunks: (id) => {
+            // Landing page chunks - isolated and lazy loaded
+            if (id.includes('/components/landing/sections/Hero')) {
+              return 'landing-hero';
+            }
+            if (id.includes('/components/landing/sections/Features')) {
+              return 'landing-features';
+            }
+            if (id.includes('/components/landing/sections/DemoShowcase') || 
+                id.includes('/components/landing/sections/SocialProof') ||
+                id.includes('/components/landing/sections/FinalCTA')) {
+              return 'landing-sections';
+            }
+            if (id.includes('/components/landing/')) {
+              return 'landing-core';
+            }
+            
+            // Vendor chunks - heavy libraries
+            if (id.includes('node_modules')) {
+              if (id.includes('recharts')) {
+                return 'vendor-recharts';
+              }
+              if (id.includes('react-router')) {
+                return 'vendor-router';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor-react';
+              }
+              return 'vendor';
+            }
+            
+            // Admin components - keep separate from landing
+            if (id.includes('/components/admin/')) {
+              return 'admin';
+            }
+            if (id.includes('/components/views/')) {
+              return 'views';
+            }
+          }
+        }
       }
     },
     resolve: {

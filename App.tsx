@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { BusinessProvider } from './context/BusinessContext';
@@ -11,18 +11,34 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
+
+// Lazy load landing page to optimize initial bundle
+const LandingPage = React.lazy(() => import('./components/landing/LandingPage'));
 
 // ShareLink se importa ahora desde types.ts
 
-function LegacyQueryRedirect() {
-  // Maneja compat ?token y ?client
+function RootRedirect() {
+  // Maneja compat ?token y ?client (legacy query params)
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const token = params.get('token');
   const clientPreview = params.get('client');
+  
+  // Legacy redirects for backwards compatibility
   if (token) return <Navigate to={`/public/${token}`} replace />;
   if (clientPreview === '1') return <Navigate to="/admin/preview" replace />;
-  return <Navigate to="/admin" replace />;
+  
+  // Show landing page for root path
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    }>
+      <LandingPage />
+    </Suspense>
+  );
 }
 
 // Componente que maneja la lógica de redirección post-logout
@@ -60,8 +76,8 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/public/:token" element={<PublicClientLoader />} />
 
-          {/* Compatibilidad con query params antiguos */}
-          <Route path="/" element={<LegacyQueryRedirect />} />
+          {/* Landing Page Marketing (lazy loaded) */}
+          <Route path="/" element={<RootRedirect />} />
 
           {/* Rutas protegidas */}
           <Route element={<ProtectedRoute />}>
