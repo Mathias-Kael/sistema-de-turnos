@@ -19,8 +19,7 @@ import {
   Category,
   Hours,
   Branding,
-  PaymentInfo,
-  Client,
+  BookingClient,
 } from '../types';
 
 // --- Demo Business Data ---
@@ -30,7 +29,7 @@ const DEMO_BRANDING: Branding = {
   secondaryColor: '#EC4899', // Pink
   textColor: '#1F2937',
   font: 'Poppins',
-  terminology: 'personas',
+  terminology: { type: 'person' } as const,
   rating: {
     score: 4.8,
     count: 127,
@@ -67,12 +66,6 @@ const DEMO_HOURS: Hours = {
   sunday: { enabled: false, intervals: [] },
 };
 
-const DEMO_PAYMENT_INFO: PaymentInfo = {
-  alias: 'luna.beauty.mp',
-  cbu: '0000003100010234567890',
-  instructions: 'Enviá el comprobante por WhatsApp después de reservar',
-};
-
 const DEMO_EMPLOYEES: Employee[] = [
   {
     id: 'demo-emp-1',
@@ -95,7 +88,7 @@ const DEMO_CATEGORIES: Category[] = [
     id: 'demo-cat-1',
     businessId: 'demo-business',
     name: 'Tratamientos Faciales',
-    icon: 'sparkles',
+    icon: 'star',
   },
   {
     id: 'demo-cat-2',
@@ -163,13 +156,10 @@ const DEMO_SERVICES: Service[] = [
 
 const DEMO_BUSINESS: Business = {
   id: 'demo-business',
-  userId: 'demo-user',
   name: 'Luna Beauty Studio',
   description:
     'Espacio de belleza integral en el corazón de Palermo. Especialistas en tratamientos faciales, manicura y masajes relajantes.',
-  address: 'Av. Santa Fe 3245, Palermo, CABA',
   phone: '+54 9 11 5555-1234',
-  email: 'hola@lunabeauty.com.ar',
   instagram: 'lunabeautystudio',
   facebook: 'lunabeautystudio',
   whatsapp: '+5491155551234',
@@ -181,8 +171,9 @@ const DEMO_BUSINESS: Business = {
   bookings: [],
   branding: DEMO_BRANDING,
   categories: DEMO_CATEGORIES,
-  paymentInfo: DEMO_PAYMENT_INFO,
-  clients: [],
+  paymentAlias: 'luna.beauty.mp',
+  paymentCbu: '0000003100010234567890',
+  depositInfo: 'Enviá el comprobante por WhatsApp después de reservar',
 };
 
 // --- Sandbox State ---
@@ -190,7 +181,6 @@ const DEMO_BUSINESS: Business = {
 interface SandboxState {
   business: Business;
   bookings: Booking[];
-  clients: Client[];
   lastReset: number;
 }
 
@@ -202,7 +192,6 @@ class SandboxBackend {
     this.state = {
       business: DEMO_BUSINESS,
       bookings: [],
-      clients: [],
       lastReset: Date.now(),
     };
 
@@ -222,7 +211,6 @@ class SandboxBackend {
     this.state = {
       business: DEMO_BUSINESS,
       bookings: [],
-      clients: [],
       lastReset: Date.now(),
     };
   }
@@ -238,7 +226,6 @@ class SandboxBackend {
     return {
       ...this.state.business,
       bookings: this.state.bookings,
-      clients: this.state.clients,
     };
   }
 
@@ -250,7 +237,6 @@ class SandboxBackend {
       return {
         ...this.state.business,
         bookings: this.state.bookings,
-        clients: this.state.clients,
       };
     }
     
@@ -273,24 +259,9 @@ class SandboxBackend {
       ...bookingData,
       id: `demo-booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       status: 'confirmed',
-      createdAt: new Date().toISOString(),
     };
 
     this.state.bookings.push(newBooking);
-
-    // Si el cliente no existe, agregarlo
-    if (bookingData.client && !this.state.clients.find(c => c.phone === bookingData.client.phone)) {
-      const newClient: Client = {
-        id: `demo-client-${Date.now()}`,
-        businessId: this.state.business.id,
-        name: bookingData.client.name,
-        phone: bookingData.client.phone,
-        email: bookingData.client.email,
-        notes: bookingData.client.notes,
-        createdAt: new Date().toISOString(),
-      };
-      this.state.clients.push(newClient);
-    }
 
     console.log('[SandboxBackend] Booking created:', newBooking.id);
     return newBooking;
@@ -317,46 +288,6 @@ class SandboxBackend {
 
     this.state.bookings = this.state.bookings.filter((b) => b.id !== id);
     console.log('[SandboxBackend] Booking deleted:', id);
-  }
-
-  async createClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
-    await this.simulateLatency(300);
-
-    const newClient: Client = {
-      ...clientData,
-      id: `demo-client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-    };
-
-    this.state.clients.push(newClient);
-    return newClient;
-  }
-
-  async updateClient(id: string, updates: Partial<Client>): Promise<Client> {
-    await this.simulateLatency(300);
-
-    const clientIndex = this.state.clients.findIndex((c) => c.id === id);
-    if (clientIndex === -1) {
-      throw new Error('Client not found');
-    }
-
-    this.state.clients[clientIndex] = {
-      ...this.state.clients[clientIndex],
-      ...updates,
-    };
-
-    return this.state.clients[clientIndex];
-  }
-
-  async deleteClient(id: string): Promise<void> {
-    await this.simulateLatency(200);
-
-    this.state.clients = this.state.clients.filter((c) => c.id !== id);
-  }
-
-  async getClients(): Promise<Client[]> {
-    await this.simulateLatency(200);
-    return this.state.clients;
   }
 
   // Reset manual (para testing)
