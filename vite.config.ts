@@ -67,10 +67,8 @@ export default defineConfig(() => {
               if (id.includes('react-router')) {
                 return 'vendor-router';
               }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              if (id.includes('react') || id.includes('react-dom')) {
+              // Keep lucide-react with React to avoid circular deps
+              if (id.includes('react') || id.includes('react-dom') || id.includes('lucide-react')) {
                 return 'vendor-react';
               }
               return 'vendor';
