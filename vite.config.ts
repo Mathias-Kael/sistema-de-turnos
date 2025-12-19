@@ -43,44 +43,21 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            // Landing page chunks - isolated and lazy loaded
-            if (id.includes('/components/landing/sections/Hero')) {
-              return 'landing-hero';
-            }
-            if (id.includes('/components/landing/sections/Features')) {
-              return 'landing-features';
-            }
-            if (id.includes('/components/landing/sections/DemoShowcase') || 
-                id.includes('/components/landing/sections/SocialProof') ||
-                id.includes('/components/landing/sections/FinalCTA')) {
-              return 'landing-sections';
-            }
-            if (id.includes('/components/landing/')) {
-              return 'landing-core';
-            }
-            
-            // Vendor chunks - heavy libraries
+            // Only split heavy vendor libraries to avoid circular dependencies
             if (id.includes('node_modules')) {
               if (id.includes('recharts')) {
                 return 'vendor-recharts';
               }
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                return 'vendor-react';
+              }
               if (id.includes('react-router')) {
                 return 'vendor-router';
               }
-              // Keep lucide-react with React to avoid circular deps
-              if (id.includes('react') || id.includes('react-dom') || id.includes('lucide-react')) {
-                return 'vendor-react';
-              }
+              // All other node_modules in one chunk
               return 'vendor';
             }
-            
-            // Admin components - keep separate from landing
-            if (id.includes('/components/admin/')) {
-              return 'admin';
-            }
-            if (id.includes('/components/views/')) {
-              return 'views';
-            }
+            // Let Vite handle application code splitting automatically
           }
         }
       }
